@@ -26,10 +26,8 @@ export const FoodBeveragePage: React.FC = () => {
             
             <Navbar />
 
-            {/* pt-28 untuk HP, pt-36 untuk Desktop agar jaraknya konsisten */}
-            <main className="max-w-[1400px] mx-auto px-4 md:px-12 pt-28 md:pt-36 pb-16 flex-grow w-full">
+            <main className="max-w-350 mx-auto px-4 md:px-12 pt-28 md:pt-36 pb-16 grow w-full">
                 
-                {/* Header Section */}
                 <div className="mb-8 md:mb-12 px-2 md:px-0">
                     <h1 className="text-3xl md:text-4xl font-bold mb-2 md:mb-3">Food & Beverage</h1>
                     <p className="text-white/60 text-xs md:text-base max-w-[90%] md:max-w-full">
@@ -37,31 +35,24 @@ export const FoodBeveragePage: React.FC = () => {
                     </p>
                 </div>
 
-                {/* --- LAYOUT UTAMA --- */}
-                {/* flex-col di HP (atas-bawah), lg:flex-row di Desktop (kiri-kanan) */}
                 <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 relative">
                     
-                    {/* KOLOM KIRI: Daftar Menu */}
                     <div className="flex-1 flex flex-col gap-8 md:gap-10">
                         
-                        {/* --- BARIS FILTER & SEARCH --- */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-2 md:px-0">
                             <h2 className="text-xl md:text-2xl font-bold">
                                 {activeFilter ? activeFilter : 'All Menus'}
                             </h2>
                             
-                            {/* Filter & Search dibikin fleksibel */}
                             <div className="flex flex-col sm:flex-row flex-1 items-start sm:items-center justify-end gap-4 w-full md:w-auto">
                                 
-                                {/* overflow-x-auto agar tag bisa di-swipe di HP kecil */}
                                 <div className="flex items-center gap-2 overflow-x-auto md:overflow-visible [&::-webkit-scrollbar]:hidden w-full sm:w-auto pb-2 sm:pb-0 px-1 -mx-1 sm:px-0 sm:mx-0">
                                     <span onClick={() => handleFilterClick('Promo')} className={getFilterClass('Promo')}>Promo</span>
                                     <span onClick={() => handleFilterClick('Popcorn')} className={getFilterClass('Popcorn')}>Popcorn</span>
                                     <span onClick={() => handleFilterClick('Drinks')} className={getFilterClass('Drinks')}>Drinks</span>
                                 </div>
                                 
-                                {/* Search bar muncul di HP dan Desktop, dengan lebar dinamis */}
-                                <div className="relative w-full sm:max-w-[200px]">
+                                <div className="relative w-full sm:max-w-50">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
@@ -74,8 +65,6 @@ export const FoodBeveragePage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* --- BAGIAN MENU --- */}
-                        {/* grid-cols-1 di HP sangat kecil, sm:grid-cols-2 di atas itu */}
                         {(!activeFilter || activeFilter === 'Popcorn') && (
                             <section className="px-2 md:px-0">
                                 {!activeFilter && <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-5 text-white/80">Popcorn</h3>}
@@ -105,11 +94,8 @@ export const FoodBeveragePage: React.FC = () => {
 
                     </div>
 
-                    {/* --- KOLOM KANAN: Keranjang --- */}
-                    {/* Di layar HP (di bawah lg), ukurannya w-full agar mengisi layar bawah.
-                        Di layar lg ke atas, kembali menjadi sidebar selebar 350px dan sticky. */}
-                    <aside className="w-full lg:w-[350px] shrink-0 mt-8 lg:mt-0 px-2 md:px-0">
-                        <div className="bg-white rounded-2xl p-5 md:p-6 flex flex-col h-[400px] md:h-[450px] lg:sticky lg:top-32 shadow-2xl">
+                    <aside className="w-full lg:w-87.5 shrink-0 mt-8 lg:mt-0 px-2 md:px-0">
+                        <div className="bg-white rounded-2xl p-5 md:p-6 flex flex-col h-100 md:h-112.5 lg:sticky lg:top-32 shadow-2xl">
                             
                             <div className="flex items-center gap-3 border-b border-gray-200 pb-3 md:pb-4 mb-3 md:mb-4">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
