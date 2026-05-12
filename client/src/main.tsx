@@ -9,6 +9,9 @@ import { HomePage } from "./pages/HomePage"
 import { MoviePage } from './pages/MoviePage'
 import { FoodBeveragePage } from './pages/FoodBeveragePage'
 import { MovieDetailsPage } from './pages/MovieDetailsPage'
+import { SeatSelectionPage } from './pages/SeatSelectionPage'
+import { PaymentPage } from './pages/PaymentPage'
+import { ReceiptPage } from './pages/ReceiptPage'
 
 
 createRoot(document.getElementById('root')!).render(
@@ -22,6 +25,9 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/fnb" element={<FoodBeveragePage />} />
 
         <Route path="/movie/:id" element={<MovieDetailsPage />} />
+        <Route path="/seat-selection/:movieId/:showtimeId" element={<SeatSelectionPage />} />
+        <Route path="/order/:movieId/:showtimeId/:seats" element={<PaymentPage />} />
+        <Route path="/receipt/:movieId/:showtimeId/:seats" element={<ReceiptPage />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

@@ -19,7 +19,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ id = 1, title, rating, dur
 
     const handleBuyTicket = (e: React.MouseEvent) => {
         e.stopPropagation();
-        navigate('/order');
+        navigate(`/movie/${id}`);
     };
 
     return (

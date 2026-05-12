@@ -4,19 +4,7 @@ import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { TrailerModal } from '../components/TrailerModal'; 
 import { Breadcrumbs } from '../components/Breadcrumbs'; 
-
-const MOVIE_DATABASE = [
-    { id: '1', title: 'WEAPONS', rating: 'R', duration: '173m', genre: 'Horror / Thriller', imgUrl: '/Weapons.png', description: 'In a quiet town, a series of mysterious events forces a group of teenagers to confront their darkest fears. Weapons explores the psychological depths of survival.', trailerUrl: 'https://www.youtube.com/embed/OpThntO9ixc?autoplay=1' },
-    { id: '2', title: 'JOKER', rating: 'PG-13', duration: '189m', genre: 'Drama / Crime', imgUrl: '/Joker.png', description: 'Forever alone in a crowd, failed comedian Arthur Fleck seeks connection as he walks the streets of Gotham City. Arthur wears two masks -- the one he paints for his day job as a clown, and the guise he projects in a futile attempt to feel like he is part of the world around him.', trailerUrl: 'https://www.youtube.com/embed/zAGVQLHvwOY?autoplay=1' },
-    { id: '3', title: 'HOPPERS', rating: 'G', duration: '189m', genre: 'Animation', imgUrl: '/Hoppers.png', description: 'Hoppers is an innovative game that combines physical activity with digital interaction, encouraging players to jump through colorful hoops to score points. Designed to promote fitness and fun, it challenges agility and coordination while engaging users in a vibrant, energetic environment.', trailerUrl: 'https://www.youtube.com/embed/PypDSyIRRSs?autoplay=1' },
-];
-
-const SHOWTIMES = [
-    { id: 1, studio: 'Studio 1', price: 'Rp 50.000', time: '13:00 WIB', isExpired: true }, 
-    { id: 2, studio: 'Studio 2', price: 'Rp 50.000', time: '18:00 WIB', isExpired: false },
-    { id: 3, studio: 'Studio 3', price: 'Rp 50.000', time: '19:30 WIB', isExpired: false },
-    { id: 4, studio: 'Studio 4', price: 'Rp 50.000', time: '21:00 WIB', isExpired: false },
-];
+import { MOVIE_DATABASE, SHOWTIMES } from '../data/dummydata'; 
 
 export const MovieDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -26,8 +14,8 @@ export const MovieDetailsPage: React.FC = () => {
 
     const movie = MOVIE_DATABASE.find(m => m.id === id);
 
-    const handleShowtimeClick = () => {
-        navigate('/seat-selection'); 
+    const handleShowtimeClick = (showtimeId: number) => {
+        navigate(`/seat-selection/${id}/${showtimeId}`); 
     };
 
     useEffect(() => {
@@ -38,7 +26,6 @@ export const MovieDetailsPage: React.FC = () => {
         return (
             <div className="min-h-screen bg-[#0d0d0d] text-white font-sans overflow-x-hidden flex flex-col">
                 <Navbar />
-                
                 <main className="max-w-350 mx-auto px-6 md:px-12 pt-28 md:pt-36 pb-16 grow w-full flex flex-col items-center justify-center text-center">
                     <div className="text-red-600 mb-6 drop-shadow-[0_0_20px_rgba(229,28,35,0.4)]">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-24 h-24">
@@ -76,7 +63,6 @@ export const MovieDetailsPage: React.FC = () => {
 
                 <div className="flex flex-col md:flex-row gap-8 lg:gap-16">
                     
-                    {/* Class diperbaiki */}
                     <div className="w-full md:w-75 lg:w-87.5 shrink-0">
                         <img 
                             src={movie.imgUrl} 
@@ -143,7 +129,7 @@ export const MovieDetailsPage: React.FC = () => {
                                     return (
                                         <div 
                                             key={item.id} 
-                                            onClick={() => !item.isExpired && handleShowtimeClick()}
+                                            onClick={() => !item.isExpired && handleShowtimeClick(item.id)}
                                             className={containerStyle}
                                         >
                                             <span className={`text-xs md:text-sm ${item.isExpired ? 'text-white/30' : 'text-white/70'}`}>
@@ -168,7 +154,6 @@ export const MovieDetailsPage: React.FC = () => {
 
             <Footer />
 
-            {/* URL Trailer dikirimkan ke modal secara spesifik per film */}
             <TrailerModal isOpen={isTrailerOpen} onClose={() => setIsTrailerOpen(false)} videoUrl={movie.trailerUrl} />
         </div>
     );
