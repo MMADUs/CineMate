@@ -1,7 +1,8 @@
 export interface MovieCardProps {
-    id?: number;
+    id?: number | string;
     title: string;
     rating: string;
     duration: string;
     imgUrl: string;
+    trailerUrl?: string;
 }

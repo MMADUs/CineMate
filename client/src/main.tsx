@@ -8,6 +8,7 @@ import { RegisterPage } from "./pages/auth/RegisterPage"
 import { HomePage } from "./pages/HomePage" 
 import { MoviePage } from './pages/MoviePage'
 import { FoodBeveragePage } from './pages/FoodBeveragePage'
+import { MovieDetailsPage } from './pages/MovieDetailsPage'
 
 
 createRoot(document.getElementById('root')!).render(
@@ -19,6 +20,8 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/register" element={<RegisterPage loginHref="/login" />} />
         <Route path="/movie" element={<MoviePage />} />
         <Route path="/fnb" element={<FoodBeveragePage />} />
+
+        <Route path="/movie/:id" element={<MovieDetailsPage />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
