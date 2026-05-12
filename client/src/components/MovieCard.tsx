@@ -1,13 +1,6 @@
 import React from 'react';
 import { Button } from './Button';
-
-export interface MovieCardProps {
-    id?: number;
-    title: string;
-    rating: string;
-    duration: string;
-    imgUrl: string;
-}
+import type { MovieCardProps } from '../types/moviecard';
 
 export const MovieCard: React.FC<MovieCardProps> = ({ title, rating, duration, imgUrl }) => {
     return (

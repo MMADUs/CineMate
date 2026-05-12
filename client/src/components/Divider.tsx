@@ -1,8 +1,5 @@
 import React from "react";
-
-export interface DividerProps {
-    text?: string;
-}
+import type { DividerProps } from "../types/divider";
 
 export const Divider: React.FC<DividerProps> = ({ text }) => {
     if (!text) {

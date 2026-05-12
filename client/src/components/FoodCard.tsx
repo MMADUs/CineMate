@@ -1,12 +1,5 @@
 import React from 'react';
-
-export interface FoodCardProps {
-    id?: number;
-    name: string;
-    price: string;
-    imgUrl: string;
-    onAdd?: () => void;
-}
+import type { FoodCardProps } from '../types/foodcard';
 
 export const FoodCard: React.FC<FoodCardProps> = ({ name, price, imgUrl, onAdd }) => {
     return (
