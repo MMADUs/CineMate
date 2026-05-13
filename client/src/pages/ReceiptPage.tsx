@@ -28,7 +28,7 @@ export const ReceiptPage: React.FC = () => {
         <div className="min-h-screen bg-[#0d0d0d] text-white font-sans overflow-x-hidden flex flex-col">
             <Navbar />
 
-            <main className="max-w-[1400px] mx-auto px-4 md:px-12 pt-28 md:pt-36 pb-16 flex-grow w-full">
+            <main className="max-w-350 mx-auto px-4 md:px-12 pt-28 md:pt-36 pb-16 grow w-full">
                 
                 <Breadcrumbs 
                     disableAll={true}
@@ -47,7 +47,7 @@ export const ReceiptPage: React.FC = () => {
                 <div className="flex flex-col gap-6 md:gap-8 px-2 md:px-0 max-w-4xl mx-auto w-full">
                     
                     <div className="bg-[#111111] md:bg-[#1a1a1a] border border-red-600 rounded-2xl p-8 md:p-12 flex flex-col items-center justify-center text-center shadow-[0_0_30px_rgba(229,28,35,0.15)] relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-b from-red-600/10 to-transparent pointer-events-none"></div>
+                        <div className="absolute inset-0 bg-linear-to-b from-red-600/10 to-transparent pointer-events-none"></div>
                         <div className="text-red-500 mb-4 z-10">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 md:h-20 md:w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -82,8 +82,8 @@ export const ReceiptPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="w-[100px] md:w-[150px] shrink-0">
-                                <img src={movie.imgUrl} alt={movie.title} className="w-full rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.05)] border border-white/10 aspect-[2/3] object-cover" />
+                            <div className="w-25 md:w-37.5 shrink-0">
+                                <img src={movie.imgUrl} alt={movie.title} className="w-full rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.05)] border border-white/10 aspect-2/3 object-cover" />
                             </div>
                         </div>
 
@@ -108,7 +108,7 @@ export const ReceiptPage: React.FC = () => {
 
                     <div className="flex flex-col gap-4 mt-2">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button className="flex items-center justify-center gap-3 px-6 py-[14px] text-base font-bold transition-all duration-200 border border-red-600 text-red-500 hover:bg-red-600/10 bg-transparent rounded-lg w-full">
+                            <button className="flex items-center justify-center gap-3 px-6 py-3.5 text-base font-bold transition-all duration-200 border border-red-600 text-red-500 hover:bg-red-600/10 bg-transparent rounded-lg w-full">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>

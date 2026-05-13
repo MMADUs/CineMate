@@ -37,7 +37,7 @@ export const PaymentPage: React.FC = () => {
         <div className="min-h-screen bg-[#0d0d0d] text-white font-sans overflow-x-hidden flex flex-col">
             <Navbar />
 
-            <main className="max-w-[1400px] mx-auto px-4 md:px-12 pt-28 md:pt-36 pb-16 flex-grow w-full">
+            <main className="max-w-350 mx-auto px-4 md:px-12 pt-28 md:pt-36 pb-16 grow w-full">
                 
                 <Breadcrumbs 
                     items={[
@@ -53,11 +53,9 @@ export const PaymentPage: React.FC = () => {
 
                 <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 px-2 md:px-0">
                     
-                    {/* BAGIAN KIRI: Form Pembayaran */}
                     <div className="flex-1 bg-[#111111] md:bg-[#1a1a1a] border border-white/5 md:border-white/10 rounded-2xl p-5 md:p-8 shadow-xl">
                         <form onSubmit={handlePayment} className="flex flex-col gap-6 md:gap-8">
                             
-                            {/* Pemilihan Metode Pembayaran */}
                             <div>
                                 <h3 className="text-sm md:text-base text-white/80 font-semibold mb-4">Payment Methods</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
@@ -139,13 +137,12 @@ export const PaymentPage: React.FC = () => {
                         </form>
                     </div>
 
-                    <div className="w-full lg:w-[400px] shrink-0 h-fit bg-[#111111] md:bg-[#1a1a1a] border border-white/5 md:border-white/10 rounded-2xl p-6 md:p-8 shadow-xl lg:sticky lg:top-32">
+                    <div className="w-full lg:w-100 shrink-0 h-fit bg-[#111111] md:bg-[#1a1a1a] border border-white/5 md:border-white/10 rounded-2xl p-6 md:p-8 shadow-xl lg:sticky lg:top-32">
                         
                         <h2 className="text-xl md:text-2xl font-bold mb-6 md:mb-8">Order Summary</h2>
 
                         <div className="flex flex-col gap-5 md:gap-6">
                             
-                            {/* Data Film DINAMIS */}
                             <div className="flex flex-col gap-1">
                                 <span className="text-xs md:text-sm text-white/50">Movie</span>
                                 <span className="text-base md:text-lg font-bold">{movie.title}</span>

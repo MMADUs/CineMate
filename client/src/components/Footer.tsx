@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 export const Footer: React.FC = () => {
     return (
-        <footer className="w-full bg-black text-white font-sans mt-20">
+        <footer className="w-full bg-[#0d0d0d] text-white font-sans mt-20">
             <div className="max-w-350 mx-auto px-12 py-16 flex flex-col md:flex-row justify-between items-start gap-12">
                 <div className="text-4xl font-normal text-white tracking-wider flex items-center font-['Jockey_One']">
                     Cine<span className="text-red-600">Mate</span>

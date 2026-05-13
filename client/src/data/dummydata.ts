@@ -1,3 +1,69 @@
+import type { OrderItem } from '../types/order';
+
+export const ORDER_HISTORY: OrderItem[] = [
+    {
+        id: 'ORD-001',
+        movieId: '3',
+        movieTitle: 'HOPPERS',
+        posterUrl: '/Hoppers.png',
+        date: '10 March 2026',
+        time: '07:00 PM',
+        seats: 'A1, A2',
+        studio: '1',
+        price: 165000,
+        status: 'Completed'
+    },
+    {
+        id: 'ORD-002',
+        movieId: '3',
+        movieTitle: 'HOPPERS',
+        posterUrl: '/Hoppers.png',
+        date: '10 March 2026',
+        time: '07:00 PM',
+        seats: 'A1, A2',
+        studio: '1',
+        price: 165000,
+        status: 'Cancelled'
+    },
+    {
+        id: 'ORD-003',
+        movieId: '3',
+        movieTitle: 'HOPPERS',
+        posterUrl: '/Hoppers.png',
+        date: '10 March 2026',
+        time: '07:00 PM',
+        seats: 'A1, A2',
+        studio: '1',
+        price: 165000,
+        status: 'Pending'
+    },
+    {
+        id: 'ORD-004',
+        movieId: '3',
+        movieTitle: 'HOPPERS',
+        posterUrl: '/Hoppers.png',
+        date: '10 March 2026',
+        time: '07:00 PM',
+        seats: 'A1, A2',
+        studio: '1',
+        price: 165000,
+        status: 'Upcoming'
+    },
+
+    {
+        id: 'ORD-005',
+        movieId: '999', 
+        movieTitle: 'AVENGERS: ENDGAME',
+        posterUrl: 'https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg', 
+        date: '25 April 2024',
+        time: '19:00 WIB',
+        seats: 'E5, E6',
+        studio: '2',
+        price: 100000,
+        status: 'Cancelled'
+    }
+];
+
 export const NOW_PLAYING = [
     { id: 1, title: 'WEAPONS', rating: 'R', duration: '173m', imgUrl: '/Weapons.png', trailerUrl: 'https://www.youtube.com/embed/OpThntO9ixc?autoplay=1' },
     { id: 2, title: 'JOKER', rating: 'PG-13', duration: '189m', imgUrl: '/Joker.png', trailerUrl: 'https://www.youtube.com/embed/zAGVQLHvwOY?autoplay=1' },
