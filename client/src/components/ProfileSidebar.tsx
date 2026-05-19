@@ -1,6 +1,5 @@
 import React from 'react';
 
-// Mendefinisikan tipe data untuk props
 interface ProfileSidebarProps {
     activeTab: 'personal' | 'history';
     setActiveTab: (tab: 'personal' | 'history') => void;

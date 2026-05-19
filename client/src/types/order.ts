@@ -12,3 +12,7 @@ export interface OrderItem {
     price: number;
     status: OrderStatus;
 }
+
+export interface OrderCardProps {
+    order: OrderItem;
+}

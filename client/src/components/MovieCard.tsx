@@ -10,7 +10,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({ id = 1, title, rating, dur
 
     const handleCardClick = () => {
         navigate(`/movie/${id}`);
-    };
+};
 
     const handleOpenTrailer = (e: React.MouseEvent) => {
         e.stopPropagation(); 

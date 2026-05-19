@@ -16,6 +16,14 @@ import { OrderHistoryPage } from './pages/HistoryOrderPage'
 import { TicketDetailsPage } from './pages/TicketDetailsPage'
 import { ProfilePage } from './pages/ProfilePage'
 
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
+import { AdminMoviesPage } from './pages/admin/AdminMoviesPage'
+import { AdminShowtimesPage } from './pages/admin/AdminShowtimesPage'
+import { AdminTransactionsPage } from './pages/admin/AdminTransactionsPage'
+import { AdminFnbPage } from './pages/admin/AdminFnBPage';
+import { AdminStudiosPage } from './pages/admin/AdminStudiosPage'
+import { AdminProfilePage } from './pages/admin/AdminProfilePage'
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
@@ -33,6 +41,14 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/receipt/:movieId/:showtimeId/:seats" element={<ReceiptPage />} />
         <Route path="/history" element={<OrderHistoryPage />} />
         <Route path="/ticket/:orderId" element={<TicketDetailsPage />} />
+
+        <Route path="/admin" element={<AdminDashboardPage />} />
+        <Route path="/admin/movies" element={<AdminMoviesPage />} />
+        <Route path="/admin/studios" element={<AdminStudiosPage />} />
+        <Route path="/admin/showtimes" element={<AdminShowtimesPage />} />
+        <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
+        <Route path="/admin/fnb" element={<AdminFnbPage />} />
+        <Route path="/admin/profile" element={<AdminProfilePage />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

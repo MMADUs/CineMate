@@ -1,10 +1,5 @@
 import React from 'react';
-
-interface QRModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    orderId: string;
-}
+import type { QRModalProps } from '../types/qr';
 
 export const QRModal: React.FC<QRModalProps> = ({ isOpen, onClose, orderId }) => {
     if (!isOpen) return null;

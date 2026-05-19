@@ -27,7 +27,7 @@ export const PaymentPage: React.FC = () => {
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }, []);
 
-    const handlePayment = (e: React.FormEvent) => {
+    const handlePayment = (e: React.SyntheticEvent) => {
         e.preventDefault();
         
         navigate(`/receipt/${movieId}/${showtimeId}/${seats}`); 
