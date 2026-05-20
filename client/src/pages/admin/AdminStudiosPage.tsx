@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { AdminLayout } from '../../components/AdminLayouts';
-import { AdminModal } from '../../components/AdminModal';
-import { DeleteModal } from '../../components/DeleteModal';
-import { Pagination } from '../../components/Pagination';
+import { AdminLayout } from '../../components/layout/AdminLayouts';
+import { AdminModal } from '../../components/modals/AdminModal';
+import { DeleteModal } from '../../components/modals/DeleteModal';
+import { Pagination } from '../../components/ui_manual/Pagination';
 
 interface CinemaHall {
     id: string;
@@ -89,7 +89,7 @@ export const AdminStudiosPage: React.FC = () => {
                 
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
                     <div className="flex items-center gap-2 bg-[#111111] border border-white/10 rounded-lg px-4 py-2 w-full sm:w-auto focus-within:border-red-500 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white/50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         <input 
@@ -118,9 +118,9 @@ export const AdminStudiosPage: React.FC = () => {
 
             <div className="bg-[#111111] border border-white/5 rounded-2xl shadow-xl overflow-hidden flex flex-col">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-200">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead>
-                            <tr className="bg-white/5 border-b border-white/5 text-white/70 text-sm">
+                            <tr className="bg-white/5 border-b border-white/5 text-white/70 text-sm whitespace-nowrap">
                                 <th className="py-4 px-6 font-semibold">Hall ID</th>
                                 <th className="py-4 px-6 font-semibold">Cinema Location</th>
                                 <th className="py-4 px-6 font-semibold">Studio Name</th>
@@ -140,35 +140,35 @@ export const AdminStudiosPage: React.FC = () => {
                                 paginatedStudios.map((studio) => (
                                     <tr key={studio.id} className="hover:bg-white/2 transition-colors group">
                                         
-                                        <td className="py-4 px-6">
+                                        <td className="py-4 px-6 whitespace-nowrap">
                                             <span className="font-bold text-white/80">{studio.id}</span>
                                         </td>
 
-                                        <td className="py-4 px-6">
+                                        <td className="py-4 px-6 whitespace-nowrap">
                                             <div className="flex items-center gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                                 <span className="font-bold text-base">{studio.cinemaName}</span>
                                             </div>
                                         </td>
 
-                                        <td className="py-4 px-6">
+                                        <td className="py-4 px-6 whitespace-nowrap">
                                             <span className="bg-[#1a1a1a] border border-white/10 px-3 py-1.5 rounded-lg text-sm font-semibold">
                                                 {studio.studioName}
                                             </span>
                                         </td>
 
-                                        <td className="py-4 px-6 text-center">
+                                        <td className="py-4 px-6 text-center whitespace-nowrap">
                                             <span className="text-white/60 text-xs">
                                                 {studio.totalRows} Rows <span className="mx-1">×</span> {studio.seatsPerRow} Cols
                                             </span>
                                         </td>
 
-                                        <td className="py-4 px-6 text-center">
+                                        <td className="py-4 px-6 text-center whitespace-nowrap">
                                             <span className="text-blue-400 font-bold">{studio.capacity} Seats</span>
                                         </td>
 
-                                        <td className="py-4 px-6 text-right">
-                                            <div className="flex items-center justify-end gap-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <td className="py-4 px-6 text-right whitespace-nowrap">
+                                            <div className="flex items-center justify-end gap-3 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button 
                                                     onClick={() => openEditModal(studio)}
                                                     className="bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white p-2 rounded transition-colors" title="Edit"

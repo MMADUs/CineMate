@@ -52,7 +52,6 @@ export const Navbar: React.FC = () => {
                         <Link to="/history" className={`hover:text-white ${getNavLinkClass('/history')}`}>Order</Link>
                     </div>
 
-                    {/* Mengubah div profil desktop menjadi Link */}
                     <Link to="/profile" className="w-10 h-10 rounded-full bg-gray-500 overflow-hidden border-2 border-red-600 shrink-0 cursor-pointer block hover:opacity-80 transition-opacity">
                         <img src="https://i.pravatar.cc/150?img=11" alt="Profile" className="w-full h-full object-cover" />
                     </Link>
@@ -81,7 +80,6 @@ export const Navbar: React.FC = () => {
             >
                 <div className="flex flex-col h-full pt-28 px-8 pb-10 overflow-y-auto">
                     
-                    {/* Mengubah div profil mobile menjadi Link */}
                     <Link to="/profile" onClick={closeMobileMenu} className="flex items-center gap-4 mb-10 pb-6 border-b border-white/10 hover:opacity-80 transition-opacity cursor-pointer">
                         <div className="w-16 h-16 rounded-full bg-gray-500 overflow-hidden border-2 border-red-600 shrink-0">
                             <img src="https://i.pravatar.cc/150?img=11" alt="Profile" className="w-full h-full object-cover" />

@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { AdminLayout } from '../../components/AdminLayouts';
-import { AdminModal } from '../../components/AdminModal';
-import { DeleteModal } from '../../components/DeleteModal';
-import { Pagination } from '../../components/Pagination'; 
+import { AdminLayout } from '../../components/layout/AdminLayouts';
+import { AdminModal } from '../../components/modals/AdminModal';
+import { DeleteModal } from '../../components/modals/DeleteModal';
+import { Pagination } from '../../components/ui_manual/Pagination'; 
 import { ORDER_HISTORY } from '../../data/dummydata';
 
 const ITEMS_PER_PAGE = 5; 

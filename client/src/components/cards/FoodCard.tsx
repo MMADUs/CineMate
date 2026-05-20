@@ -1,5 +1,5 @@
 import React from 'react';
-import type { FoodCardProps } from '../types/fnb';
+import type { FoodCardProps } from '../../types/fnb';
 
 export const FoodCard: React.FC<FoodCardProps> = ({ name, price, imgUrl, onAdd }) => {
     return (

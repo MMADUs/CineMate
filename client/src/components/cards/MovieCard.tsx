@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
-import { Button } from './Button';
-import { TrailerModal } from './TrailerModal';
-import type { MovieCardProps } from '../types/moviecard';
+import { Button } from '../ui_manual/Button';
+import { TrailerModal } from '../modals/TrailerModal';
 import { useNavigate } from 'react-router-dom'; 
+
+export interface MovieCardProps {
+    id?: number | string;
+    title: string;
+    rating: string;
+    duration: string;
+    imgUrl: string;
+    trailerUrl?: string;
+}
 
 export const MovieCard: React.FC<MovieCardProps> = ({ id = 1, title, rating, duration, imgUrl, trailerUrl }) => {
     const navigate = useNavigate();
@@ -63,7 +71,6 @@ export const MovieCard: React.FC<MovieCardProps> = ({ id = 1, title, rating, dur
                 </div>
             </div>
 
-            {/* Lempar props trailerUrl ke Modal di bawah ini */}
             <TrailerModal isOpen={isTrailerOpen} onClose={() => setIsTrailerOpen(false)} videoUrl={trailerUrl} />
         </>
     );

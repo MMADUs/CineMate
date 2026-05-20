@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Navbar } from '../components/Navbar';
-import { Footer } from '../components/Footer';
-import { Button } from '../components/Button';
-import { MovieCard } from '../components/MovieCard';
+import { Navbar } from '../components/layout/Navbar';
+import { Footer } from '../components/layout/Footer';
+import { Button } from '../components/ui_manual/Button';
+import { MovieCard } from '../components/cards/MovieCard';
 import { ALL_MOVIES } from '../data/dummydata';
 
 export const MoviePage: React.FC = () => {

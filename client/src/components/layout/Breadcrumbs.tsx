@@ -1,6 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import type { BreadcrumbsProps } from '../types/breadcrumbs';
+
+export interface BreadcrumbItem {
+    label: string;
+    path?: string; 
+} 
+
+export interface BreadcrumbsProps {
+    items: BreadcrumbItem[];
+    disableAll?: boolean; 
+}
 
 export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, disableAll = false }) => {
     return (

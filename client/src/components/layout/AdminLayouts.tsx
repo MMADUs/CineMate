@@ -74,10 +74,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => 
                 </div>
             </aside>
 
-            {/* MAIN CONTENT AREA */}
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
                 
-                {/* TOPBAR / HEADER */}
                 <header className="h-20 bg-[#111111] border-b border-white/5 flex items-center justify-between px-6 md:px-10 shrink-0">
                     <div className="flex items-center gap-4">
                         <button 
@@ -91,7 +89,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => 
                         <h2 className="text-xl md:text-2xl font-bold">{title}</h2>
                     </div>
 
-                    {/* ADMIN PROFILE BUTTON */}
                     <div 
                         onClick={() => navigate('/admin/profile')}
                         className="flex items-center gap-4 cursor-pointer group"
@@ -109,7 +106,6 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => 
                     </div>
                 </header>
 
-                {/* CONTENT */}
                 <main className="flex-1 overflow-y-auto bg-[#0d0d0d] p-6 md:p-10">
                     {children}
                 </main>

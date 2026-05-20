@@ -1,7 +1,7 @@
 import React from 'react';
-import type { OrderCardProps } from '../types/order';
+import type { OrderCardProps } from '../../types/order';
 import { useNavigate } from 'react-router-dom';
-import { MOVIE_DATABASE } from '../data/dummydata'; 
+import { MOVIE_DATABASE } from '../../data/dummydata'; 
 
 export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
     const navigate = useNavigate();

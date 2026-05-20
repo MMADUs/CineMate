@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Navbar } from '../components/Navbar';
-import { Footer } from '../components/Footer';
-import { Button } from '../components/Button';
-import { FoodCard } from '../components/FoodCard';
+import { Navbar } from '../components/layout/Navbar';
+import { Footer } from '../components/layout/Footer';
+import { Button } from '../components/ui_manual/Button';
+import { FoodCard } from '../components/cards/FoodCard';
 
 const POPCORN_ITEMS = Array(6).fill({ id: 1, name: 'Popcorn Salty', price: 'Rp 40.000', imgUrl: '/Popcorn.png' });
 const DRINK_ITEMS = Array(4).fill({ id: 2, name: 'Milkshake Chocolate', price: 'Rp 20.000', imgUrl: '/milkshake.png' });

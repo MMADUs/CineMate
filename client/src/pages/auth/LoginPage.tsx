@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Button } from "../../components/Button";
-import { Input } from "../../components/Input";
-import { Divider } from "../../components/Divider";
-import { Link } from "../../components/Link";
-import { GoogleIcon } from "../../components/GoogleIcon";
+import { Button } from "../../components/ui_manual/Button";
+import { Input } from "../../components/ui_manual/Input";
+import { Divider } from "../../components/ui_manual/Divider";
+import { Link } from "../../components/ui_manual/Link";
+import { GoogleIcon } from "../../components/ui_manual/GoogleIcon";
 
 export interface LoginPageProps {
   registerHref?: string;

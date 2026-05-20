@@ -1,8 +1,8 @@
 import React from 'react';
-import { Navbar } from '../components/Navbar';
-import { MovieCarousel } from '../components/MovieCarousel'; 
-import { Footer } from '../components/Footer'; 
-import { Button } from '../components/Button';
+import { Navbar } from '../components/layout/Navbar';
+import { MovieCarousel } from '../components/cards/MovieCarousel'; 
+import { Footer } from '../components/layout/Footer'; 
+import { Button } from '../components/ui_manual/Button';
 import { NOW_PLAYING, UPCOMING_MOVIES } from '../data/dummydata';
 
 export const HomePage: React.FC = () => {

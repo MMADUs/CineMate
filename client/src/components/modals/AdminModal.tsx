@@ -16,7 +16,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, title, 
                 className="bg-[#111111] border border-white/10 rounded-2xl w-full max-w-lg shadow-[0_0_40px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90vh]"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header Modal */}
                 <div className="flex items-center justify-between p-6 border-b border-white/5">
                     <h3 className="text-xl font-bold text-white">{title}</h3>
                     <button onClick={onClose} className="text-white/50 hover:text-white transition-colors">
@@ -26,7 +25,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, title, 
                     </button>
                 </div>
 
-                {/* Body Modal (Isinya Dinamis) */}
                 <div className="p-6 overflow-y-auto">
                     {children}
                 </div>

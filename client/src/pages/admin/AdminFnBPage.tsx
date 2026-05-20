@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { AdminLayout } from '../../components/AdminLayouts';
-import { AdminModal } from '../../components/AdminModal';
-import { DeleteModal } from '../../components/DeleteModal';
-import { Pagination } from '../../components/Pagination';
+import { AdminLayout } from '../../components/layout/AdminLayouts';
+import { AdminModal } from '../../components/modals/AdminModal';
+import { DeleteModal } from '../../components/modals/DeleteModal';
+import { Pagination } from '../../components/ui_manual/Pagination';
 import type { FnbItem } from '../../types/fnb';
 import { ADMIN_FNB } from '../../data/dummydata';
 
@@ -79,7 +79,6 @@ export const AdminFnbPage: React.FC = () => {
                 </div>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-                    {/* SEARCH BAR */}
                     <div className="flex items-center gap-2 bg-[#111111] border border-white/10 rounded-lg px-4 py-2 w-full sm:w-auto focus-within:border-red-500 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -182,7 +181,6 @@ export const AdminFnbPage: React.FC = () => {
                     </table>
                 </div>
                 
-                {/* PAGINATION COMPONENT */}
                 <Pagination 
                     currentPage={currentPage} 
                     totalPages={totalPages} 
@@ -195,7 +193,7 @@ export const AdminFnbPage: React.FC = () => {
                 isOpen={isAddModalOpen} 
                 onClose={() => { 
                     setIsAddModalOpen(false); 
-                    setImageFile(null); // Reset gambar jika modal ditutup (batal)
+                    setImageFile(null); 
                 }} 
                 title="Add F&B Item"
             >

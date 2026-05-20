@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Navbar } from '../components/Navbar';
-import { Footer } from '../components/Footer';
-import { OrderCard } from '../components/OrderCard';
+import { Navbar } from '../components/layout/Navbar';
+import { Footer } from '../components/layout/Footer';
+import { OrderCard } from '../components/cards/OrderCard';
 import { ORDER_HISTORY } from '../data/dummydata';
 import type { OrderStatus } from '../types/order';
 

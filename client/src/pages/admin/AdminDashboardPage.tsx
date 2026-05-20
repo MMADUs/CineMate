@@ -1,5 +1,5 @@
 import React from 'react';
-import { AdminLayout } from '../../components/AdminLayouts';
+import { AdminLayout } from '../../components/layout/AdminLayouts';
 import { ORDER_HISTORY, NOW_PLAYING } from '../../data/dummydata';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../../components/ui/chart';
@@ -11,7 +11,6 @@ const chartConfig = {
   },
 };
 
-// Data statis pendapatan mingguan
 const weeklyRevenueData = [
   { name: 'Mon', total: 4500000 },
   { name: 'Tue', total: 3200000 },
@@ -23,17 +22,14 @@ const weeklyRevenueData = [
 ];
 
 export const AdminDashboardPage: React.FC = () => {
-    // Mengambil 5 data transaksi terakhir & menghitung order pending
     const recentOrders = ORDER_HISTORY.slice(0, 5);
     const pendingOrdersCount = ORDER_HISTORY.filter(o => o.status === 'Pending').length;
 
     return (
         <AdminLayout title="Dashboard Overview">
             
-            {/* ================= BAGIAN 1: METRIC CARDS ================= */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
                 
-                {/* Card 1: Revenue */}
                 <div className="rounded-xl border border-white/10 bg-[#111111] text-white shadow-sm">
                     <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
                         <h3 className="tracking-tight text-sm font-medium text-white/70">Total Revenue</h3>
@@ -47,7 +43,6 @@ export const AdminDashboardPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Card 2: Tickets Sold */}
                 <div className="rounded-xl border border-white/10 bg-[#111111] text-white shadow-sm">
                     <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
                         <h3 className="tracking-tight text-sm font-medium text-white/70">Tickets Sold</h3>
@@ -63,7 +58,6 @@ export const AdminDashboardPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Card 3: Pending Orders */}
                 <div className="rounded-xl border border-white/10 bg-[#111111] text-white shadow-sm">
                     <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
                         <h3 className="tracking-tight text-sm font-medium text-white/70">Pending Orders</h3>
@@ -78,7 +72,6 @@ export const AdminDashboardPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Card 4: Active Movies */}
                 <div className="rounded-xl border border-white/10 bg-[#111111] text-white shadow-sm">
                     <div className="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
                         <h3 className="tracking-tight text-sm font-medium text-white/70">Now Playing</h3>
@@ -97,10 +90,8 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* ================= BAGIAN 2: CHARTS & TRANSACTIONS ================= */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 
-                {/* KIRI: GRAFIK PENDAPATAN (Menggunakan ChartContainer shadcn) */}
                 <div className="rounded-xl border border-white/10 bg-[#111111] text-white shadow-sm lg:col-span-4">
                     <div className="flex flex-col space-y-1.5 p-6">
                         <h3 className="font-semibold leading-none tracking-tight">Weekly Revenue</h3>
@@ -108,8 +99,7 @@ export const AdminDashboardPage: React.FC = () => {
                     </div>
                     <div className="p-6 pt-0">
                         
-                        {/* Wrapper sakti dari shadcn yang menghubungkan config warna */}
-                        <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                        <ChartContainer config={chartConfig} className="min-h-50 w-full">
                             <ResponsiveContainer width="100%" height={350}>
                                 <BarChart data={weeklyRevenueData} margin={{ left: -10, right: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
@@ -129,13 +119,11 @@ export const AdminDashboardPage: React.FC = () => {
                                         tickFormatter={(value) => `Rp${value / 1000000}M`} 
                                     />
                                     
-                                    {/* Tooltip shadcn yang otomatis mengikuti tema aplikasi */}
                                     <ChartTooltip 
                                         cursor={{ fill: 'rgba(255,255,255,0.03)' }} 
                                         content={<ChartTooltipContent hideLabel />} 
                                     />
                                     
-                                    {/* Menggunakan variabel warna dari chartConfig */}
                                     <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -144,7 +132,6 @@ export const AdminDashboardPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* KANAN: RECENT TRANSACTIONS */}
                 <div className="rounded-xl border border-white/10 bg-[#111111] text-white shadow-sm lg:col-span-3 flex flex-col">
                     <div className="flex flex-col space-y-1.5 p-6">
                         <h3 className="font-semibold leading-none tracking-tight">Recent Sales</h3>
@@ -154,7 +141,7 @@ export const AdminDashboardPage: React.FC = () => {
                         <div className="space-y-8">
                             {recentOrders.map((order) => (
                                 <div key={order.id} className="flex items-center">
-                                    <div className="relative h-12 w-10 flex-shrink-0">
+                                    <div className="relative h-12 w-10 shrink-0">
                                         <img 
                                             src={order.posterUrl} 
                                             alt={order.movieTitle} 

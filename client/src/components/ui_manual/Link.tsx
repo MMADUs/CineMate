@@ -1,5 +1,11 @@
 import React from "react";
-import type { LinkProps } from "../types/link";
+
+export interface LinkProps {
+    href: string;
+    label: string;
+    variant?: "default" | "accent";
+    external?: boolean;
+}
 
 export const Link: React.FC<LinkProps> = ({
     href,

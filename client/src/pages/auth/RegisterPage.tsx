@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Button } from "../../components/Button";
-import { Input } from "../../components/Input";
-import { Link } from "../../components/Link";
+import { Button } from "../../components/ui_manual/Button";
+import { Input } from "../../components/ui_manual/Input";
+import { Link } from "../../components/ui_manual/Link";
 
 export interface RegisterPageProps {
     loginHref?: string;

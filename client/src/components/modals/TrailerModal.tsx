@@ -1,5 +1,10 @@
 import React from 'react';
-import type { TrailerProps } from '../types/trailer';
+
+export interface TrailerProps {
+    isOpen: boolean;
+    onClose: () => void;
+    videoUrl?: string;
+}
 
 export const TrailerModal: React.FC<TrailerProps> = ({ isOpen, onClose, videoUrl = "https://www.youtube.com/embed/shW9i6k8cB0?autoplay=1" }) => {
     

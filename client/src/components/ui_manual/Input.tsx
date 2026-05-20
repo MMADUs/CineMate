@@ -1,5 +1,19 @@
 import React, { useState } from "react";
-import type { InputProps } from "../types/input";
+
+export type InputType = "text" | "email" | "password" | "number" | "tel";
+
+export interface InputProps {
+    id: string;
+    name: string;
+    label: string;
+    type?: InputType;
+    placeholder?: string;
+    required?: boolean;
+    autoComplete?: string;
+    value?: string;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    errorMessage?: string;
+}
 
 export const Input: React.FC<InputProps> = ({
     id,

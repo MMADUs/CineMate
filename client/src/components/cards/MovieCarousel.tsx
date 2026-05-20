@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { MovieCard } from './MovieCard';
-import type { MovieCardProps } from '../types/moviecard';
+import type { MovieCardProps } from '../../types/moviecard';
 
 export const MovieCarousel = ({ title, movies, itemsPerView = 3 }: { title: string, movies: MovieCardProps[], itemsPerView?: number }) => {
     const scrollRef = useRef<HTMLDivElement>(null);

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom'; 
-import { Navbar } from '../components/Navbar';
-import { Footer } from '../components/Footer';
-import { Breadcrumbs } from '../components/Breadcrumbs';
-import { Button } from '../components/Button';
+import { Navbar } from '../components/layout/Navbar';
+import { Footer } from '../components/layout/Footer';
+import { Breadcrumbs } from '../components/layout/Breadcrumbs';
+import { Button } from '../components/ui_manual/Button';
 import { MOVIE_DATABASE, SHOWTIMES } from '../data/dummydata';
 
 export const PaymentPage: React.FC = () => {
