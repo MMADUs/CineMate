@@ -39,6 +39,12 @@ This document outlines the REST API endpoints required by the CineMate Frontend,
   * **Payload:** `showtimeID`, `seatIDs` (Array of selected SeatIDs), `taxAmount`, `totalAmount`
   * **Action:** Backend creates `Booking` and inserts into `Booking_Seat`.
   * **Response:** `BookingID`
+#### SEBETULNYA GW GATAU INI BUTUH API ATAU GAK BUAT NGELOCK KURSI KALAU USER LAGI BAYAR (BISA JADI OPSIONAL)
+* **POST `/api/bookings/lock-seats`**
+  * **Role:** User (Requires Token)
+  * **Payload:** `showtimeID`, `seatIDs` (Array of selected SeatIDs)
+  * **Action:** Temporarily locks seats (e.g., for 5-10 minutes) during checkout to prevent double-booking.
+  * **Response:** `200 OK` (Lock successful) or `409 Conflict` (Seat already locked/booked).
 * **POST `/api/fnb-orders`** (If purchasing snacks)
   * **Role:** User
   * **Payload:** `items: [{ snackID, quantity, subTotalPrice }]`, `taxAmount`, `totalAmount`
@@ -50,10 +56,17 @@ This document outlines the REST API endpoints required by the CineMate Frontend,
   * **Action:** Creates record in `Payment` table and updates `bookingStatus` / `orderStatus`.
 * **GET `/api/users/orders`**
   * **Role:** User
-  * **Response:** Array of User's `Booking` and `FNB_Order` history.
+  * **Response:** Array of User's `Booking` history.
 * **GET `/api/orders/:bookingId`**
   * **Role:** User
   * **Response:** Complete ticket/receipt data (Movie, Showtime, CinemaHall, Seats, Payment status).
+* **GET `/api/users/profile`**
+  * **Role:** User
+  * **Response:** User data matching the `User` table for the Profile Page.
+* **PUT `/api/users/profile`**
+  * **Role:** User
+  * **Payload:** `FullName`, `PhoneNum`, `Password` (Email usually cannot be changed).
+  * **Action:** Updates user information in the `User` table.
 
 ---
 
@@ -63,12 +76,11 @@ This document outlines the REST API endpoints required by the CineMate Frontend,
   * **Response:** `totalRevenue` (Sum of `Payment.amount`), `ticketsSold` (Count of `Booking_Seat`), `pendingOrders`, `activeMoviesCount`.
 * **GET `/api/admin/dashboard/chart`**
   * **Role:** Admin
-  * **Response:** Weekly revenue data array for Shadcn Charts `[{ name: 'Mon', total: 4500000 }, ...]`.
+  * **Response:** Weekly revenue data array for Shadcn Charts `[{ name: 'Mon', total: 4500000 }]`.
 
 ---
 
 ## 5. Admin: Data Management (CRUD)
-*(All endpoints below require Admin JWT Token)*
 
 ### A. Movie Management (`Movie` Table)
 * **GET** `/api/admin/movies`
@@ -105,6 +117,11 @@ This document outlines the REST API endpoints required by the CineMate Frontend,
   * **Response:** Joined data from `Booking`, `FNB_Order`, `User`, and `Payment` tables.
 * **PUT** `/api/admin/transactions/:bookingId/cancel`
   * **Action:** Updates `bookingStatus` to 'Cancelled'.
+* **POST `/api/admin/transactions/:bookingId/verify`**
+  * **Role:** Admin / System (Used by Cinema QR Scanner)
+  * **Action:** Validates the QR code and updates `bookingStatus` in the `Booking` table from 'Upcoming' to 'Completed'.
+* **PUT `/api/admin/transactions/fnb/:fnbOrderId/cancel`**
+  * **Action:** Updates `orderStatus` in `FNB_Order` to 'Cancelled'.
 
 ### F. Admin Profile & System Logs
 * **GET** `/api/admin/profile`
