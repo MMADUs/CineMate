@@ -3,7 +3,7 @@ import React from "react";
 export type ButtonVariant = "primary" | "google" | "outline";
 export type ButtonShape = "pill" | "rounded" | "square"; 
 
-export interface ButtonProps {
+interface ButtonProps {
     label: string;
     variant?: ButtonVariant;
     shape?: ButtonShape; 

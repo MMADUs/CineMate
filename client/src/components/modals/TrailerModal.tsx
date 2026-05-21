@@ -1,6 +1,6 @@
 import React from 'react';
 
-export interface TrailerProps {
+interface TrailerProps {
     isOpen: boolean;
     onClose: () => void;
     videoUrl?: string;

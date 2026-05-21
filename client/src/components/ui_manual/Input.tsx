@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 
-export type InputType = "text" | "email" | "password" | "number" | "tel";
+type InputType = "text" | "email" | "password" | "number" | "tel";
 
-export interface InputProps {
+interface InputProps {
     id: string;
     name: string;
     label: string;

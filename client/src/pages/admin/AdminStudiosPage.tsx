@@ -118,7 +118,7 @@ export const AdminStudiosPage: React.FC = () => {
 
             <div className="bg-[#111111] border border-white/5 rounded-2xl shadow-xl overflow-hidden flex flex-col">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[800px]">
+                    <table className="w-full text-left border-collapse min-w-200">
                         <thead>
                             <tr className="bg-white/5 border-b border-white/5 text-white/70 text-sm whitespace-nowrap">
                                 <th className="py-4 px-6 font-semibold">Hall ID</th>

@@ -1,6 +1,6 @@
 import React from "react";
 
-export interface DividerProps {
+interface DividerProps {
     text?: string;
 }
 

@@ -94,7 +94,7 @@ export const AdminMoviesPage: React.FC = () => {
 
             <div className="bg-[#111111] border border-white/5 rounded-2xl shadow-xl overflow-hidden flex flex-col">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[900px]">
+                    <table className="w-full text-left border-collapse min-w-225">
                         <thead>
                             <tr className="bg-white/5 border-b border-white/5 text-white/70 text-sm whitespace-nowrap">
                                 <th className="py-4 px-6 font-semibold">Movie</th>
@@ -117,7 +117,7 @@ export const AdminMoviesPage: React.FC = () => {
                             ) : (
                                 paginatedMovies.map((movie) => (
                                     <tr key={movie.id} className="hover:bg-white/2 transition-colors group">
-                                        <td className="py-4 px-6 min-w-[250px]">
+                                        <td className="py-4 px-6 min-w-62.5">
                                             <div className="flex items-center gap-4">
                                                 <img src={movie.imgUrl} alt={movie.title} className="w-10 h-14 rounded object-cover border border-white/10 shrink-0" />
                                                 <div className="flex flex-col">

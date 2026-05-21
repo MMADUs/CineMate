@@ -3,7 +3,7 @@ import { Button } from '../ui_manual/Button';
 import { TrailerModal } from '../modals/TrailerModal';
 import { useNavigate } from 'react-router-dom'; 
 
-export interface MovieCardProps {
+interface MovieCardProps {
     id?: number | string;
     title: string;
     rating: string;

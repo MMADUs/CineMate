@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
 import { Button } from '../components/ui_manual/Button';
 import { FoodCard } from '../components/cards/FoodCard';
+import { FoodCardSkeleton } from '../components/cards/FoodCardSkeleton'; 
 
 const POPCORN_ITEMS = Array(6).fill({ id: 1, name: 'Popcorn Salty', price: 'Rp 40.000', imgUrl: '/Popcorn.png' });
 const DRINK_ITEMS = Array(4).fill({ id: 2, name: 'Milkshake Chocolate', price: 'Rp 20.000', imgUrl: '/milkshake.png' });
@@ -10,15 +11,34 @@ const PROMO_ITEMS = Array(4).fill({ id: 3, name: 'Popcorn & Drink', price: 'Rp 5
 
 export const FoodBeveragePage: React.FC = () => {
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
+    
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1500);
+
+        return () => clearTimeout(timer);
+    }, [activeFilter]);
 
     const handleFilterClick = (filterName: string) => {
         setActiveFilter(prev => prev === filterName ? null : filterName);
+        setIsLoading(true); 
     };
 
     const getFilterClass = (filterName: string) => {
         return activeFilter === filterName
             ? "bg-[#e51c23] border-[#e51c23] text-white text-xs px-4 py-1.5 rounded-full cursor-pointer transition shadow-md font-semibold shrink-0"
             : "border border-white/20 text-white/80 text-xs px-4 py-1.5 rounded-full cursor-pointer hover:bg-white/10 hover:text-white transition shrink-0";
+    };
+
+    const renderSkeletons = (count: number) => {
+        return Array.from({ length: count }).map((_, index) => (
+            <FoodCardSkeleton key={`skeleton-${index}`} />
+        ));
     };
 
     return (
@@ -69,7 +89,7 @@ export const FoodBeveragePage: React.FC = () => {
                             <section className="px-2 md:px-0">
                                 {!activeFilter && <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-5 text-white/80">Popcorn</h3>}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
-                                    {POPCORN_ITEMS.map((item, index) => <FoodCard key={index} {...item} />)}
+                                    {isLoading ? renderSkeletons(6) : POPCORN_ITEMS.map((item, index) => <FoodCard key={index} {...item} />)}
                                 </div>
                             </section>
                         )}
@@ -78,7 +98,7 @@ export const FoodBeveragePage: React.FC = () => {
                             <section className="px-2 md:px-0">
                                 {!activeFilter && <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-5 text-white/80">Drinks</h3>}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
-                                    {DRINK_ITEMS.map((item, index) => <FoodCard key={index} {...item} />)}
+                                    {isLoading ? renderSkeletons(4) : DRINK_ITEMS.map((item, index) => <FoodCard key={index} {...item} />)}
                                 </div>
                             </section>
                         )}
@@ -87,7 +107,7 @@ export const FoodBeveragePage: React.FC = () => {
                             <section className="px-2 md:px-0">
                                 {!activeFilter && <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-5 text-white/80">Promo</h3>}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
-                                    {PROMO_ITEMS.map((item, index) => <FoodCard key={index} {...item} />)}
+                                    {isLoading ? renderSkeletons(4) : PROMO_ITEMS.map((item, index) => <FoodCard key={index} {...item} />)}
                                 </div>
                             </section>
                         )}

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export interface QRModalProps {
+interface QRModalProps {
     isOpen: boolean;
     onClose: () => void;
     orderId: string;
