@@ -6,9 +6,11 @@ export const Navbar: React.FC = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const getNavLinkClass = (path: string) => {
-        return location.pathname === path
-            ? "text-red-500 font-bold transition" 
-            : "text-white/70 hover:text-white transition";
+        if (location.pathname === path) {
+            return "text-red-500 font-bold hover:text-red-500 transition-colors duration-200";
+        }
+        
+        return "text-white/70 font-medium hover:text-white transition-colors duration-200";
     };
 
     const closeMobileMenu = () => setIsMobileMenuOpen(false);
@@ -45,11 +47,11 @@ export const Navbar: React.FC = () => {
                 </div>
 
                 <div className="hidden md:flex items-center gap-10">
-                    <div className="flex gap-8 text-sm font-medium">
-                        <Link to="/" className={`hover:text-red-500 ${getNavLinkClass('/')}`}>Home</Link>
-                        <Link to="/movie" className={`hover:text-white ${getNavLinkClass('/movie')}`}>Movie</Link>
-                        <Link to="/fnb" className={`hover:text-white ${getNavLinkClass('/fnb')}`}>Food & Beverage</Link>
-                        <Link to="/history" className={`hover:text-white ${getNavLinkClass('/history')}`}>Order</Link>
+                    <div className="flex gap-8 text-sm">
+                        <Link to="/" className={getNavLinkClass('/')}>Home</Link>
+                        <Link to="/movie" className={getNavLinkClass('/movie')}>Movie</Link>
+                        <Link to="/fnb" className={getNavLinkClass('/fnb')}>Food & Beverage</Link>
+                        <Link to="/history" className={getNavLinkClass('/history')}>Order</Link>
                     </div>
 
                     <Link to="/profile" className="w-10 h-10 rounded-full bg-gray-500 overflow-hidden border-2 border-red-600 shrink-0 cursor-pointer block hover:opacity-80 transition-opacity">

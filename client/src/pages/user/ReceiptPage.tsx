@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Navbar } from '../components/layout/Navbar';
-import { Footer } from '../components/layout/Footer';
-import { Breadcrumbs } from '../components/layout/Breadcrumbs';
-import { Button } from '../components/ui_manual/Button';
-import { MOVIE_DATABASE, SHOWTIMES } from '../data/dummydata';
+import { Navbar } from '../../components/layout/Navbar';
+import { Footer } from '../../components/layout/Footer';
+import { Breadcrumbs } from '../../components/layout/Breadcrumbs';
+import { Button } from '../../components/ui_manual/Button';
+import { MOVIE_DATABASE, SHOWTIMES } from '../../data/dummydata';
 
 export const ReceiptPage: React.FC = () => {
     const { movieId, showtimeId, seats } = useParams<{ movieId: string, showtimeId: string, seats: string }>();

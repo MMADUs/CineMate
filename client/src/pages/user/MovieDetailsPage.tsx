@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom'; 
-import { Navbar } from '../components/layout/Navbar';
-import { Footer } from '../components/layout/Footer';
-import { TrailerModal } from '../components/modals/TrailerModal'; 
-import { Breadcrumbs } from '../components/layout/Breadcrumbs'; 
-import { MOVIE_DATABASE, SHOWTIMES } from '../data/dummydata'; 
+import { Navbar } from '../../components/layout/Navbar';
+import { Footer } from '../../components/layout/Footer';
+import { TrailerModal } from '../../components/modals/TrailerModal'; 
+import { Breadcrumbs } from '../../components/layout/Breadcrumbs'; 
+import { MOVIE_DATABASE, SHOWTIMES } from '../../data/dummydata'; 
 
 export const MovieDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();

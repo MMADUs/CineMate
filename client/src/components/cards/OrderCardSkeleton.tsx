@@ -3,24 +3,35 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export const OrderCardSkeleton: React.FC = () => {
     return (
-        <div className="bg-[#111111] border border-white/5 rounded-2xl p-5 md:p-6 mb-4 md:mb-6 flex flex-col sm:flex-row gap-5 items-start sm:items-center justify-between">
+        <div className="flex flex-col sm:flex-row gap-6 mb-8 w-full border-b border-white/5 pb-8 last:border-0">
             
-            <div className="flex items-center gap-4 w-full sm:w-auto">
-                <Skeleton className="w-16 h-24 rounded-lg bg-white/10 shrink-0" />
-                
-                <div className="flex flex-col gap-2.5 w-full">
-                    <Skeleton className="h-5 w-20 rounded-full bg-white/10" />
-                    <Skeleton className="h-6 w-40 md:w-56 bg-white/10" />
-                    <Skeleton className="h-4 w-32 bg-white/10" />
-                </div>
+            <div className="w-full sm:w-37.5 shrink-0">
+                <Skeleton className="w-full aspect-2/3 sm:h-56.25 rounded-xl bg-white/10" />
             </div>
 
-            <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3 w-full sm:w-auto mt-4 sm:mt-0">
-                <Skeleton className="h-20 w-full sm:w-20 rounded-xl bg-white/10 shrink-0" />
-                <Skeleton className="h-20 w-full sm:w-20 rounded-xl bg-white/10 shrink-0" />
-                <Skeleton className="h-20 w-full sm:w-30 rounded-xl bg-white/10 col-span-2 sm:col-span-1 shrink-0" />
+            <div className="flex-1 flex flex-col gap-4">
+                
+                <div className="flex flex-wrap items-center gap-3">
+                    <Skeleton className="h-8 w-3/4 max-w-62.5 rounded-md bg-white/10" />
+                    <Skeleton className="h-6 w-20 rounded-full bg-white/10" />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <Skeleton className="h-6 w-24 rounded bg-white/10" />
+                    <Skeleton className="h-6 w-20 rounded bg-white/10" />
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <Skeleton className="h-19 w-full rounded-xl bg-[#111111] border border-white/5" />
+                    <Skeleton className="h-19 w-full rounded-xl bg-[#111111] border border-white/5" />
+                    <Skeleton className="h-19 w-full rounded-xl bg-[#111111] border border-white/5 col-span-2 md:col-span-1" />
+                </div>
+
+                <div className="mt-2">
+                    <Skeleton className="h-12 w-full rounded-lg bg-white/10" />
+                </div>
+                
             </div>
-            
         </div>
     );
 };

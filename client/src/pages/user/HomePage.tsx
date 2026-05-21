@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Navbar } from '../components/layout/Navbar';
-import { MovieCarousel } from '../components/cards/MovieCarousel'; 
-import { MovieCardSkeleton } from '../components/cards/MovieCardSkeleton';
-import { Footer } from '../components/layout/Footer'; 
-import { Button } from '../components/ui_manual/Button';
-import { NOW_PLAYING, UPCOMING_MOVIES } from '../data/dummydata';
+import { Navbar } from '../../components/layout/Navbar';
+import { MovieCarousel } from '../../components/cards/MovieCarousel'; 
+import { MovieCardSkeleton } from '../../components/cards/MovieCardSkeleton';
+import { Footer } from '../../components/layout/Footer'; 
+import { Button } from '../../components/ui_manual/Button';
+import { NOW_PLAYING, UPCOMING_MOVIES } from '../../data/dummydata';
 
 export const HomePage: React.FC = () => {
     const navigate = useNavigate();

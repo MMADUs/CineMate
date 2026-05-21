@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Navbar } from '../components/layout/Navbar';
-import { Footer } from '../components/layout/Footer';
-import { Button } from '../components/ui_manual/Button';
-import { OrderCard } from '../components/cards/OrderCard'; 
-import { ProfileSidebar } from '../components/layout/ProfileSidebar'; 
-import { ORDER_HISTORY } from '../data/dummydata';
+import { Navbar } from '../../components/layout/Navbar';
+import { Footer } from '../../components/layout/Footer';
+import { Button } from '../../components/ui_manual/Button';
+import { OrderCard } from '../../components/cards/OrderCard'; 
+import { ProfileSidebar } from '../../components/layout/ProfileSidebar'; 
+import { ORDER_HISTORY } from '../../data/dummydata';
 
 export const ProfilePage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'personal' | 'history'>('personal');

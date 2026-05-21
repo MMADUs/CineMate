@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Navbar } from '../components/layout/Navbar';
-import { Footer } from '../components/layout/Footer';
-import { Breadcrumbs } from '../components/layout/Breadcrumbs';
-import { MOVIE_DATABASE, SHOWTIMES } from '../data/dummydata'
+import { Navbar } from '../../components/layout/Navbar';
+import { Footer } from '../../components/layout/Footer';
+import { Breadcrumbs } from '../../components/layout/Breadcrumbs';
+import { MOVIE_DATABASE, SHOWTIMES } from '../../data/dummydata'
 
 const ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const COLS = Array.from({ length: 20 }, (_, i) => i + 1);

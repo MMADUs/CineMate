@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Navbar } from '../components/layout/Navbar';
-import { Footer } from '../components/layout/Footer';
-import { Button } from '../components/ui_manual/Button';
-import { QRModal } from '../components/modals/QRModal'; 
-import { ORDER_HISTORY, MOVIE_DATABASE } from '../data/dummydata';
+import { Navbar } from '../../components/layout/Navbar';
+import { Footer } from '../../components/layout/Footer';
+import { Button } from '../../components/ui_manual/Button';
+import { QRModal } from '../../components/modals/QRModal'; 
+import { ORDER_HISTORY, MOVIE_DATABASE } from '../../data/dummydata';
 
 export const TicketDetailsPage: React.FC = () => {
     const { orderId } = useParams<{ orderId: string }>();

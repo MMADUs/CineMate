@@ -5,16 +5,16 @@ import './index.css'
 
 import { LoginPage } from "./pages/auth/LoginPage"
 import { RegisterPage } from "./pages/auth/RegisterPage"
-import { HomePage } from "./pages/HomePage" 
-import { MoviePage } from './pages/MoviePage'
-import { FoodBeveragePage } from './pages/FoodBeveragePage'
-import { MovieDetailsPage } from './pages/MovieDetailsPage'
-import { SeatSelectionPage } from './pages/SeatSelectionPage'
-import { PaymentPage } from './pages/PaymentPage'
-import { ReceiptPage } from './pages/ReceiptPage'
-import { OrderHistoryPage } from './pages/HistoryOrderPage'
-import { TicketDetailsPage } from './pages/TicketDetailsPage'
-import { ProfilePage } from './pages/ProfilePage'
+import { HomePage } from "./pages/user/HomePage" 
+import { MoviePage } from './pages/user/MoviePage'
+import { FoodBeveragePage } from './pages/user/FoodBeveragePage'
+import { MovieDetailsPage } from './pages/user/MovieDetailsPage'
+import { SeatSelectionPage } from './pages/user/SeatSelectionPage'
+import { PaymentPage } from './pages/user/PaymentPage'
+import { ReceiptPage } from './pages/user/ReceiptPage'
+import { OrderHistoryPage } from './pages/user/HistoryOrderPage'
+import { TicketDetailsPage } from './pages/user/TicketDetailsPage'
+import { ProfilePage } from './pages/user/ProfilePage'
 
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 import { AdminMoviesPage } from './pages/admin/AdminMoviesPage'
