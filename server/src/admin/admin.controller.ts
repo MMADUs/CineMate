@@ -10,6 +10,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { CurrentAdmin } from '../common/decorators/current-admin.decorator';
 import { AdminJwtGuard } from '../common/guards/admin-jwt.guard';
@@ -29,6 +30,7 @@ import {
 import { BookingResponseDto } from '../bookings/dto/booking-response.dto';
 import { FnbOrderResponseDto } from '../fnb-orders/dto/fnb-order-response.dto';
 
+@ApiTags('Admin')
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
@@ -41,6 +43,8 @@ export class AdminController {
    */
   @Post('auth/login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login admin and set HttpOnly admin cookies' })
+  @ApiOkResponse({ type: AdminResponseDto })
   login(
     @Body() dto: AdminLoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -57,6 +61,8 @@ export class AdminController {
   @UseGuards(AdminRefreshGuard)
   @Post('auth/refresh')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Rotate admin access and refresh cookies' })
+  @ApiOkResponse({ type: AdminRefreshResponseDto })
   refresh(
     @CurrentAdmin() admin: AuthAdmin,
     @Res({ passthrough: true }) res: Response,
@@ -73,6 +79,8 @@ export class AdminController {
   @UseGuards(AdminJwtGuard)
   @Post('auth/logout')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Logout admin and clear auth cookies' })
+  @ApiOkResponse({ type: AdminLogoutResponseDto })
   logout(
     @CurrentAdmin() admin: AuthAdmin,
     @Res({ passthrough: true }) res: Response,
@@ -88,6 +96,8 @@ export class AdminController {
    */
   @UseGuards(AdminJwtGuard)
   @Get('profile')
+  @ApiOperation({ summary: 'Get authenticated admin profile' })
+  @ApiOkResponse({ type: AdminResponseDto })
   profile(@CurrentAdmin() admin: AuthAdmin): AdminResponseDto {
     return this.adminService.profile(admin.adminId);
   }
@@ -99,6 +109,8 @@ export class AdminController {
    */
   @UseGuards(AdminJwtGuard)
   @Get('dashboard/metrics')
+  @ApiOperation({ summary: 'Get dashboard metrics' })
+  @ApiOkResponse({ type: DashboardMetricsResponseDto })
   metrics(): DashboardMetricsResponseDto {
     return this.adminService.metrics();
   }
@@ -110,6 +122,8 @@ export class AdminController {
    */
   @UseGuards(AdminJwtGuard)
   @Get('dashboard/chart')
+  @ApiOperation({ summary: 'Get dashboard revenue chart data' })
+  @ApiOkResponse({ type: [DashboardChartPointResponseDto] })
   chart(): DashboardChartPointResponseDto[] {
     return this.adminService.chart();
   }
@@ -120,6 +134,8 @@ export class AdminController {
    */
   @UseGuards(AdminJwtGuard)
   @Get('transactions')
+  @ApiOperation({ summary: 'List booking, F&B, and payment transactions' })
+  @ApiOkResponse({ type: AdminTransactionsResponseDto })
   transactions(): AdminTransactionsResponseDto {
     return this.adminService.transactions();
   }
@@ -131,6 +147,8 @@ export class AdminController {
    */
   @UseGuards(AdminJwtGuard)
   @Patch('transactions/:bookingId/cancel')
+  @ApiOperation({ summary: 'Cancel a booking transaction' })
+  @ApiOkResponse({ type: BookingResponseDto })
   cancelBooking(@Param('bookingId') bookingId: string): BookingResponseDto {
     return this.adminService.cancelBooking(bookingId);
   }
@@ -142,6 +160,8 @@ export class AdminController {
    */
   @UseGuards(AdminJwtGuard)
   @Patch('transactions/:bookingId/verify')
+  @ApiOperation({ summary: 'Verify a booking transaction' })
+  @ApiOkResponse({ type: BookingResponseDto })
   verifyBooking(@Param('bookingId') bookingId: string): BookingResponseDto {
     return this.adminService.verifyBooking(bookingId);
   }
@@ -153,18 +173,21 @@ export class AdminController {
    */
   @UseGuards(AdminJwtGuard)
   @Patch('transactions/fnb/:fnbOrderId/cancel')
+  @ApiOperation({ summary: 'Cancel an F&B order transaction' })
   cancelFnbOrder(
     @Param('fnbOrderId') fnbOrderId: string,
   ): Omit<FnbOrderResponseDto, 'items'> {
     return this.adminService.cancelFnbOrder(fnbOrderId);
   }
-  
+
   /* Admin Logs Controller
    * @desc: List admin activity logs
    * @route: /admin/logs
    */
   @UseGuards(AdminJwtGuard)
   @Get('logs')
+  @ApiOperation({ summary: 'List admin activity logs' })
+  @ApiOkResponse({ type: [AdminLogResponseDto] })
   logs(): AdminLogResponseDto[] {
     return this.adminService.logs();
   }

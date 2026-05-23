@@ -12,6 +12,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AdminJwtGuard } from '../common/guards/admin-jwt.guard';
 import { CreateShowtimeDto } from './dto/create-showtime.dto';
 import { QueryShowtimeDto } from './dto/query-showtime.dto';
@@ -22,6 +28,7 @@ import {
 import { UpdateShowtimeDto } from './dto/update-showtime.dto';
 import { ShowtimesService } from './showtimes.service';
 
+@ApiTags('Showtimes')
 @Controller()
 export class ShowtimesController {
   constructor(private readonly showtimesService: ShowtimesService) {}
@@ -34,6 +41,8 @@ export class ShowtimesController {
    */
   @Get('showtimes')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List public showtimes' })
+  @ApiOkResponse({ type: [ShowtimeResponseDto] })
   findAll(@Query() query: QueryShowtimeDto): ShowtimeResponseDto[] {
     return this.showtimesService.findAll(query);
   }
@@ -46,6 +55,8 @@ export class ShowtimesController {
    */
   @Get('showtimes/:showtimeId/seats')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get showtime seat availability' })
+  @ApiOkResponse({ type: ShowtimeSeatsResponseDto })
   getSeats(
     @Param('showtimeId', ParseIntPipe) showtimeId: number,
   ): ShowtimeSeatsResponseDto {
@@ -60,6 +71,8 @@ export class ShowtimesController {
   @UseGuards(AdminJwtGuard)
   @Get('admin/showtimes')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List all showtimes for admin' })
+  @ApiOkResponse({ type: [ShowtimeResponseDto] })
   adminFindAll(): ShowtimeResponseDto[] {
     return this.showtimesService.findAll({});
   }
@@ -73,6 +86,8 @@ export class ShowtimesController {
   @UseGuards(AdminJwtGuard)
   @Post('admin/showtimes')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create showtime' })
+  @ApiCreatedResponse({ type: ShowtimeResponseDto })
   create(@Body() dto: CreateShowtimeDto): ShowtimeResponseDto {
     return this.showtimesService.create(dto);
   }
@@ -86,6 +101,8 @@ export class ShowtimesController {
   @UseGuards(AdminJwtGuard)
   @Put('admin/showtimes/:showtimeId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update showtime' })
+  @ApiOkResponse({ type: ShowtimeResponseDto })
   update(
     @Param('showtimeId', ParseIntPipe) showtimeId: number,
     @Body() dto: UpdateShowtimeDto,
@@ -102,6 +119,8 @@ export class ShowtimesController {
   @UseGuards(AdminJwtGuard)
   @Delete('admin/showtimes/:showtimeId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete showtime' })
+  @ApiOkResponse({ type: ShowtimeResponseDto })
   remove(
     @Param('showtimeId', ParseIntPipe) showtimeId: number,
   ): ShowtimeResponseDto {

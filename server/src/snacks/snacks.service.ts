@@ -12,7 +12,7 @@ import { UpdateSnackDto } from './dto/update-snack.dto';
 @Injectable()
 export class SnacksService {
   constructor(
-    @Inject(DRIZZLE) 
+    @Inject(DRIZZLE)
     private readonly db: BetterSQLite3Database<typeof schema>,
   ) {}
 
@@ -68,7 +68,7 @@ export class SnacksService {
 
     // check if snack doesn't exist
     if (!snack) throw new NotFoundException('Snack not found');
-    
+
     return snack;
   }
 
@@ -83,7 +83,7 @@ export class SnacksService {
       .where(eq(snacks.snackId, snackId))
       .returning()
       .get();
-      
+
     // check if snack doesn't exist
     if (!snack) throw new NotFoundException('Snack not found');
 

@@ -31,6 +31,37 @@
 $ npm install
 ```
 
+## Run with Docker
+
+Frontend developers can run the API with one command:
+
+```bash
+docker compose up --build
+```
+
+The API will be available at:
+
+- API base URL: `http://localhost:3000/api`
+- Swagger docs: `http://localhost:3000/api/docs`
+- Healthcheck: `http://localhost:3000/api/health`
+
+On container startup, the app automatically:
+
+- runs Drizzle migrations against SQLite
+- creates the local SQLite database in the `cinemate-data` Docker volume
+- seeds one admin account if it does not already exist
+
+Default seeded admin:
+
+```text
+email: admin@cinemate.local
+password: Admin@123456
+```
+
+For real integration, copy `.env.docker.example` values into `docker-compose.yml`
+or your deployment environment and replace all secrets, especially JWT and Xendit
+settings.
+
 ## Compile and run the project
 
 ```bash

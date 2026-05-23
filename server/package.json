@@ -12,6 +12,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+    "start:docker": "node dist/database/migrate && node dist/database/seed-admin && node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -21,7 +22,9 @@
     "db:generate": "drizzle-kit generate --config=src/database/drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=src/database/drizzle.config.ts",
     "db:push": "drizzle-kit push --config=src/database/drizzle.config.ts",
-    "db:studio": "drizzle-kit studio --config=src/database/drizzle.config.ts"
+    "db:studio": "drizzle-kit studio --config=src/database/drizzle.config.ts",
+    "db:runtime:migrate": "node dist/database/migrate",
+    "seed:admin": "node dist/database/seed-admin"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -31,6 +34,7 @@
     "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/swagger": "^11.4.4",
     "@nestjs/throttler": "^6.4.0",
     "argon2": "^0.44.0",
     "better-sqlite3": "^12.10.0",
@@ -43,6 +47,7 @@
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

@@ -12,6 +12,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AdminJwtGuard } from '../common/guards/admin-jwt.guard';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { MovieResponseDto } from './dto/movie-response.dto';
@@ -19,6 +25,7 @@ import { QueryMovieDto } from './dto/query-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
 import { MoviesService } from './movies.service';
 
+@ApiTags('Movies')
 @Controller()
 export class MoviesController {
   constructor(private readonly moviesService: MoviesService) {}
@@ -31,6 +38,8 @@ export class MoviesController {
    */
   @Get('movies')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List public movies' })
+  @ApiOkResponse({ type: [MovieResponseDto] })
   findAll(@Query() query: QueryMovieDto): MovieResponseDto[] {
     return this.moviesService.findAll(query);
   }
@@ -43,6 +52,8 @@ export class MoviesController {
    */
   @Get('movies/:movieId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get movie detail' })
+  @ApiOkResponse({ type: MovieResponseDto })
   findOne(@Param('movieId', ParseIntPipe) movieId: number): MovieResponseDto {
     return this.moviesService.findOne(movieId);
   }
@@ -55,6 +66,8 @@ export class MoviesController {
   @UseGuards(AdminJwtGuard)
   @Get('admin/movies')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List all movies for admin' })
+  @ApiOkResponse({ type: [MovieResponseDto] })
   adminFindAll(): MovieResponseDto[] {
     return this.moviesService.findAll({});
   }
@@ -68,6 +81,8 @@ export class MoviesController {
   @UseGuards(AdminJwtGuard)
   @Post('admin/movies')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create movie' })
+  @ApiCreatedResponse({ type: MovieResponseDto })
   create(@Body() dto: CreateMovieDto): MovieResponseDto {
     return this.moviesService.create(dto);
   }
@@ -81,6 +96,8 @@ export class MoviesController {
   @UseGuards(AdminJwtGuard)
   @Put('admin/movies/:movieId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update movie' })
+  @ApiOkResponse({ type: MovieResponseDto })
   update(
     @Param('movieId', ParseIntPipe) movieId: number,
     @Body() dto: UpdateMovieDto,
@@ -97,6 +114,8 @@ export class MoviesController {
   @UseGuards(AdminJwtGuard)
   @Delete('admin/movies/:movieId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete movie' })
+  @ApiOkResponse({ type: MovieResponseDto })
   remove(@Param('movieId', ParseIntPipe) movieId: number): MovieResponseDto {
     return this.moviesService.remove(movieId);
   }

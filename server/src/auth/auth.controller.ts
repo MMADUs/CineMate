@@ -8,6 +8,12 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
@@ -23,6 +29,7 @@ import {
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -35,6 +42,8 @@ export class AuthController {
    */
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiCreatedResponse({ type: AuthUserResponseDto })
   register(
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
@@ -50,6 +59,8 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login user and set HttpOnly auth cookies' })
+  @ApiOkResponse({ type: AuthUserResponseDto })
   login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -66,6 +77,8 @@ export class AuthController {
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Rotate user access and refresh cookies' })
+  @ApiOkResponse({ type: RefreshResponseDto })
   refresh(
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) res: Response,
@@ -82,6 +95,8 @@ export class AuthController {
   @UseGuards(JwtAccessGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Logout user and clear auth cookies' })
+  @ApiOkResponse({ type: LogoutResponseDto })
   logout(
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) res: Response,
@@ -97,6 +112,8 @@ export class AuthController {
    */
   @UseGuards(JwtAccessGuard)
   @Get('me')
+  @ApiOperation({ summary: 'Get current user JWT payload' })
+  @ApiOkResponse({ type: AuthMeResponseDto })
   getMe(@CurrentUser() user: AuthUser): AuthMeResponseDto {
     return user;
   }

@@ -8,6 +8,12 @@ import {
   HttpStatus,
   HttpCode,
 } from '@nestjs/common';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
@@ -20,6 +26,7 @@ import {
 import { CreateBookingDto } from './dto/create-booking.dto';
 
 @UseGuards(JwtAccessGuard)
+@ApiTags('Bookings')
 @Controller()
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
@@ -32,6 +39,8 @@ export class BookingsController {
    */
   @Post('bookings')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create movie booking' })
+  @ApiCreatedResponse({ type: CreatedBookingResponseDto })
   create(
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateBookingDto,
@@ -47,6 +56,8 @@ export class BookingsController {
    */
   @Get('users/orders')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get authenticated user booking history' })
+  @ApiOkResponse({ type: [BookingResponseDto] })
   findMine(@CurrentUser() user: AuthUser): BookingResponseDto[] {
     return this.bookingsService.findUserBookings(user.userId);
   }
@@ -59,6 +70,8 @@ export class BookingsController {
    */
   @Get('users/orders/:bookingId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get authenticated user booking detail' })
+  @ApiOkResponse({ type: BookingDetailResponseDto })
   findOne(
     @CurrentUser() user: AuthUser,
     @Param('bookingId') bookingId: string,

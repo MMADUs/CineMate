@@ -14,9 +14,12 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+  describe('healthcheck', () => {
+    it('should return API health status', () => {
+      const response = appController.healthcheck();
+      expect(response.status).toBe('ok');
+      expect(response.service).toBe('CineMate API');
+      expect(Date.parse(response.timestamp)).not.toBeNaN();
     });
   });
 });

@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
@@ -15,6 +16,7 @@ import { UserProfileResponseDto } from './dto/user-response.dto';
 import { UsersService } from './users.service';
 
 @UseGuards(JwtAccessGuard)
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -27,6 +29,8 @@ export class UsersController {
    */
   @Get('profile')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get authenticated user profile' })
+  @ApiOkResponse({ type: UserProfileResponseDto })
   getProfile(@CurrentUser() user: AuthUser): UserProfileResponseDto {
     return this.usersService.getProfile(user.userId);
   }
@@ -39,6 +43,8 @@ export class UsersController {
    */
   @Put('profile')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update authenticated user profile' })
+  @ApiOkResponse({ type: UserProfileResponseDto })
   updateProfile(
     @CurrentUser() user: AuthUser,
     @Body() dto: UpdateProfileDto,

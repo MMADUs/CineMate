@@ -12,6 +12,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AdminJwtGuard } from '../common/guards/admin-jwt.guard';
 import { CreateSnackDto } from './dto/create-snack.dto';
 import { QuerySnackDto } from './dto/query-snack.dto';
@@ -19,6 +25,7 @@ import { SnackResponseDto } from './dto/snack-response.dto';
 import { UpdateSnackDto } from './dto/update-snack.dto';
 import { SnacksService } from './snacks.service';
 
+@ApiTags('Snacks')
 @Controller()
 export class SnacksController {
   constructor(private readonly snacksService: SnacksService) {}
@@ -31,6 +38,8 @@ export class SnacksController {
    */
   @Get('snacks')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List public snacks' })
+  @ApiOkResponse({ type: [SnackResponseDto] })
   findAll(@Query() query: QuerySnackDto): SnackResponseDto[] {
     return this.snacksService.findAll(query);
   }
@@ -43,6 +52,8 @@ export class SnacksController {
   @UseGuards(AdminJwtGuard)
   @Get('admin/snacks')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List all snacks for admin' })
+  @ApiOkResponse({ type: [SnackResponseDto] })
   adminFindAll(): SnackResponseDto[] {
     return this.snacksService.findAll({});
   }
@@ -56,6 +67,8 @@ export class SnacksController {
   @UseGuards(AdminJwtGuard)
   @Post('admin/snacks')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create snack' })
+  @ApiCreatedResponse({ type: SnackResponseDto })
   create(@Body() dto: CreateSnackDto): SnackResponseDto {
     return this.snacksService.create(dto);
   }
@@ -69,6 +82,8 @@ export class SnacksController {
   @UseGuards(AdminJwtGuard)
   @Put('admin/snacks/:snackId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update snack' })
+  @ApiOkResponse({ type: SnackResponseDto })
   update(
     @Param('snackId', ParseIntPipe) snackId: number,
     @Body() dto: UpdateSnackDto,
@@ -85,6 +100,8 @@ export class SnacksController {
   @UseGuards(AdminJwtGuard)
   @Delete('admin/snacks/:snackId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete snack' })
+  @ApiOkResponse({ type: SnackResponseDto })
   remove(@Param('snackId', ParseIntPipe) snackId: number): SnackResponseDto {
     return this.snacksService.remove(snackId);
   }

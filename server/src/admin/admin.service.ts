@@ -34,7 +34,7 @@ import {
 @Injectable()
 export class AdminService {
   constructor(
-    @Inject(DRIZZLE) 
+    @Inject(DRIZZLE)
     private readonly db: BetterSQLite3Database<typeof schema>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,

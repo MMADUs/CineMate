@@ -8,6 +8,7 @@ import {
   fnbOrderItems,
   fnbOrders,
   movies,
+  paymentWebhookEvents,
   payments,
   seats,
   showtimes,
@@ -94,6 +95,15 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
     references: [fnbOrders.fnbOrderId],
   }),
 }));
+export const paymentWebhookEventsRelations = relations(
+  paymentWebhookEvents,
+  ({ one }) => ({
+    payment: one(payments, {
+      fields: [paymentWebhookEvents.paymentId],
+      references: [payments.paymentId],
+    }),
+  }),
+);
 export const adminLogsRelations = relations(adminLogs, ({ one }) => ({
   admin: one(admins, {
     fields: [adminLogs.adminId],

@@ -11,6 +11,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AdminJwtGuard } from '../common/guards/admin-jwt.guard';
 import { CinemaHallsService } from './cinema-halls.service';
 import { CreateHallDto } from './dto/create-hall.dto';
@@ -18,6 +24,7 @@ import { HallResponseDto } from './dto/hall-response.dto';
 import { UpdateHallDto } from './dto/update-hall.dto';
 
 @UseGuards(AdminJwtGuard)
+@ApiTags('Cinema Halls')
 @Controller('admin/halls')
 export class CinemaHallsController {
   constructor(private readonly cinemaHallsService: CinemaHallsService) {}
@@ -29,6 +36,8 @@ export class CinemaHallsController {
    */
   @Get()
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List cinema halls' })
+  @ApiOkResponse({ type: [HallResponseDto] })
   findAll(): HallResponseDto[] {
     return this.cinemaHallsService.findAll();
   }
@@ -41,6 +50,8 @@ export class CinemaHallsController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create cinema hall and generate seats' })
+  @ApiCreatedResponse({ type: HallResponseDto })
   create(@Body() dto: CreateHallDto): HallResponseDto {
     return this.cinemaHallsService.create(dto);
   }
@@ -53,6 +64,8 @@ export class CinemaHallsController {
    */
   @Put(':hallId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update cinema hall' })
+  @ApiOkResponse({ type: HallResponseDto })
   update(
     @Param('hallId', ParseIntPipe) hallId: number,
     @Body() dto: UpdateHallDto,
@@ -68,6 +81,8 @@ export class CinemaHallsController {
    */
   @Delete(':hallId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete cinema hall' })
+  @ApiOkResponse({ type: HallResponseDto })
   remove(@Param('hallId', ParseIntPipe) hallId: number): HallResponseDto {
     return this.cinemaHallsService.remove(hallId);
   }

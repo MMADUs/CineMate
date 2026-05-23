@@ -11,7 +11,7 @@ import { UserProfileResponseDto } from './dto/user-response.dto';
 @Injectable()
 export class UsersService {
   constructor(
-    @Inject(DRIZZLE) 
+    @Inject(DRIZZLE)
     private readonly db: BetterSQLite3Database<typeof schema>,
   ) {}
 
