@@ -1,0 +1,13 @@
+export { admins } from './admin.schema';
+export { users } from './user.schema';
+export { movies } from './movie.schema';
+export { cinemaHalls } from './cinema-hall.schema';
+export { showtimes } from './showtime.schema';
+export { seats } from './seat.schema';
+export { bookings } from './booking.schema';
+export { bookingSeats } from './booking-seat.schema';
+export { snacks } from './snack.schema';
+export { fnbOrders } from './fnb-order.schema';
+export { fnbOrderItems } from './fnb-order-item.schema';
+export { payments } from './payment.schema';
+export { adminLogs } from './admin-log.schema';
