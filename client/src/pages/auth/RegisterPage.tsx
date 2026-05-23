@@ -1,7 +1,31 @@
-import React, { useState } from "react";
+import React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui_manual/Button";
 import { Input } from "../../components/ui_manual/Input";
 import { Link } from "../../components/ui_manual/Link";
+
+const registerSchema = z
+    .object({
+        email: z
+        .string()
+        .min(1, { message: "Email address is required." })
+        .email({ message: "Please enter a valid email address." }),
+        password: z
+        .string()
+        .min(6, { message: "Password must be at least 6 characters." }),
+        confirmPassword: z
+        .string()
+        .min(1, { message: "Please confirm your password." }),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+        message: "Passwords do not match.",
+        path: ["confirmPassword"],
+    });
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export interface RegisterPageProps {
     loginHref?: string;
@@ -13,35 +37,24 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     loginHref = "/login",
     onRegister,
 }) => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
+    const navigate = useNavigate();
 
-    const validate = (): boolean => {
-        const newErrors: { email?: string; password?: string; confirmPassword?: string } = {};
-        
-        if (!email || !email.includes("@")) {
-        newErrors.email = "Please enter a valid email address.";
-        }
-        
-        if (!password || password.length < 6) {
-        newErrors.password = "Password must be at least 6 characters.";
-        }
-        
-        if (confirmPassword !== password) {
-        newErrors.confirmPassword = "Passwords do not match.";
-        }
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<RegisterFormValues>({
+        resolver: zodResolver(registerSchema),
+        defaultValues: {
+            email: "",
+            password: "",
+            confirmPassword: "",
+        },
+    });
 
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleSubmit = (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        if (validate()) {
-        onRegister?.(email, password);
-        }
+    const onSubmit = (data: RegisterFormValues) => {
+        onRegister?.(data.email, data.password);
+        navigate("/login");
     };
 
     return (
@@ -51,7 +64,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
             <div className="w-full rounded-3xl border border-white/10 bg-[#121212]/80 backdrop-blur-md px-10 py-12 shadow-2xl">
 
-            {/* Header */}
             <div className="text-center mb-10">
                 <h1 className="text-[2.5rem] font-bold text-white tracking-tight leading-none mb-2">
                 Register
@@ -61,42 +73,38 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                 </p>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
                 <Input
                 id="email"
-                name="email"
                 label="Email Address"
                 type="email"
                 placeholder="Enter Your Email"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                errorMessage={errors.email}
+                autoComplete="email"
+                {...register("email")}
+                errorMessage={errors.email?.message}
                 />
 
                 <Input
                 id="password"
-                name="password"
                 label="Password"
                 type="password"
                 placeholder="Enter Your Password"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                errorMessage={errors.password}
+                autoComplete="new-password"
+                {...register("password")}
+                errorMessage={errors.password?.message}
                 />
 
                 <Input
                 id="confirmPassword"
-                name="confirmPassword"
                 label="Confirm Password"
                 type="password"
                 placeholder="Confirm Password"
                 required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                errorMessage={errors.confirmPassword}
+                autoComplete="new-password"
+                {...register("confirmPassword")}
+                errorMessage={errors.confirmPassword?.message}
                 />
 
                 <div className="mt-2">

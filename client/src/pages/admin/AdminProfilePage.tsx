@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { AdminLayout } from '../../components/layout/AdminLayouts';
 
 interface AdminLog {
@@ -17,15 +20,34 @@ const RECENT_LOGS: AdminLog[] = [
     { id: 'LOG-005', action: 'Deleted Showtime Slot', target: 'Studio 2 - 13:00 WIB', timestamp: '17 May 2026, 14:00 WIB', status: 'Success' },
 ];
 
+const adminProfileSchema = z.object({
+    fullName: z.string().min(3, "Name must be at least 3 characters."),
+    phone: z.string().min(10, "Please enter a valid phone number."),
+});
+
+type AdminProfileValues = z.infer<typeof adminProfileSchema>;
+
 export const AdminProfilePage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'profile' | 'logs'>('profile');
 
-    const [fullName, setFullName] = useState('Admin Manager');
-    const [phone, setPhone] = useState('+62 812 3456 7890');
+    const {
+        register,
+        handleSubmit,
+        watch,
+        formState: { errors },
+    } = useForm<AdminProfileValues>({
+        resolver: zodResolver(adminProfileSchema),
+        defaultValues: {
+            fullName: 'Admin Manager',
+            phone: '+62 812 3456 7890'
+        }
+    });
 
-    const handleSaveProfile = (e: React.SyntheticEvent) => {
-        e.preventDefault();
-        alert('Admin profile updated successfully! (Local state simulation)');
+    // eslint-disable-next-line react-hooks/incompatible-library
+    const displayFullName = watch('fullName');
+
+    const onSubmit = (data: AdminProfileValues) => {
+        alert(`Admin profile updated successfully!\nNew Name: ${data.fullName}\nNew Phone: ${data.phone}`);
     };
 
     return (
@@ -60,11 +82,11 @@ export const AdminProfilePage: React.FC = () => {
                         
                         <div className="rounded-xl border border-white/10 bg-[#111111] p-6 text-center flex flex-col items-center justify-center h-fit">
                             <img 
-                                src="https://ui-avatars.com/api/?name=Admin+Manager&background=e51c23&color=fff&size=128" 
+                                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(displayFullName || 'Admin')}&background=e51c23&color=fff&size=128`} 
                                 alt="Admin Avatar" 
                                 className="w-24 h-24 rounded-full border-2 border-red-500 mb-4 shadow-lg shadow-red-500/10"
                             />
-                            <h3 className="text-xl font-bold">{fullName}</h3>
+                            <h3 className="text-xl font-bold">{displayFullName || 'Admin Manager'}</h3>
                             <p className="text-xs text-red-500 font-semibold bg-red-500/10 px-2.5 py-1 rounded-full mt-1.5 uppercase tracking-wider">
                                 Super Admin
                             </p>
@@ -88,27 +110,25 @@ export const AdminProfilePage: React.FC = () => {
                             
                             <div className="rounded-xl border border-white/10 bg-[#111111] p-6 shadow-sm">
                                 <h3 className="text-lg font-bold mb-4">Profile Information</h3>
-                                <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
+                                <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="flex flex-col gap-1">
                                             <label className="text-xs text-white/60 font-medium">Full Name</label>
                                             <input 
+                                                {...register('fullName')}
                                                 type="text" 
-                                                value={fullName} 
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFullName(e.target.value)}
-                                                required 
                                                 className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-red-500" 
                                             />
+                                            {errors.fullName && <span className="text-xs text-red-500">{errors.fullName.message}</span>}
                                         </div>
                                         <div className="flex flex-col gap-1">
                                             <label className="text-xs text-white/60 font-medium">Phone Number</label>
                                             <input 
+                                                {...register('phone')}
                                                 type="text" 
-                                                value={phone} 
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
-                                                required 
                                                 className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-red-500" 
                                             />
+                                            {errors.phone && <span className="text-xs text-red-500">{errors.phone.message}</span>}
                                         </div>
                                     </div>
 
@@ -139,7 +159,6 @@ export const AdminProfilePage: React.FC = () => {
                                 </form>
                             </div>
 
-                            {/* Komponen Penjelas Hak Akses (System Guard Card) */}
                             <div className="rounded-xl border border-white/10 bg-[#111111] p-6 shadow-sm">
                                 <h3 className="text-lg font-bold mb-1">System Permissions Access</h3>
                                 <p className="text-xs text-white/50 mb-4">Your administrative account has fully granted permissions over the following core modules:</p>

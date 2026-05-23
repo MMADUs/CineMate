@@ -1,4 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { AdminLayout } from '../../components/layout/AdminLayouts';
 import { AdminModal } from '../../components/modals/AdminModal';
 import { DeleteModal } from '../../components/modals/DeleteModal';
@@ -22,27 +25,56 @@ const ADMIN_STUDIOS: CinemaHall[] = [
 
 const ITEMS_PER_PAGE = 3;
 
+const studioSchema = z.object({
+    cinemaName: z.string().min(1, "Cinema location is required."),
+    studioName: z.string().min(1, "Studio name is required."),
+    totalRows: z.number({ message: "Must be a number" }).min(1, "Min 1").max(26, "Max 26"),
+    seatsPerRow: z.number({ message: "Must be a number" }).min(1, "Min 1"),
+});
+
+type StudioFormValues = z.infer<typeof studioSchema>;
+
 export const AdminStudiosPage: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedStudio, setSelectedStudio] = useState<CinemaHall | null>(null);
 
-    const [addRows, setAddRows] = useState<number>(0);
-    const [addCols, setAddCols] = useState<number>(0);
-
-    const [editRows, setEditRows] = useState<number>(0);
-    const [editCols, setEditCols] = useState<number>(0);
-
-    const openEditModal = (studio: CinemaHall) => {
-        setSelectedStudio(studio);
-        setEditRows(studio.totalRows);
-        setEditCols(studio.seatsPerRow);
-        setIsEditModalOpen(true);
-    };
-
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+
+    const {
+        register,
+        handleSubmit,
+        reset,
+        control,
+        formState: { errors },
+    } = useForm<StudioFormValues>({
+        resolver: zodResolver(studioSchema),
+        defaultValues: {
+            cinemaName: '',
+            studioName: '',
+            totalRows: 0,
+            seatsPerRow: 0
+        }
+    });
+
+    const watchedRows = Number(useWatch({ control, name: 'totalRows' })) || 0;
+    const watchedCols = Number(useWatch({ control, name: 'seatsPerRow' })) || 0;
+    const dynamicCapacity = watchedRows * watchedCols;
+
+    useEffect(() => {
+        if (isAddModalOpen) {
+            reset({ cinemaName: '', studioName: '', totalRows: 0, seatsPerRow: 0 });
+        } else if (isEditModalOpen && selectedStudio) {
+            reset({
+                cinemaName: selectedStudio.cinemaName,
+                studioName: selectedStudio.studioName,
+                totalRows: selectedStudio.totalRows,
+                seatsPerRow: selectedStudio.seatsPerRow
+            });
+        }
+    }, [isAddModalOpen, isEditModalOpen, selectedStudio, reset]);
 
     const { paginatedStudios, totalPages } = useMemo(() => {
         const filtered = ADMIN_STUDIOS.filter(studio => 
@@ -59,23 +91,24 @@ export const AdminStudiosPage: React.FC = () => {
         return { paginatedStudios: paginated, totalPages: total };
     }, [searchTerm, currentPage]);
 
-    const handleAddSubmit = (e: React.SyntheticEvent) => {
-        e.preventDefault();
-        alert(`Studio added! Capacity is ${addRows * addCols} seats. Backend will generate ${addRows} rows (A-${String.fromCharCode(65 + addRows - 1)}) and ${addCols} columns.`);
+    const onAddSubmit = (data: StudioFormValues) => {
+        alert(`Studio added! Capacity is ${dynamicCapacity} seats. Backend will generate ${data.totalRows} rows (A-${String.fromCharCode(65 + data.totalRows - 1)}) and ${data.seatsPerRow} columns.`);
         setIsAddModalOpen(false);
-        setAddRows(0);
-        setAddCols(0);
     };
 
-    const handleEditSubmit = (e: React.SyntheticEvent) => {
-        e.preventDefault();
-        alert(`${selectedStudio?.studioName} Updated! New capacity is ${editRows * editCols} seats.`);
+    const onEditSubmit = (data: StudioFormValues) => {
+        alert(`${data.studioName} Updated! New capacity is ${dynamicCapacity} seats.`);
         setIsEditModalOpen(false);
     };
 
     const handleDeleteConfirm = () => {
         alert(`${selectedStudio?.studioName} Deleted Successfully!`);
         setIsDeleteModalOpen(false);
+    };
+
+    const openEditModal = (studio: CinemaHall) => {
+        setSelectedStudio(studio);
+        setIsEditModalOpen(true);
     };
 
     return (
@@ -201,48 +234,45 @@ export const AdminStudiosPage: React.FC = () => {
             </div>
 
             <AdminModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Add New Studio">
-                <form onSubmit={handleAddSubmit} className="flex flex-col gap-4">
+                <form onSubmit={handleSubmit(onAddSubmit)} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1">
                         <label className="text-sm text-white/70">Cinema Location</label>
-                        <input type="text" placeholder="e.g. Graha Bintaro" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                        <input {...register('cinemaName')} type="text" placeholder="e.g. Graha Bintaro" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                        {errors.cinemaName && <span className="text-xs text-red-500 mt-1">{errors.cinemaName.message}</span>}
                     </div>
                     
                     <div className="flex flex-col gap-1">
                         <label className="text-sm text-white/70">Studio Name</label>
-                        <input type="text" placeholder="e.g. Studio 1" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                        <input {...register('studioName')} type="text" placeholder="e.g. Studio 1" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                        {errors.studioName && <span className="text-xs text-red-500 mt-1">{errors.studioName.message}</span>}
                     </div>
                     
-                    {/* BAGIAN GRID SETUP */}
                     <div className="bg-white/5 p-4 rounded-xl border border-white/10 mt-2">
                         <h4 className="text-sm font-bold text-white mb-3">Seat Grid Setup</h4>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs text-white/70">Total Rows (e.g. A to E = 5)</label>
                                 <input 
+                                    {...register('totalRows', { valueAsNumber: true })}
                                     type="number" 
-                                    min="1" max="26" // Max Z
-                                    required 
-                                    value={addRows || ''}
-                                    onChange={(e) => setAddRows(Number(e.target.value))}
                                     className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" 
                                 />
+                                {errors.totalRows && <span className="text-xs text-red-500 mt-1">{errors.totalRows.message}</span>}
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs text-white/70">Seats per Row (Columns)</label>
                                 <input 
+                                    {...register('seatsPerRow', { valueAsNumber: true })}
                                     type="number" 
-                                    min="1"
-                                    required 
-                                    value={addCols || ''}
-                                    onChange={(e) => setAddCols(Number(e.target.value))}
                                     className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" 
                                 />
+                                {errors.seatsPerRow && <span className="text-xs text-red-500 mt-1">{errors.seatsPerRow.message}</span>}
                             </div>
                         </div>
                         
                         <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
                             <span className="text-sm text-white/50">Total Generated Capacity:</span>
-                            <span className="text-lg font-bold text-blue-400">{addRows * addCols} Seats</span>
+                            <span className="text-lg font-bold text-blue-400">{dynamicCapacity} Seats</span>
                         </div>
                     </div>
 
@@ -257,10 +287,17 @@ export const AdminStudiosPage: React.FC = () => {
 
             <AdminModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Studio">
                 {selectedStudio && (
-                    <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+                    <form onSubmit={handleSubmit(onEditSubmit)} className="flex flex-col gap-4">
+                        
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm text-white/70">Cinema Location</label>
+                            <input {...register('cinemaName')} type="text" disabled className="bg-[#1a1a1a]/50 border border-white/5 rounded-lg p-3 text-white/40 focus:outline-none cursor-not-allowed" />
+                        </div>
+
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Studio Name</label>
-                            <input type="text" defaultValue={selectedStudio.studioName} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            <input {...register('studioName')} type="text" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            {errors.studioName && <span className="text-xs text-red-500 mt-1">{errors.studioName.message}</span>}
                         </div>
 
                         <div className="bg-white/5 p-4 rounded-xl border border-white/10 mt-2">
@@ -269,33 +306,29 @@ export const AdminStudiosPage: React.FC = () => {
                                 <div className="flex flex-col gap-1">
                                     <label className="text-xs text-white/70">Total Rows</label>
                                     <input 
+                                        {...register('totalRows', { valueAsNumber: true })}
                                         type="number" 
-                                        min="1" max="26"
-                                        required 
-                                        value={editRows}
-                                        onChange={(e) => setEditRows(Number(e.target.value))}
                                         className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" 
                                     />
+                                    {errors.totalRows && <span className="text-xs text-red-500 mt-1">{errors.totalRows.message}</span>}
                                 </div>
                                 <div className="flex flex-col gap-1">
                                     <label className="text-xs text-white/70">Seats per Row</label>
                                     <input 
+                                        {...register('seatsPerRow', { valueAsNumber: true })}
                                         type="number" 
-                                        min="1"
-                                        required 
-                                        value={editCols}
-                                        onChange={(e) => setEditCols(Number(e.target.value))}
                                         className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" 
                                     />
+                                    {errors.seatsPerRow && <span className="text-xs text-red-500 mt-1">{errors.seatsPerRow.message}</span>}
                                 </div>
                             </div>
                             
                             <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
                                 <span className="text-sm text-white/50">New Total Capacity:</span>
                                 <span className={`text-lg font-bold ${
-                                    (editRows * editCols) !== selectedStudio.capacity ? 'text-red-400' : 'text-blue-400'
+                                    dynamicCapacity !== selectedStudio.capacity ? 'text-red-400' : 'text-blue-400'
                                 }`}>
-                                    {editRows * editCols} Seats
+                                    {dynamicCapacity} Seats
                                 </span>
                             </div>
                         </div>

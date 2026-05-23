@@ -1,62 +1,39 @@
-import React, { useState } from "react";
+import React, { forwardRef } from "react";
 
-type InputType = "text" | "email" | "password" | "number" | "tel";
-
-interface InputProps {
-    id: string;
-    name: string;
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label: string;
-    type?: InputType;
-    placeholder?: string;
-    required?: boolean;
-    autoComplete?: string;
-    value?: string;
-    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     errorMessage?: string;
 }
 
-export const Input: React.FC<InputProps> = ({
-    id,
-    name,
-    label,
-    type = "text",
-    placeholder = "",
-    required = false,
-    autoComplete,
-    value,
-    onChange,
-    errorMessage,
-}) => {
-    const [focused, setFocused] = useState(false);
-    const hasError = !!errorMessage;
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+    ({ id, label, errorMessage, className, ...props }, ref) => {
+        const hasError = !!errorMessage;
 
-    const borderClass = hasError
-        ? "border border-[#e51c23] shadow-[0_0_0_3px_rgba(229,28,35,0.15)]"
-        : focused
-        ? "border border-[#e51c23] shadow-[0_0_0_3px_rgba(229,28,35,0.15)]"
-        : "border border-transparent";
+        return (
+            <div className="flex flex-col gap-2">
+                <label htmlFor={id} className="text-sm font-medium text-white">
+                    {label}
+                </label>
+                
+                <input
+                    id={id}
+                    ref={ref}
+                    className={`w-full bg-white/5 rounded-xl px-4 py-3.5 text-[15px] text-white placeholder-white/25 outline-none transition-all duration-300 border ${
+                        hasError
+                            ? "border-[#e51c23] shadow-[0_0_0_3px_rgba(229,28,35,0.15)]"
+                            : "border-transparent focus:border-[#e51c23] focus:shadow-[0_0_0_3px_rgba(229,28,35,0.15)]"
+                    } ${className || ""}`}
+                    {...props}
+                />
+                
+                {errorMessage && (
+                    <p className="text-xs text-[#e51c23] font-medium tracking-wide mt-0.5">
+                        {errorMessage}
+                    </p>
+                )}
+            </div>
+        );
+    }
+);
 
-    return (
-        <div className="flex flex-col gap-2">
-            <label htmlFor={id} className="text-sm font-medium text-white">
-                {label}
-            </label>
-            <input
-                id={id}
-                name={name}
-                type={type}
-                placeholder={placeholder}
-                required={required}
-                autoComplete={autoComplete}
-                value={value}
-                onChange={onChange}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
-                className={`w-full bg-white/5 rounded-xl px-4 py-3.5 text-[15px] text-white placeholder-white/25 outline-none transition-all duration-200 ${borderClass}`}
-            />
-            {hasError && (
-                <span className="text-xs text-[#e51c23]">{errorMessage}</span>
-            )}
-        </div>
-    );
-};
+Input.displayName = "Input";

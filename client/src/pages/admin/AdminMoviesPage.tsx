@@ -1,4 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { AdminLayout } from '../../components/layout/AdminLayouts';
 import { AdminModal } from '../../components/modals/AdminModal';
 import { DeleteModal } from '../../components/modals/DeleteModal';
@@ -7,6 +10,19 @@ import { MOVIE_DATABASE } from '../../data/dummydata';
 import type { Movie } from '../../types/movie';
 
 const ITEMS_PER_PAGE = 5;
+
+const movieSchema = z.object({
+    title: z.string().min(1, "Movie title is required."),
+    description: z.string().min(10, "Description must be at least 10 characters."),
+    genre: z.string().min(1, "Genre is required."),
+    rating: z.string().min(1, "Age rating is required."),
+    duration: z.string().min(1, "Duration is required."),
+    trailerUrl: z.string().url("Must be a valid URL (e.g., https://youtube.com/...)"),
+    startDate: z.string().min(1, "Start date is required."),
+    endDate: z.string().min(1, "End date is required."),
+});
+
+type MovieFormValues = z.infer<typeof movieSchema>;
 
 export const AdminMoviesPage: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -19,32 +35,54 @@ export const AdminMoviesPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
 
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors },
+    } = useForm<MovieFormValues>({
+        resolver: zodResolver(movieSchema),
+    });
+
+    useEffect(() => {
+        if (isAddModalOpen) {
+            reset({ title: '', description: '', genre: '', rating: 'G', duration: '', trailerUrl: '', startDate: '', endDate: '' });
+        } else if (isEditModalOpen && selectedMovie) {
+            reset({
+                title: selectedMovie.title,
+                description: selectedMovie.description,
+                genre: selectedMovie.genre,
+                rating: selectedMovie.rating,
+                duration: selectedMovie.duration.replace('m', ''), 
+                trailerUrl: selectedMovie.trailerUrl,
+                startDate: selectedMovie.startDate,
+                endDate: selectedMovie.endDate,
+            });
+        }
+    }, [isAddModalOpen, isEditModalOpen, selectedMovie, reset]);
+
     const { paginatedMovies, totalPages } = useMemo(() => {
         const filtered = (MOVIE_DATABASE as Movie[]).filter(movie => 
             movie.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             movie.genre.toLowerCase().includes(searchTerm.toLowerCase())
         );
-
         const total = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-
-        const paginated = filtered.slice(
-            (currentPage - 1) * ITEMS_PER_PAGE,
-            currentPage * ITEMS_PER_PAGE
-        );
-
+        const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
         return { paginatedMovies: paginated, totalPages: total };
     }, [searchTerm, currentPage]);
 
-    const handleAddSubmit = (e: React.SyntheticEvent) => {
-        e.preventDefault();
-        alert(`Movie Added Successfully!\nPoster attached: ${imageFile ? imageFile.name : 'No file'}`);
+    const onAddSubmit = (data: MovieFormValues) => {
+        if (!imageFile) {
+            alert("Please upload a movie poster!");
+            return;
+        }
+        alert(`Movie "${data.title}" Added Successfully!\nPoster: ${imageFile.name}`);
         setIsAddModalOpen(false);
         setImageFile(null);
     };
 
-    const handleEditSubmit = (e: React.SyntheticEvent) => {
-        e.preventDefault();
-        alert(`Movie ${selectedMovie?.title} Updated Successfully!\nNew Poster: ${imageFile ? imageFile.name : 'Kept original poster'}`);
+    const onEditSubmit = (data: MovieFormValues) => {
+        alert(`Movie "${data.title}" Updated Successfully!\nNew Poster: ${imageFile ? imageFile.name : 'Kept original poster'}`);
         setIsEditModalOpen(false);
         setImageFile(null);
     };
@@ -107,7 +145,6 @@ export const AdminMoviesPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            
                             {paginatedMovies.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="py-12 text-center text-white/50">
@@ -128,14 +165,8 @@ export const AdminMoviesPage: React.FC = () => {
                                         </td>
                                         <td className="py-4 px-6 text-sm text-white/80 whitespace-nowrap">{movie.genre}</td>
                                         <td className="py-4 px-6 text-sm text-white/80 whitespace-nowrap">{movie.duration}</td>
-                                        
-                                        <td className="py-4 px-6 text-sm text-white/60 font-medium whitespace-nowrap">
-                                            {movie.startDate}
-                                        </td>
-                                        <td className="py-4 px-6 text-sm text-white/60 font-medium whitespace-nowrap">
-                                            {movie.endDate}
-                                        </td>
-
+                                        <td className="py-4 px-6 text-sm text-white/60 font-medium whitespace-nowrap">{movie.startDate}</td>
+                                        <td className="py-4 px-6 text-sm text-white/60 font-medium whitespace-nowrap">{movie.endDate}</td>
                                         <td className="py-4 px-6 text-center whitespace-nowrap">
                                             <span className={`px-3 py-1 text-[10px] uppercase font-bold rounded-full ${parseInt(movie.id) <= 3 ? 'bg-green-500/20 text-green-500' : 'bg-purple-500/20 text-purple-400'}`}>
                                                 {parseInt(movie.id) <= 3 ? 'Now Playing' : 'Coming Soon'}
@@ -185,64 +216,69 @@ export const AdminMoviesPage: React.FC = () => {
                 }} 
                 title="Add New Movie"
             >
-                <form onSubmit={handleAddSubmit} className="flex flex-col gap-4">
+                <form onSubmit={handleSubmit(onAddSubmit)} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1">
                         <label className="text-sm text-white/70">Movie Title</label>
-                        <input name="title" type="text" placeholder="e.g. Inception" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                        <input {...register('title')} type="text" placeholder="e.g. Inception" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                        {errors.title && <span className="text-xs text-red-500 mt-1">{errors.title.message}</span>}
                     </div>
 
                     <div className="flex flex-col gap-1">
                         <label className="text-sm text-white/70">Description / Synopsis</label>
-                        <textarea name="description" rows={3} placeholder="A brief summary of the movie..." required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 resize-none"></textarea>
+                        <textarea {...register('description')} rows={3} placeholder="A brief summary..." className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 resize-none"></textarea>
+                        {errors.description && <span className="text-xs text-red-500 mt-1">{errors.description.message}</span>}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Genre</label>
-                            <input name="genre" type="text" placeholder="e.g. Sci-Fi / Action" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            <input {...register('genre')} type="text" placeholder="e.g. Sci-Fi / Action" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            {errors.genre && <span className="text-xs text-red-500 mt-1">{errors.genre.message}</span>}
                         </div>
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Age Rating</label>
-                            <select name="rating" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 appearance-none">
+                            <select {...register('rating')} className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 appearance-none">
                                 <option value="G">G (General)</option>
                                 <option value="PG-13">PG-13 (Parents Strongly Cautioned)</option>
                                 <option value="R">R (Restricted)</option>
                             </select>
+                            {errors.rating && <span className="text-xs text-red-500 mt-1">{errors.rating.message}</span>}
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Duration (Minutes)</label>
-                            <input name="duration" type="number" placeholder="e.g. 120" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            <input {...register('duration')} type="number" placeholder="e.g. 120" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            {errors.duration && <span className="text-xs text-red-500 mt-1">{errors.duration.message}</span>}
                         </div>
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm text-white/70">Trailer URL (Youtube Embed)</label>
-                            <input name="trailerUrl" type="url" placeholder="https://www.youtube.com/embed/..." required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            <label className="text-sm text-white/70">Trailer URL</label>
+                            <input {...register('trailerUrl')} type="text" placeholder="https://youtube.com/..." className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            {errors.trailerUrl && <span className="text-xs text-red-500 mt-1">{errors.trailerUrl.message}</span>}
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Start Date</label>
-                            <input name="startDate" type="date" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                            <input {...register('startDate')} type="date" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                            {errors.startDate && <span className="text-xs text-red-500 mt-1">{errors.startDate.message}</span>}
                         </div>
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">End Date</label>
-                            <input name="endDate" type="date" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                            <input {...register('endDate')} type="date" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                            {errors.endDate && <span className="text-xs text-red-500 mt-1">{errors.endDate.message}</span>}
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-1 mt-2">
-                        <label className="text-sm text-white/70">Upload Movie Poster</label>
+                        <label className="text-sm text-white/70">Upload Movie Poster <span className="text-red-500">*</span></label>
                         <input 
                             type="file" 
                             accept="image/png, image/jpeg, image/webp" 
-                            required 
                             onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                    setImageFile(e.target.files[0]);
-                                }
+                                if (e.target.files && e.target.files[0]) setImageFile(e.target.files[0]);
                             }}
                             className="bg-[#1a1a1a] border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:border-red-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-500/10 file:text-red-500 hover:file:bg-red-500/20 transition-all cursor-pointer" 
                         />
@@ -254,7 +290,6 @@ export const AdminMoviesPage: React.FC = () => {
                 </form>
             </AdminModal>
 
-            {/* ================= MODAL EDIT ================= */}
             <AdminModal 
                 isOpen={isEditModalOpen} 
                 onClose={() => {
@@ -264,7 +299,7 @@ export const AdminMoviesPage: React.FC = () => {
                 title="Edit Movie"
             >
                 {selectedMovie && (
-                    <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+                    <form onSubmit={handleSubmit(onEditSubmit)} className="flex flex-col gap-4">
                         
                         <div className="flex items-center gap-4 p-3 bg-white/5 rounded-xl border border-white/10 mb-2">
                             <img src={selectedMovie.imgUrl} alt={selectedMovie.title} className="w-12 h-16 object-cover rounded shadow-md" />
@@ -276,22 +311,25 @@ export const AdminMoviesPage: React.FC = () => {
 
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Movie Title</label>
-                            <input name="title" type="text" defaultValue={selectedMovie.title} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            <input {...register('title')} type="text" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            {errors.title && <span className="text-xs text-red-500 mt-1">{errors.title.message}</span>}
                         </div>
 
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Description / Synopsis</label>
-                            <textarea name="description" rows={3} defaultValue={selectedMovie.description} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 resize-none"></textarea>
+                            <textarea {...register('description')} rows={3} className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 resize-none"></textarea>
+                            {errors.description && <span className="text-xs text-red-500 mt-1">{errors.description.message}</span>}
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1">
                                 <label className="text-sm text-white/70">Genre</label>
-                                <input name="genre" type="text" defaultValue={selectedMovie.genre} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                                <input {...register('genre')} type="text" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                                {errors.genre && <span className="text-xs text-red-500 mt-1">{errors.genre.message}</span>}
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="text-sm text-white/70">Age Rating</label>
-                                <select name="rating" defaultValue={selectedMovie.rating} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 appearance-none">
+                                <select {...register('rating')} className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 appearance-none">
                                     <option value="G">G (General)</option>
                                     <option value="PG-13">PG-13 (Parents Strongly Cautioned)</option>
                                     <option value="R">R (Restricted)</option>
@@ -302,22 +340,26 @@ export const AdminMoviesPage: React.FC = () => {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1">
                                 <label className="text-sm text-white/70">Duration (Minutes)</label>
-                                <input name="duration" type="number" defaultValue={selectedMovie.duration.replace('m', '')} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                                <input {...register('duration')} type="number" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                                {errors.duration && <span className="text-xs text-red-500 mt-1">{errors.duration.message}</span>}
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="text-sm text-white/70">Trailer URL</label>
-                                <input name="trailerUrl" type="url" defaultValue={selectedMovie.trailerUrl} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                                <input {...register('trailerUrl')} type="text" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                                {errors.trailerUrl && <span className="text-xs text-red-500 mt-1">{errors.trailerUrl.message}</span>}
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1">
                                 <label className="text-sm text-white/70">Start Date</label>
-                                <input name="startDate" type="date" defaultValue={selectedMovie.startDate} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                                <input {...register('startDate')} type="date" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                                {errors.startDate && <span className="text-xs text-red-500 mt-1">{errors.startDate.message}</span>}
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="text-sm text-white/70">End Date</label>
-                                <input name="endDate" type="date" defaultValue={selectedMovie.endDate} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                                <input {...register('endDate')} type="date" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                                {errors.endDate && <span className="text-xs text-red-500 mt-1">{errors.endDate.message}</span>}
                             </div>
                         </div>
 
@@ -327,9 +369,7 @@ export const AdminMoviesPage: React.FC = () => {
                                 type="file" 
                                 accept="image/png, image/jpeg, image/webp" 
                                 onChange={(e) => {
-                                    if (e.target.files && e.target.files[0]) {
-                                        setImageFile(e.target.files[0]);
-                                    }
+                                    if (e.target.files && e.target.files[0]) setImageFile(e.target.files[0]);
                                 }}
                                 className="bg-[#1a1a1a] border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-500 hover:file:bg-blue-500/20 transition-all cursor-pointer" 
                             />

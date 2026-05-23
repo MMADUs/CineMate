@@ -1,4 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { AdminLayout } from '../../components/layout/AdminLayouts';
 import { AdminModal } from '../../components/modals/AdminModal';
 import { DeleteModal } from '../../components/modals/DeleteModal';
@@ -7,6 +10,15 @@ import type { FnbItem } from '../../types/fnb';
 import { ADMIN_FNB } from '../../data/dummydata';
 
 const ITEMS_PER_PAGE = 3; 
+
+const fnbSchema = z.object({
+    name: z.string().min(1, "Item name is required."),
+    category: z.string().min(1, "Category is required."),
+    price: z.number({ message: "Must be a valid number" }).min(0, "Price cannot be negative"),
+    stock: z.number({ message: "Must be a valid number" }).min(0, "Stock cannot be negative"),
+});
+
+type FnbFormValues = z.infer<typeof fnbSchema>;
 
 export const AdminFnbPage: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -18,6 +30,28 @@ export const AdminFnbPage: React.FC = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors },
+    } = useForm<FnbFormValues>({
+        resolver: zodResolver(fnbSchema),
+    });
+
+    useEffect(() => {
+        if (isAddModalOpen) {
+            reset({ name: '', category: 'Snack', price: 0, stock: 0 });
+        } else if (isEditModalOpen && selectedFnb) {
+            reset({
+                name: selectedFnb.name,
+                category: selectedFnb.category,
+                price: selectedFnb.price,
+                stock: selectedFnb.stock
+            });
+        }
+    }, [isAddModalOpen, isEditModalOpen, selectedFnb, reset]);
 
     const { paginatedFnb, totalPages } = useMemo(() => {
         const filtered = ADMIN_FNB.filter(item => 
@@ -34,19 +68,20 @@ export const AdminFnbPage: React.FC = () => {
         return { paginatedFnb: paginated, totalPages: total };
     }, [searchTerm, currentPage]);
 
-    const handleAddSubmit = (e: React.SyntheticEvent) => {
-        e.preventDefault();
-        alert(`F&B Item ready to be sent to backend!\nFile attached: ${imageFile ? imageFile.name : 'No file'}`);
+    const onAddSubmit = (data: FnbFormValues) => {
+        if (!imageFile) {
+            alert("Please upload an image for the F&B item!");
+            return;
+        }
+        alert(`Item "${data.name}" added successfully!\nCategory: ${data.category}\nPrice: Rp${data.price}\nStock: ${data.stock}\nFile: ${imageFile.name}`);
         setIsAddModalOpen(false);
         setImageFile(null); 
     };
 
-    const handleEditSubmit = (e: React.SyntheticEvent) => {
-        e.preventDefault();
-        // Cek apakah admin mengupload gambar baru atau tidak
-        alert(`${selectedFnb?.name} Updated Successfully!\nNew Image: ${imageFile ? imageFile.name : 'Kept original image'}`);
+    const onEditSubmit = (data: FnbFormValues) => {
+        alert(`Item "${data.name}" updated successfully!\nNew Image: ${imageFile ? imageFile.name : 'Kept original image'}`);
         setIsEditModalOpen(false);
-        setImageFile(null); // Reset setelah submit
+        setImageFile(null);
     };
 
     const handleDeleteConfirm = () => {
@@ -188,7 +223,6 @@ export const AdminFnbPage: React.FC = () => {
                 />
             </div>
 
-            {/* MODAL ADD */}
             <AdminModal 
                 isOpen={isAddModalOpen} 
                 onClose={() => { 
@@ -197,36 +231,39 @@ export const AdminFnbPage: React.FC = () => {
                 }} 
                 title="Add F&B Item"
             >
-                <form onSubmit={handleAddSubmit} className="flex flex-col gap-4">
+                <form onSubmit={handleSubmit(onAddSubmit)} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1">
                         <label className="text-sm text-white/70">Item Name</label>
-                        <input name="name" type="text" placeholder="e.g. Caramel Popcorn" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                        <input {...register('name')} type="text" placeholder="e.g. Caramel Popcorn" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                        {errors.name && <span className="text-xs text-red-500 mt-1">{errors.name.message}</span>}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Category</label>
-                            <select name="category" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 appearance-none">
+                            <select {...register('category')} className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 appearance-none">
                                 <option value="Snack">Snack</option>
                                 <option value="Drink">Drink</option>
                                 <option value="Combo">Combo</option>
                             </select>
+                            {errors.category && <span className="text-xs text-red-500 mt-1">{errors.category.message}</span>}
                         </div>
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Price (Rp)</label>
-                            <input name="price" type="number" placeholder="e.g. 45000" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            <input {...register('price', { valueAsNumber: true })} type="number" placeholder="e.g. 45000" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            {errors.price && <span className="text-xs text-red-500 mt-1">{errors.price.message}</span>}
                         </div>
                     </div>
                     <div className="flex flex-col gap-1">
                         <label className="text-sm text-white/70">Initial Stock</label>
-                        <input name="stock" type="number" placeholder="e.g. 100" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                        <input {...register('stock', { valueAsNumber: true })} type="number" placeholder="e.g. 100" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                        {errors.stock && <span className="text-xs text-red-500 mt-1">{errors.stock.message}</span>}
                     </div>
                     
                     <div className="flex flex-col gap-1">
-                        <label className="text-sm text-white/70">Upload Image</label>
+                        <label className="text-sm text-white/70">Upload Image <span className="text-red-500">*</span></label>
                         <input 
                             type="file" 
                             accept="image/png, image/jpeg, image/webp" 
-                            required 
                             onChange={(e) => {
                                 if (e.target.files && e.target.files[0]) {
                                     setImageFile(e.target.files[0]);
@@ -251,7 +288,7 @@ export const AdminFnbPage: React.FC = () => {
                 title="Edit F&B Item"
             >
                 {selectedFnb && (
-                    <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+                    <form onSubmit={handleSubmit(onEditSubmit)} className="flex flex-col gap-4">
                         
                         <div className="flex items-center gap-4 p-3 bg-white/5 rounded-xl border border-white/10 mb-2">
                             <img src={selectedFnb.imgUrl} alt={selectedFnb.name} className="w-16 h-16 object-cover rounded-lg" />
@@ -263,16 +300,20 @@ export const AdminFnbPage: React.FC = () => {
 
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Item Name</label>
-                            <input type="text" defaultValue={selectedFnb.name} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            <input {...register('name')} type="text" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            {errors.name && <span className="text-xs text-red-500 mt-1">{errors.name.message}</span>}
                         </div>
+                        
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1">
                                 <label className="text-sm text-white/70">Price (Rp)</label>
-                                <input type="number" defaultValue={selectedFnb.price} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                                <input {...register('price', { valueAsNumber: true })} type="number" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                                {errors.price && <span className="text-xs text-red-500 mt-1">{errors.price.message}</span>}
                             </div>
                             <div className="flex flex-col gap-1">
                                 <label className="text-sm text-white/70">Current Stock</label>
-                                <input type="number" defaultValue={selectedFnb.stock} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                                <input {...register('stock', { valueAsNumber: true })} type="number" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                                {errors.stock && <span className="text-xs text-red-500 mt-1">{errors.stock.message}</span>}
                             </div>
                         </div>
 

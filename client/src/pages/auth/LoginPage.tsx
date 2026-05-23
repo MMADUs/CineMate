@@ -1,9 +1,25 @@
-import React, { useState } from "react";
+import React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "../../components/ui_manual/Button";
 import { Input } from "../../components/ui_manual/Input";
 import { Divider } from "../../components/ui_manual/Divider";
 import { Link } from "../../components/ui_manual/Link";
 import { GoogleIcon } from "../../components/ui_manual/GoogleIcon";
+import { useNavigate } from "react-router-dom";
+
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email address is required.")
+    .email("Please enter a valid email address."),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters."),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export interface LoginPageProps {
   registerHref?: string;
@@ -16,27 +32,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   onLogin,
   onGoogleLogin,
 }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const navigate = useNavigate();
 
-  const validate = (): boolean => {
-    const newErrors: { email?: string; password?: string } = {};
-    if (!email || !email.includes("@")) {
-      newErrors.email = "Please enter a valid email address.";
-    }
-    if (!password || password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters.";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-  const handleSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (validate()) {
-      onLogin?.(email, password);
-    }
+  const onSubmit = (data: LoginFormValues) => {
+    onLogin?.(data.email, data.password);
+    navigate("/");
   };
 
   return (
@@ -57,31 +69,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
             <Input
               id="email"
-              name="email"
               label="Email Address"
               type="email"
               placeholder="Enter Your Email"
               required
               autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              errorMessage={errors.email}
+              {...register("email")}
+              errorMessage={errors.email?.message}
             />
 
             <Input
               id="password"
-              name="password"
               label="Password"
               type="password"
               placeholder="Enter Your Password"
               required
               autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              errorMessage={errors.password}
+              {...register("password")}
+              errorMessage={errors.password?.message}
             />
 
             <div className="mt-2">
@@ -99,6 +107,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             <Button
               label="Sign In With Google"
               variant="google"
+              type="button" 
               icon={<GoogleIcon />}
               onClick={onGoogleLogin}
             />

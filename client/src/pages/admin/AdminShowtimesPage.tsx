@@ -1,4 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { AdminLayout } from '../../components/layout/AdminLayouts';
 import { AdminModal } from '../../components/modals/AdminModal';
 import { DeleteModal } from '../../components/modals/DeleteModal';
@@ -8,6 +11,16 @@ import type { Showtime } from '../../types/showtime';
 
 const ITEMS_PER_PAGE = 5; 
 
+const showtimeSchema = z.object({
+    movieId: z.string().min(1, "Please select a movie."),
+    studio: z.string().min(1, "Please select a studio."),
+    date: z.string().min(1, "Date is required."),
+    time: z.string().min(1, "Time is required."),
+    price: z.number({ message: "Must be a valid number" }).min(0, "Price cannot be negative"),
+});
+
+type ShowtimeFormValues = z.infer<typeof showtimeSchema>;
+
 export const AdminShowtimesPage: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -16,6 +29,30 @@ export const AdminShowtimesPage: React.FC = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors },
+    } = useForm<ShowtimeFormValues>({
+        resolver: zodResolver(showtimeSchema),
+    });
+
+    useEffect(() => {
+        if (isAddModalOpen) {
+            reset({ movieId: '', studio: 'Studio 1', date: '', time: '', price: 0 });
+        } else if (isEditModalOpen && selectedShowtime) {
+            const movie = MOVIE_DATABASE.find(m => m.title === selectedShowtime.movieTitle);
+            reset({
+                movieId: movie ? movie.id : '',
+                studio: selectedShowtime.studio,
+                date: selectedShowtime.date,
+                time: selectedShowtime.time,
+                price: selectedShowtime.price
+            });
+        }
+    }, [isAddModalOpen, isEditModalOpen, selectedShowtime, reset]);
 
     const { paginatedShowtimes, totalPages } = useMemo(() => {
         const filtered = ADMIN_SHOWTIMES.filter(st => 
@@ -32,15 +69,15 @@ export const AdminShowtimesPage: React.FC = () => {
         return { paginatedShowtimes: paginated, totalPages: total };
     }, [searchTerm, currentPage]);
 
-    const handleAddSubmit = (e: React.SyntheticEvent) => {
-        e.preventDefault();
-        alert("Showtime Added Successfully!");
+    // 4. Submit Handlers
+    const onAddSubmit = (data: ShowtimeFormValues) => {
+        const movieName = MOVIE_DATABASE.find(m => m.id === data.movieId)?.title;
+        alert(`Showtime Added!\nMovie: ${movieName}\nStudio: ${data.studio}\nDate: ${data.date}\nTime: ${data.time}\nPrice: Rp${data.price}`);
         setIsAddModalOpen(false);
     };
 
-    const handleEditSubmit = (e: React.SyntheticEvent) => {
-        e.preventDefault();
-        alert(`Showtime ${selectedShowtime?.id} Updated Successfully!`);
+    const onEditSubmit = (data: ShowtimeFormValues) => {
+        alert(`Showtime ${selectedShowtime?.id} Updated Successfully!\nNew Date: ${data.date}\nNew Time: ${data.time}\nNew Price: Rp${data.price}`);
         setIsEditModalOpen(false);
     };
 
@@ -59,7 +96,6 @@ export const AdminShowtimesPage: React.FC = () => {
                 </div>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-                    {/* SEARCH BAR */}
                     <div className="flex items-center gap-2 bg-[#111111] border border-white/10 rounded-lg px-4 py-2 w-full sm:w-auto focus-within:border-red-500 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -70,7 +106,7 @@ export const AdminShowtimesPage: React.FC = () => {
                             value={searchTerm}
                             onChange={(e) => {
                                 setSearchTerm(e.target.value);
-                                setCurrentPage(1); // Mencegah error useEffect
+                                setCurrentPage(1);
                             }}
                             className="bg-transparent border-none text-sm text-white focus:outline-none w-full sm:w-48"
                         />
@@ -159,7 +195,6 @@ export const AdminShowtimesPage: React.FC = () => {
                     </table>
                 </div>
                 
-                {/* 3. PAGINATION COMPONENT */}
                 <Pagination 
                     currentPage={currentPage} 
                     totalPages={totalPages} 
@@ -167,39 +202,45 @@ export const AdminShowtimesPage: React.FC = () => {
                 />
             </div>
 
-            {/* MODALS TETAP SAMA */}
+            {/* MODAL ADD */}
             <AdminModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Add New Showtime">
-                <form onSubmit={handleAddSubmit} className="flex flex-col gap-4">
+                <form onSubmit={handleSubmit(onAddSubmit)} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1">
                         <label className="text-sm text-white/70">Select Movie</label>
-                        <select required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 appearance-none">
+                        <select {...register('movieId')} className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 appearance-none">
                             <option value="">-- Choose a movie --</option>
                             {MOVIE_DATABASE.map(m => (
                                 <option key={m.id} value={m.id}>{m.title}</option>
                             ))}
                         </select>
+                        {errors.movieId && <span className="text-xs text-red-500 mt-1">{errors.movieId.message}</span>}
                     </div>
                     <div className="flex flex-col gap-1">
                         <label className="text-sm text-white/70">Studio</label>
-                        <select required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 appearance-none">
+                        <select {...register('studio')} className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 appearance-none">
                             <option value="Studio 1">Studio 1</option>
                             <option value="Studio 2">Studio 2</option>
                             <option value="VIP Studio">VIP Studio</option>
                         </select>
+                        {errors.studio && <span className="text-xs text-red-500 mt-1">{errors.studio.message}</span>}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Date</label>
-                            <input type="date" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                            <input {...register('date')} type="date" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                            {errors.date && <span className="text-xs text-red-500 mt-1">{errors.date.message}</span>}
                         </div>
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Time</label>
-                            <input type="time" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                            <input {...register('time')} type="time" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                            {errors.time && <span className="text-xs text-red-500 mt-1">{errors.time.message}</span>}
                         </div>
                     </div>
                     <div className="flex flex-col gap-1">
                         <label className="text-sm text-white/70">Price (Rp)</label>
-                        <input type="number" placeholder="e.g. 50000" required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                        {/* Kunci Perbaikan Tipe Data */}
+                        <input {...register('price', { valueAsNumber: true })} type="number" placeholder="e.g. 50000" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                        {errors.price && <span className="text-xs text-red-500 mt-1">{errors.price.message}</span>}
                     </div>
                     <button type="submit" className="w-full bg-[#e51c23] hover:bg-[#c71118] text-white font-bold py-3 rounded-lg mt-4 transition-colors">
                         Save Showtime
@@ -209,19 +250,45 @@ export const AdminShowtimesPage: React.FC = () => {
 
             <AdminModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Showtime">
                 {selectedShowtime && (
-                    <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+                    <form onSubmit={handleSubmit(onEditSubmit)} className="flex flex-col gap-4">
+                        
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm text-white/70">Date</label>
-                            <input type="date" defaultValue={selectedShowtime.date} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                            <label className="text-sm text-white/70">Movie</label>
+                            <select {...register('movieId')} disabled className="bg-[#1a1a1a]/50 text-white/40 border border-white/5 rounded-lg p-3 appearance-none cursor-not-allowed">
+                                <option value="">-- Choose a movie --</option>
+                                {MOVIE_DATABASE.map(m => (
+                                    <option key={m.id} value={m.id}>{m.title}</option>
+                                ))}
+                            </select>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm text-white/70">Time</label>
-                            <input type="time" defaultValue={selectedShowtime.time} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                            <label className="text-sm text-white/70">Studio</label>
+                            <select {...register('studio')} disabled className="bg-[#1a1a1a]/50 text-white/40 border border-white/5 rounded-lg p-3 appearance-none cursor-not-allowed">
+                                <option value="Studio 1">Studio 1</option>
+                                <option value="Studio 2">Studio 2</option>
+                                <option value="VIP Studio">VIP Studio</option>
+                            </select>
                         </div>
-                        <div className="flex flex-col gap-1">
+
+                        <div className="grid grid-cols-2 gap-4 mt-2">
+                            <div className="flex flex-col gap-1">
+                                <label className="text-sm text-white/70">Date</label>
+                                <input {...register('date')} type="date" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                                {errors.date && <span className="text-xs text-red-500 mt-1">{errors.date.message}</span>}
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <label className="text-sm text-white/70">Time</label>
+                                <input {...register('time')} type="time" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                                {errors.time && <span className="text-xs text-red-500 mt-1">{errors.time.message}</span>}
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1 mt-1">
                             <label className="text-sm text-white/70">Price (Rp)</label>
-                            <input type="number" defaultValue={selectedShowtime.price} required className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 scheme-dark" />
+                            <input {...register('price', { valueAsNumber: true })} type="number" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
+                            {errors.price && <span className="text-xs text-red-500 mt-1">{errors.price.message}</span>}
                         </div>
+
                         <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg mt-4 transition-colors">
                             Update Changes
                         </button>
