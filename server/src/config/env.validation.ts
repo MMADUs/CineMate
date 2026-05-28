@@ -29,6 +29,10 @@ export function validateEnv(config: Record<string, unknown>) {
     IDEMPOTENCY_FLAG: config.IDEMPOTENCY_FLAG ?? 'false',
     // idempotency key retention in hours
     IDEMPOTENCY_TTL_HOURS: config.IDEMPOTENCY_TTL_HOURS ?? 24,
+    // enable concise structured application request logs
+    APP_LOGGING_FLAG: config.APP_LOGGING_FLAG ?? 'false',
+    // log successful GET requests only when they exceed this duration
+    APP_LOGGING_SLOW_MS: config.APP_LOGGING_SLOW_MS ?? 1000,
     // jwt access secret
     JWT_ACCESS_SECRET: config.JWT_ACCESS_SECRET ?? 'dev-access-secret',
     // jwt refresh secret

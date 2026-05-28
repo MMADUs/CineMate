@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { CinemaHallsModule } from './cinema-halls/cinema-halls.module';
+import { AppLoggingModule } from './common/logging/app-logging.module';
 import { validateEnv } from './config/env.validation';
 import { DatabaseModule } from './database/database.module';
 import { FnbOrdersModule } from './fnb-orders/fnb-orders.module';
@@ -23,6 +24,7 @@ import { UsersModule } from './users/users.module';
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     DatabaseModule,
+    AppLoggingModule,
     IdempotencyModule,
     AuthModule,
     UsersModule,

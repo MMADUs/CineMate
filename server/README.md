@@ -76,6 +76,10 @@ Idempotency protection is available for high-risk POST requests and is disabled
 by default for MVP/frontend testing. Set `IDEMPOTENCY_FLAG=true` to require the
 `Idempotency-Key` header on booking, F&B order, and payment creation requests.
 
+Concise structured request logging is also disabled by default. Set
+`APP_LOGGING_FLAG=true` to log mutating requests, errors, and slow GET requests
+without request bodies or sensitive headers.
+
 For real integration, copy `.env.docker.example` values into `docker-compose.yml`
 or your deployment environment and replace all secrets, especially JWT and Xendit
 settings.

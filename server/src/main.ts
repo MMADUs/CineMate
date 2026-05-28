@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { IdempotencyInterceptor } from './common/idempotency/idempotency.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { AppLoggingInterceptor } from './common/logging/app-logging.interceptor';
 
 async function bootstrap() {
   // nest app
@@ -41,6 +42,7 @@ async function bootstrap() {
 
   // Global interceptors
   app.useGlobalInterceptors(
+    app.get(AppLoggingInterceptor),
     app.get(IdempotencyInterceptor),
     new TransformInterceptor(),
   );
