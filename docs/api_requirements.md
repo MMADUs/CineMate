@@ -115,10 +115,7 @@ This document outlines the complete REST API endpoints required by the CineMate 
 ### E. Transaction & Order Management
 * **GET** `/api/admin/transactions?page=1&limit=5&search=keyword` *(UPDATED - Added Pagination)*
   * **Response:** Joined data from `Booking`, `FNB_Order`, `User`, and `Payment` tables to display on Admin Transactions Page.
-* **PUT** `/api/admin/transactions/:bookingId/cancel`
-  * **Action:** Manually updates `bookingStatus` to 'Cancelled'.
-* **POST `/api/admin/transactions/:bookingId/verify`**
-  * **Action:** Endpoint to be hit when Admin scans a User's QR Code. Validates the QR code and updates `bookingStatus` from 'Upcoming' to 'Completed'.
+
 
 ### F. Admin Profile
 * **GET** `/api/admin/profile` *(UPDATED - Removed System Logs)*

@@ -9,6 +9,8 @@ import { Link } from "../../components/ui_manual/Link";
 import { GoogleIcon } from "../../components/ui_manual/GoogleIcon";
 import { useNavigate } from "react-router-dom";
 
+// Login simpan access token & refresh token dengan JWT, access token pake
+// Access token habis, nembak ke refresh token API
 const loginSchema = z.object({
   email: z
     .string()

@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Navbar } from '@/components/layout/Navbar';
-import { Footer } from '@/components/layout/Footer';
-import { OrderCard } from '@/components/cards/OrderCard';
-import { OrderCardSkeleton } from '@/components/cards/OrderCardSkeleton';
-import { ORDER_HISTORY } from '@/data/dummydata';
-import type { OrderStatus } from '@/types/order';
+import { Navbar } from '../../components/layout/Navbar';
+import { Footer } from '../../components/layout/Footer';
+import { OrderCard } from '../../components/cards/OrderCard';
+import { OrderCardSkeleton } from '../../components/cards/OrderCardSkeleton';
+import { ORDER_HISTORY } from '../../data/dummydata'; // Pastikan path ini benar
+import type { OrderStatus } from '../../types/order';
 
 export const OrderHistoryPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'All' | OrderStatus>('All');
-    
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -21,7 +20,8 @@ export const OrderHistoryPage: React.FC = () => {
         return () => clearTimeout(timer);
     }, []);
 
-    const tabs: ('All' | OrderStatus)[] = ['All', 'Upcoming', 'Completed', 'Cancelled', 'Pending'];
+    // Status 'Upcoming' sudah dihapus, tersisa 3 status utama dari Payment
+    const tabs: ('All' | OrderStatus)[] = ['All', 'Completed', 'Cancelled', 'Pending'];
 
     const filteredOrders = ORDER_HISTORY.filter(order => 
         activeTab === 'All' ? true : order.status === activeTab
@@ -35,7 +35,7 @@ export const OrderHistoryPage: React.FC = () => {
                 
                 <div className="mb-10">
                     <h1 className="text-3xl md:text-4xl font-bold mb-2">Order History</h1>
-                    <p className="text-white/50 text-sm md:text-base">View all your ticket bookings</p>
+                    <p className="text-white/50 text-sm md:text-base">View all your ticket and F&B bookings</p>
                 </div>
 
                 <div className="flex overflow-x-auto [&::-webkit-scrollbar]:hidden gap-3 mb-8 pb-2">

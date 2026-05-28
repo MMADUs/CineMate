@@ -12,8 +12,12 @@ export const ORDER_HISTORY: OrderItem[] = [
         time: '07:00 PM',
         seats: 'A1, A2',
         studio: '1',
-        price: 165000,
-        status: 'Completed'
+        price: 245000, // Harga sudah disesuaikan termasuk F&B
+        status: 'Completed',
+        fnbItems: [
+            { name: 'Combo 1 (Popcorn + Drink)', quantity: 1 },
+            { name: 'Coca-Cola (L)', quantity: 1 }
+        ]
     },
     {
         id: 'ORD-002',
@@ -36,20 +40,11 @@ export const ORDER_HISTORY: OrderItem[] = [
         time: '07:00 PM',
         seats: 'A1, A2',
         studio: '1',
-        price: 165000,
-        status: 'Pending'
-    },
-    {
-        id: 'ORD-004',
-        movieId: '3',
-        movieTitle: 'HOPPERS',
-        posterUrl: '/Hoppers.png',
-        date: '10 March 2026',
-        time: '07:00 PM',
-        seats: 'A1, A2',
-        studio: '1',
-        price: 165000,
-        status: 'Upcoming'
+        price: 200000,
+        status: 'Pending',
+        fnbItems: [
+            { name: 'Nachos with Cheese', quantity: 1 }
+        ]
     },
     {
         id: 'ORD-005',

@@ -4,6 +4,7 @@ import { ORDER_HISTORY, NOW_PLAYING } from '../../data/dummydata';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../../components/ui/chart';
 
+// API Refresh tokennya berbeda dengan punya user biasa
 const chartConfig = {
   total: {
     label: "Revenue",

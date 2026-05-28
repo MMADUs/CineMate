@@ -30,7 +30,6 @@ export const TicketDetailsPage: React.FC = () => {
 
     const getStatusColor = (status: string) => {
         switch (status.toUpperCase()) {
-            case 'UPCOMING': return 'text-[#3b82f6]'; 
             case 'COMPLETED': return 'text-[#22c55e]'; 
             case 'CANCELLED': return 'text-[#ef4444]'; 
             case 'PENDING': return 'text-[#eab308]';
@@ -39,7 +38,7 @@ export const TicketDetailsPage: React.FC = () => {
     };
 
     const renderActionButtons = () => {
-        if (order.status === 'Upcoming') {
+        if (order.status === 'Completed') {
             return (
                 <Button 
                     label="Download E-Ticket" 
@@ -47,6 +46,29 @@ export const TicketDetailsPage: React.FC = () => {
                     shape="rounded" 
                     onClick={() => alert('Downloading E-Ticket...')}
                 />
+            );
+        }
+
+        if (order.status === 'Pending') {
+            return (
+                <div className="flex flex-col sm:flex-row gap-4 w-full">
+                    <div className="flex-1">
+                        <Button 
+                            label="Pay Now" 
+                            variant="primary" 
+                            shape="rounded" 
+                            onClick={() => alert('Redirecting to payment gateway...')}
+                        />
+                    </div>
+                    <div className="flex-1">
+                        <Button 
+                            label="Back to History" 
+                            variant="outline" 
+                            shape="rounded" 
+                            onClick={() => navigate('/history')}
+                        />
+                    </div>
+                </div>
             );
         }
 
@@ -146,7 +168,8 @@ export const TicketDetailsPage: React.FC = () => {
                             </div>
                         </div>
 
-                        {order.status === 'Upcoming' && (
+                        {/* QR CODE DITAMPILKAN JIKA STATUS COMPLETED */}
+                        {order.status === 'Completed' && (
                             <div className="bg-[#0D0D0D] border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-4 shadow-md">
                                 <span className="font-bold text-sm md:text-base">Show this QR Code at the counter</span>
                                 
@@ -190,7 +213,7 @@ export const TicketDetailsPage: React.FC = () => {
                                 <span className="font-bold text-sm md:text-base">Graha Bintaro</span>
                             </div>
                             <div className="flex flex-col gap-1">
-                                <span className="text-white/50 text-[10px] md:text-xs font-bold tracking-wider">PRICE</span>
+                                <span className="text-white/50 text-[10px] md:text-xs font-bold tracking-wider">TOTAL PRICE</span>
                                 <span className="font-bold text-sm md:text-base">Rp {order.price.toLocaleString('id-ID')}</span>
                             </div>
                             <div className="flex flex-col gap-1">
@@ -200,6 +223,26 @@ export const TicketDetailsPage: React.FC = () => {
                                 </span>
                             </div>
                         </div>
+
+                        {/* SEKSI TAMBAHAN: F&B ITEMS */}
+                        {order.fnbItems && order.fnbItems.length > 0 && (
+                            <div className="bg-[#0D0D0D] border border-white/10 rounded-2xl p-5 md:p-6 shadow-md">
+                                <h3 className="text-white/50 text-[10px] md:text-xs font-bold tracking-wider mb-4 flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                    FOOD & BEVERAGE
+                                </h3>
+                                <div className="flex flex-col gap-3">
+                                    {order.fnbItems.map((item, index) => (
+                                        <div key={index} className="flex justify-between items-center text-sm md:text-base">
+                                            <span className="font-bold text-white/90">
+                                                <span className="text-white/50 mr-3">{item.quantity}x</span> 
+                                                {item.name}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="bg-[#0D0D0D] border border-white/10 rounded-2xl p-6 md:p-8 mt-2 shadow-md">
                             <h3 className="font-bold text-base md:text-lg mb-4">How to Use your E-Ticket</h3>
@@ -222,7 +265,8 @@ export const TicketDetailsPage: React.FC = () => {
 
             <Footer />
 
-            {order.status === 'Upcoming' && (
+            {/* MODAL QR CODE HANYA BISA DIBUKA JIKA COMPLETED */}
+            {order.status === 'Completed' && (
                 <QRModal 
                     isOpen={isQrModalOpen} 
                     onClose={() => setIsQrModalOpen(false)} 

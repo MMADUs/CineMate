@@ -1,4 +1,9 @@
-export type OrderStatus = 'Completed' | 'Cancelled' | 'Pending' | 'Upcoming';
+export type OrderStatus = 'Completed' | 'Cancelled' | 'Pending';
+
+export interface OrderFnbItem {
+    name: string;
+    quantity: number;
+}
 
 export interface OrderItem {
     id: string;
@@ -11,6 +16,7 @@ export interface OrderItem {
     studio: string;
     price: number;
     status: OrderStatus;
+    fnbItems?: OrderFnbItem[]; 
 }
 
 export interface OrderCardProps {
