@@ -25,6 +25,10 @@ export function validateEnv(config: Record<string, unknown>) {
       config.OBJECT_STORAGE_SECRET_KEY ?? 'rustfsadmin',
     // bucket used for uploaded app images
     OBJECT_STORAGE_BUCKET: config.OBJECT_STORAGE_BUCKET ?? 'cinemate-images',
+    // enable idempotency protection for selected mutating endpoints
+    IDEMPOTENCY_FLAG: config.IDEMPOTENCY_FLAG ?? 'false',
+    // idempotency key retention in hours
+    IDEMPOTENCY_TTL_HOURS: config.IDEMPOTENCY_TTL_HOURS ?? 24,
     // jwt access secret
     JWT_ACCESS_SECRET: config.JWT_ACCESS_SECRET ?? 'dev-access-secret',
     // jwt refresh secret

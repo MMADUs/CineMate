@@ -72,6 +72,10 @@ secret key: rustfsadmin
 bucket: cinemate-images
 ```
 
+Idempotency protection is available for high-risk POST requests and is disabled
+by default for MVP/frontend testing. Set `IDEMPOTENCY_FLAG=true` to require the
+`Idempotency-Key` header on booking, F&B order, and payment creation requests.
+
 For real integration, copy `.env.docker.example` values into `docker-compose.yml`
 or your deployment environment and replace all secrets, especially JWT and Xendit
 settings.

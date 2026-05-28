@@ -75,6 +75,8 @@ services:
       OBJECT_STORAGE_ACCESS_KEY: rustfsadmin
       OBJECT_STORAGE_SECRET_KEY: rustfsadmin
       OBJECT_STORAGE_BUCKET: cinemate-images
+      IDEMPOTENCY_FLAG: "false"
+      IDEMPOTENCY_TTL_HOURS: 24
       JWT_ACCESS_SECRET: change-me-user-access-secret
       JWT_REFRESH_SECRET: change-me-user-refresh-secret
       JWT_ADMIN_ACCESS_SECRET: change-me-admin-access-secret

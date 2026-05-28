@@ -1,7 +1,6 @@
 # todo list are written in this markdown file
 
 mandatory:
-- idempotency in post api requests
 - app logging
 - bruno api client
 - connect the xendit payment gateway

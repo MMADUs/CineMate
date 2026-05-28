@@ -10,11 +10,13 @@ import {
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
+  ApiHeader,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Idempotent } from '../common/decorators/idempotent.decorator';
 import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { BookingsService } from './bookings.service';
@@ -39,7 +41,14 @@ export class BookingsController {
    */
   @Post('bookings')
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent()
   @ApiOperation({ summary: 'Create movie booking' })
+  @ApiHeader({
+    name: 'Idempotency-Key',
+    required: false,
+    description:
+      'Required only when IDEMPOTENCY_FLAG=true. Reuse the same UUID for retries of the same booking request.',
+  })
   @ApiCreatedResponse({ type: CreatedBookingResponseDto })
   create(
     @CurrentUser() user: AuthUser,

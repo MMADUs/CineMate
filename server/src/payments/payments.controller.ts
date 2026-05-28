@@ -7,6 +7,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Idempotent } from '../common/decorators/idempotent.decorator';
 import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -29,10 +30,17 @@ export class PaymentsController {
    */
   @UseGuards(JwtAccessGuard)
   @Post()
+  @Idempotent()
   @ApiOperation({
     summary: 'Create Xendit hosted checkout invoice',
     description:
       'Creates a pending local payment and a Xendit invoice. The frontend should redirect/open invoiceUrl. Booking/order is confirmed only after webhook payment success.',
+  })
+  @ApiHeader({
+    name: 'Idempotency-Key',
+    required: false,
+    description:
+      'Required only when IDEMPOTENCY_FLAG=true. Reuse the same UUID for retries of the same payment invoice request.',
   })
   @ApiCreatedResponse({ type: CreatePaymentResponseDto })
   create(

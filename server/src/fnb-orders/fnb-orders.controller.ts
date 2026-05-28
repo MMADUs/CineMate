@@ -6,8 +6,14 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiCreatedResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiCreatedResponse,
+  ApiHeader,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Idempotent } from '../common/decorators/idempotent.decorator';
 import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { CreateFnbOrderDto } from './dto/create-fnb-order.dto';
@@ -28,7 +34,14 @@ export class FnbOrdersController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @Idempotent()
   @ApiOperation({ summary: 'Create F&B order' })
+  @ApiHeader({
+    name: 'Idempotency-Key',
+    required: false,
+    description:
+      'Required only when IDEMPOTENCY_FLAG=true. Reuse the same UUID for retries of the same F&B order request.',
+  })
   @ApiCreatedResponse({ type: FnbOrderResponseDto })
   create(
     @CurrentUser() user: AuthUser,

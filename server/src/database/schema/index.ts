@@ -12,3 +12,4 @@ export { fnbOrderItems } from './fnb-order-item.schema';
 export { payments } from './payment.schema';
 export { paymentWebhookEvents } from './payment-webhook-event.schema';
 export { adminLogs } from './admin-log.schema';
+export { idempotencyKeys } from './idempotency-key.schema';
