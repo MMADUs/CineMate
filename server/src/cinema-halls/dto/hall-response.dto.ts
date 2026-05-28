@@ -12,7 +12,7 @@ export class HallResponseDto {
 
   @ApiProperty({ example: 8 })
   totalRows: number;
-  
+
   @ApiProperty({ example: 12 })
   seatsPerRow: number;
 }

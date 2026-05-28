@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, eq, like } from 'drizzle-orm';
-import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { MySql2Database } from 'drizzle-orm/mysql2';
 import { DRIZZLE } from '../database/database.constants';
 import * as schema from '../database/schema';
 import { movies } from '../database/schema';
@@ -13,7 +13,7 @@ import { UpdateMovieDto } from './dto/update-movie.dto';
 export class MoviesService {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: BetterSQLite3Database<typeof schema>,
+    private readonly db: MySql2Database<typeof schema>,
   ) {}
 
   /* Find All Movies Service
@@ -21,7 +21,7 @@ export class MoviesService {
    * @param: QueryMovieDto
    * @returns: MovieResponseDto[]
    */
-  findAll(query: QueryMovieDto = {}): MovieResponseDto[] {
+  async findAll(query: QueryMovieDto = {}): Promise<MovieResponseDto[]> {
     // get query filters
     const filters = [
       query.status ? eq(movies.status, query.status) : undefined,
@@ -30,12 +30,11 @@ export class MoviesService {
 
     // apply filters
     return filters.length
-      ? this.db
+      ? await this.db
           .select()
           .from(movies)
           .where(and(...filters))
-          .all()
-      : this.db.select().from(movies).all();
+      : await this.db.select().from(movies);
   }
 
   /* Find One Movie Service
@@ -43,12 +42,11 @@ export class MoviesService {
    * @param: movieId
    * @returns: MovieResponseDto
    */
-  findOne(movieId: number): MovieResponseDto {
-    const movie = this.db
+  async findOne(movieId: number): Promise<MovieResponseDto> {
+    const [movie] = await this.db
       .select()
       .from(movies)
-      .where(eq(movies.movieId, movieId))
-      .get();
+      .where(eq(movies.movieId, movieId));
 
     // check if movie doesn't exist
     if (!movie) throw new NotFoundException('Movie not found');
@@ -61,19 +59,18 @@ export class MoviesService {
    * @param: CreateMovieDto
    * @returns: MovieResponseDto
    */
-  create(dto: CreateMovieDto): MovieResponseDto {
+  async create(dto: CreateMovieDto): Promise<MovieResponseDto> {
     // create movie
-    const movie = this.db
+    const [insertedMovie] = await this.db
       .insert(movies)
       .values({
         ...dto,
         posterUrl: dto.posterUrl ?? '',
         trailerUrl: dto.trailerUrl ?? '',
       })
-      .returning()
-      .get();
+      .$returningId();
 
-    return movie;
+    return this.findOne(insertedMovie.movieId);
   }
 
   /* Update Movie Service
@@ -81,18 +78,14 @@ export class MoviesService {
    * @param: movieId, UpdateMovieDto
    * @returns: MovieResponseDto
    */
-  update(movieId: number, dto: UpdateMovieDto): MovieResponseDto {
-    const movie = this.db
-      .update(movies)
-      .set(dto)
-      .where(eq(movies.movieId, movieId))
-      .returning()
-      .get();
+  async update(
+    movieId: number,
+    dto: UpdateMovieDto,
+  ): Promise<MovieResponseDto> {
+    await this.findOne(movieId);
+    await this.db.update(movies).set(dto).where(eq(movies.movieId, movieId));
 
-    // check if movie doesn't exist
-    if (!movie) throw new NotFoundException('Movie not found');
-
-    return movie;
+    return this.findOne(movieId);
   }
 
   /* Remove Movie Service
@@ -100,15 +93,9 @@ export class MoviesService {
    * @param: movieId
    * @returns: MovieResponseDto
    */
-  remove(movieId: number): MovieResponseDto {
-    const movie = this.db
-      .delete(movies)
-      .where(eq(movies.movieId, movieId))
-      .returning()
-      .get();
-
-    // check if movie doesn't exist
-    if (!movie) throw new NotFoundException('Movie not found');
+  async remove(movieId: number): Promise<MovieResponseDto> {
+    const movie = await this.findOne(movieId);
+    await this.db.delete(movies).where(eq(movies.movieId, movieId));
 
     return movie;
   }

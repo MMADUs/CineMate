@@ -1,30 +1,30 @@
-import { sql } from 'drizzle-orm';
 import {
+  decimal,
   index,
-  integer,
-  numeric,
-  sqliteTable,
-  text,
-} from 'drizzle-orm/sqlite-core';
+  int,
+  mysqlTable,
+  timestamp,
+  varchar,
+} from 'drizzle-orm/mysql-core';
 import { showtimes } from './showtime.schema';
 import { users } from './user.schema';
 
-export const bookings = sqliteTable(
+export const bookings = mysqlTable(
   'Booking',
   {
-    bookingId: text('BookingID').primaryKey(),
-    userId: integer('UserID')
+    bookingId: varchar('BookingID', { length: 36 }).primaryKey(),
+    userId: int('UserID')
       .notNull()
       .references(() => users.userId, { onDelete: 'cascade' }),
-    showtimeId: integer('ShowtimeID')
+    showtimeId: int('ShowtimeID')
       .notNull()
       .references(() => showtimes.showtimeId, { onDelete: 'cascade' }),
-    bookingDate: text('bookingDate')
+    bookingDate: timestamp('bookingDate', { mode: 'string' })
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    taxAmount: numeric('taxAmount').notNull(),
-    totalAmount: numeric('totalAmount').notNull(),
-    bookingStatus: text('bookingStatus', { length: 20 })
+      .defaultNow(),
+    taxAmount: decimal('taxAmount', { precision: 12, scale: 2 }).notNull(),
+    totalAmount: decimal('totalAmount', { precision: 12, scale: 2 }).notNull(),
+    bookingStatus: varchar('bookingStatus', { length: 20 })
       .notNull()
       .default('Pending'),
   },

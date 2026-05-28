@@ -1,21 +1,27 @@
-import { sql } from 'drizzle-orm';
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import {
+  index,
+  int,
+  mysqlTable,
+  text,
+  timestamp,
+  varchar,
+} from 'drizzle-orm/mysql-core';
 import { admins } from './admin.schema';
 
-export const adminLogs = sqliteTable(
+export const adminLogs = mysqlTable(
   'AdminLog',
   {
-    logId: integer('LogID').primaryKey({ autoIncrement: true }),
-    adminId: integer('AdminID')
+    logId: int('LogID').primaryKey().autoincrement(),
+    adminId: int('AdminID')
       .notNull()
       .references(() => admins.adminId, { onDelete: 'cascade' }),
-    action: text('action', { length: 100 }).notNull(),
-    entity: text('entity', { length: 50 }).notNull(),
-    entityId: text('entityId').notNull(),
+    action: varchar('action', { length: 100 }).notNull(),
+    entity: varchar('entity', { length: 50 }).notNull(),
+    entityId: varchar('entityId', { length: 100 }).notNull(),
     details: text('details'),
-    createdAt: text('createdAt')
+    createdAt: timestamp('createdAt', { mode: 'string' })
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .defaultNow(),
   },
   (table) => [index('admin_log_admin_id_idx').on(table.adminId)],
 );

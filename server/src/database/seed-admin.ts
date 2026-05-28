@@ -1,66 +1,53 @@
-import Database from 'better-sqlite3';
 import * as argon2 from 'argon2';
 import { eq } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { mkdirSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { drizzle } from 'drizzle-orm/mysql2';
+import { createPool } from 'mysql2/promise';
 import { admins } from './schema';
 
-// Database path
-const dbPath = resolve(process.env.DATABASE_URL ?? './data/cinemate.db');
-
-// Admin credentials
+const databaseUrl =
+  process.env.DATABASE_URL ??
+  'mysql://cinemate:cinemate@localhost:3306/cinemate';
 const username = process.env.ADMIN_USERNAME ?? 'admin';
 const email = process.env.ADMIN_EMAIL ?? 'admin@cinemate.local';
 const password = process.env.ADMIN_PASSWORD ?? 'Admin@123456';
-
-// Force update flag
 const forceUpdate = process.env.ADMIN_SEED_FORCE_UPDATE === 'true';
 
-mkdirSync(dirname(dbPath), { recursive: true });
-
 async function main() {
-  // new sqlite db connection
-  const sqlite = new Database(dbPath);
-  sqlite.pragma('foreign_keys = ON');
+  const pool = createPool({
+    uri: databaseUrl,
+    waitForConnections: true,
+    connectionLimit: 1,
+  });
+  const db = drizzle(pool, { mode: 'default' });
 
-  // new drizzle instance
-  const db = drizzle(sqlite);
+  try {
+    const [existingAdmin] = await db
+      .select()
+      .from(admins)
+      .where(eq(admins.email, email));
 
-  // check if admin exists
-  const existingAdmin = db
-    .select()
-    .from(admins)
-    .where(eq(admins.email, email))
-    .get();
-
-  // if admin doesn't exist, seed it
-  if (!existingAdmin) {
-    db.insert(admins)
-      .values({
+    if (!existingAdmin) {
+      await db.insert(admins).values({
         username,
         email,
         password: await argon2.hash(password),
-      })
-      .run();
-
-    console.log(`Seeded admin account: ${email}`);
-  // else if forceUpdate is true, update admin
-  } else if (forceUpdate) {
-    db.update(admins)
-      .set({
-        username,
-        password: await argon2.hash(password),
-      })
-      .where(eq(admins.email, email))
-      .run();
-
-    console.log(`Updated seeded admin account: ${email}`);
-  } else {
-    console.log(`Admin account already exists: ${email}`);
+      });
+      console.log(`Seeded admin account: ${email}`);
+    } else if (forceUpdate) {
+      await db
+        .update(admins)
+        .set({
+          username,
+          password: await argon2.hash(password),
+        })
+        .where(eq(admins.email, email));
+      console.log(`Updated seeded admin account: ${email}`);
+    } else {
+      console.log(`Admin account already exists: ${email}`);
+    }
+  } finally {
+    await pool.end();
   }
-
-  sqlite.close();
 }
 
 void main();

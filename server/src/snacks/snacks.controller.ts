@@ -34,27 +34,27 @@ export class SnacksController {
    * @desc: List public snacks
    * @route: /snacks
    * @param: QuerySnackDto
-   * @returns: SnackResponseDto[]
+   * @returns: Promise<SnackResponseDto[]>
    */
   @Get('snacks')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'List public snacks' })
   @ApiOkResponse({ type: [SnackResponseDto] })
-  findAll(@Query() query: QuerySnackDto): SnackResponseDto[] {
+  findAll(@Query() query: QuerySnackDto): Promise<SnackResponseDto[]> {
     return this.snacksService.findAll(query);
   }
 
   /* Admin Find All Snacks Controller
    * @desc: List all snacks for admin
    * @route: /admin/snacks
-   * @returns: SnackResponseDto[]
+   * @returns: Promise<SnackResponseDto[]>
    */
   @UseGuards(AdminJwtGuard)
   @Get('admin/snacks')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'List all snacks for admin' })
   @ApiOkResponse({ type: [SnackResponseDto] })
-  adminFindAll(): SnackResponseDto[] {
+  adminFindAll(): Promise<SnackResponseDto[]> {
     return this.snacksService.findAll({});
   }
 
@@ -62,14 +62,14 @@ export class SnacksController {
    * @desc: Create a snack
    * @route: /admin/snacks
    * @param: CreateSnackDto
-   * @returns: SnackResponseDto
+   * @returns: Promise<SnackResponseDto>
    */
   @UseGuards(AdminJwtGuard)
   @Post('admin/snacks')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create snack' })
   @ApiCreatedResponse({ type: SnackResponseDto })
-  create(@Body() dto: CreateSnackDto): SnackResponseDto {
+  create(@Body() dto: CreateSnackDto): Promise<SnackResponseDto> {
     return this.snacksService.create(dto);
   }
 
@@ -77,7 +77,7 @@ export class SnacksController {
    * @desc: Update a snack
    * @route: /admin/snacks/:snackId
    * @param: snackId, UpdateSnackDto
-   * @returns: SnackResponseDto
+   * @returns: Promise<SnackResponseDto>
    */
   @UseGuards(AdminJwtGuard)
   @Put('admin/snacks/:snackId')
@@ -87,7 +87,7 @@ export class SnacksController {
   update(
     @Param('snackId', ParseIntPipe) snackId: number,
     @Body() dto: UpdateSnackDto,
-  ): SnackResponseDto {
+  ): Promise<SnackResponseDto> {
     return this.snacksService.update(snackId, dto);
   }
 
@@ -95,14 +95,16 @@ export class SnacksController {
    * @desc: Delete a snack
    * @route: /admin/snacks/:snackId
    * @param: snackId
-   * @returns: SnackResponseDto
+   * @returns: Promise<SnackResponseDto>
    */
   @UseGuards(AdminJwtGuard)
   @Delete('admin/snacks/:snackId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete snack' })
   @ApiOkResponse({ type: SnackResponseDto })
-  remove(@Param('snackId', ParseIntPipe) snackId: number): SnackResponseDto {
+  remove(
+    @Param('snackId', ParseIntPipe) snackId: number,
+  ): Promise<SnackResponseDto> {
     return this.snacksService.remove(snackId);
   }
 }

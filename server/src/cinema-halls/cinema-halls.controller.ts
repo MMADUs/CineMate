@@ -32,13 +32,13 @@ export class CinemaHallsController {
   /* Find All Halls Controller
    * @desc: List all cinema halls
    * @route: /admin/halls
-   * @returns: HallResponseDto[]
+   * @returns: Promise<HallResponseDto[]>
    */
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'List cinema halls' })
   @ApiOkResponse({ type: [HallResponseDto] })
-  findAll(): HallResponseDto[] {
+  findAll(): Promise<HallResponseDto[]> {
     return this.cinemaHallsService.findAll();
   }
 
@@ -46,13 +46,13 @@ export class CinemaHallsController {
    * @desc: Create a cinema hall and generate seats
    * @route: /admin/halls
    * @param: CreateHallDto
-   * @returns: HallResponseDto
+   * @returns: Promise<HallResponseDto>
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create cinema hall and generate seats' })
   @ApiCreatedResponse({ type: HallResponseDto })
-  create(@Body() dto: CreateHallDto): HallResponseDto {
+  create(@Body() dto: CreateHallDto): Promise<HallResponseDto> {
     return this.cinemaHallsService.create(dto);
   }
 
@@ -60,7 +60,7 @@ export class CinemaHallsController {
    * @desc: Update a cinema hall
    * @route: /admin/halls/:hallId
    * @param: hallId, UpdateHallDto
-   * @returns: HallResponseDto
+   * @returns: Promise<HallResponseDto>
    */
   @Put(':hallId')
   @HttpCode(HttpStatus.OK)
@@ -69,7 +69,7 @@ export class CinemaHallsController {
   update(
     @Param('hallId', ParseIntPipe) hallId: number,
     @Body() dto: UpdateHallDto,
-  ): HallResponseDto {
+  ): Promise<HallResponseDto> {
     return this.cinemaHallsService.update(hallId, dto);
   }
 
@@ -77,13 +77,15 @@ export class CinemaHallsController {
    * @desc: Delete a cinema hall
    * @route: /admin/halls/:hallId
    * @param: hallId
-   * @returns: HallResponseDto
+   * @returns: Promise<HallResponseDto>
    */
   @Delete(':hallId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete cinema hall' })
   @ApiOkResponse({ type: HallResponseDto })
-  remove(@Param('hallId', ParseIntPipe) hallId: number): HallResponseDto {
+  remove(
+    @Param('hallId', ParseIntPipe) hallId: number,
+  ): Promise<HallResponseDto> {
     return this.cinemaHallsService.remove(hallId);
   }
 }

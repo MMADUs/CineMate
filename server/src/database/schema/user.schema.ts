@@ -1,14 +1,11 @@
-import { sql } from 'drizzle-orm';
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { int, mysqlTable, timestamp, varchar } from 'drizzle-orm/mysql-core';
 
-export const users = sqliteTable('User', {
-  userId: integer('UserID').primaryKey({ autoIncrement: true }),
-  fullName: text('FullName', { length: 50 }).notNull(),
-  email: text('Email', { length: 100 }).notNull().unique(),
-  phoneNum: text('PhoneNum', { length: 20 }).notNull(),
-  password: text('Password', { length: 255 }).notNull(),
-  refreshTokenHash: text('refreshTokenHash'),
-  createdAt: text('createdAt')
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+export const users = mysqlTable('User', {
+  userId: int('UserID').primaryKey().autoincrement(),
+  fullName: varchar('FullName', { length: 50 }).notNull(),
+  email: varchar('Email', { length: 100 }).notNull().unique(),
+  phoneNum: varchar('PhoneNum', { length: 20 }).notNull(),
+  password: varchar('Password', { length: 255 }).notNull(),
+  refreshTokenHash: varchar('refreshTokenHash', { length: 255 }),
+  createdAt: timestamp('createdAt', { mode: 'string' }).notNull().defaultNow(),
 });

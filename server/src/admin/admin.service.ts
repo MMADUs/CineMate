@@ -1,9 +1,14 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { desc, eq, sql } from 'drizzle-orm';
-import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { MySql2Database } from 'drizzle-orm/mysql2';
 import { Response } from 'express';
 import { BookingResponseDto } from '../bookings/dto/booking-response.dto';
 import { AuthAdmin } from '../common/interfaces/auth-user.interface';
@@ -35,7 +40,7 @@ import {
 export class AdminService {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: BetterSQLite3Database<typeof schema>,
+    private readonly db: MySql2Database<typeof schema>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
@@ -46,11 +51,10 @@ export class AdminService {
    * @returns: Promise<AdminResponseDto>
    */
   async login(dto: AdminLoginDto, res: Response): Promise<AdminResponseDto> {
-    const admin = this.db
+    const [admin] = await this.db
       .select()
       .from(admins)
-      .where(eq(admins.email, dto.email))
-      .get();
+      .where(eq(admins.email, dto.email));
 
     // check if admin exists and password is correct
     if (!admin || !(await argon2.verify(admin.password, dto.password)))
@@ -60,11 +64,10 @@ export class AdminService {
     const tokens = await this.issueTokens(admin.adminId, admin.email);
 
     // hash refresh token and update admin
-    this.db
+    await this.db
       .update(admins)
       .set({ refreshTokenHash: await argon2.hash(tokens.refreshToken) })
-      .where(eq(admins.adminId, admin.adminId))
-      .run();
+      .where(eq(admins.adminId, admin.adminId));
 
     // set cookies
     this.setCookies(res, tokens.accessToken, tokens.refreshToken);
@@ -81,11 +84,10 @@ export class AdminService {
     admin: AuthAdmin,
     res: Response,
   ): Promise<AdminRefreshResponseDto> {
-    const found = this.db
+    const [found] = await this.db
       .select()
       .from(admins)
-      .where(eq(admins.adminId, admin.adminId))
-      .get();
+      .where(eq(admins.adminId, admin.adminId));
 
     // check if admin exists and refresh token is valid
     if (
@@ -100,11 +102,10 @@ export class AdminService {
     const tokens = await this.issueTokens(found.adminId, found.email);
 
     // update hash refresh token
-    this.db
+    await this.db
       .update(admins)
       .set({ refreshTokenHash: await argon2.hash(tokens.refreshToken) })
-      .where(eq(admins.adminId, found.adminId))
-      .run();
+      .where(eq(admins.adminId, found.adminId));
 
     // set new cookies
     this.setCookies(res, tokens.accessToken, tokens.refreshToken);
@@ -119,14 +120,16 @@ export class AdminService {
   /* Admin Logout Service
    * @desc: Clear admin refresh token hash and cookies
    * @param: AuthAdmin, Response
-   * @returns: AdminLogoutResponseDto
+   * @returns: Promise<AdminLogoutResponseDto>
    */
-  logout(admin: AuthAdmin, res: Response): AdminLogoutResponseDto {
-    this.db
+  async logout(
+    admin: AuthAdmin,
+    res: Response,
+  ): Promise<AdminLogoutResponseDto> {
+    await this.db
       .update(admins)
       .set({ refreshTokenHash: null })
-      .where(eq(admins.adminId, admin.adminId))
-      .run();
+      .where(eq(admins.adminId, admin.adminId));
 
     // clear cookies
     this.clearCookies(res);
@@ -137,14 +140,13 @@ export class AdminService {
   /* Admin Profile Service
    * @desc: Get authenticated admin profile
    * @param: adminId
-   * @returns: AdminResponseDto
+   * @returns: Promise<AdminResponseDto>
    */
-  profile(adminId: number): AdminResponseDto {
-    const admin = this.db
+  async profile(adminId: number): Promise<AdminResponseDto> {
+    const [admin] = await this.db
       .select()
       .from(admins)
-      .where(eq(admins.adminId, adminId))
-      .get();
+      .where(eq(admins.adminId, adminId));
 
     // check if admin exists
     if (!admin) throw new UnauthorizedException();
@@ -155,41 +157,45 @@ export class AdminService {
   /* Dashboard Metrics Service
    * @desc: Get admin dashboard KPI metrics
    * @param: none
-   * @returns: DashboardMetricsResponseDto
+   * @returns: Promise<DashboardMetricsResponseDto>
    */
-  metrics(): DashboardMetricsResponseDto {
+  async metrics(): Promise<DashboardMetricsResponseDto> {
     // get total revenue from completed payments
     const totalRevenue =
-      this.db
-        .select({ value: sql<number>`coalesce(sum(${payments.amount}), 0)` })
-        .from(payments)
-        .where(eq(payments.paymentStatus, 'Completed'))
-        .get()?.value ?? 0;
+      (
+        await this.db
+          .select({ value: sql<number>`coalesce(sum(${payments.amount}), 0)` })
+          .from(payments)
+          .where(eq(payments.paymentStatus, 'Completed'))
+      )[0]?.value ?? 0;
 
     // get total tickets sold
     const ticketsSold =
-      this.db
-        .select({ value: sql<number>`count(*)` })
-        .from(bookingSeats)
-        .innerJoin(bookings, eq(bookingSeats.bookingId, bookings.bookingId))
-        .where(sql`${bookings.bookingStatus} in ('Confirmed', 'Completed')`)
-        .get()?.value ?? 0;
+      (
+        await this.db
+          .select({ value: sql<number>`count(*)` })
+          .from(bookingSeats)
+          .innerJoin(bookings, eq(bookingSeats.bookingId, bookings.bookingId))
+          .where(sql`${bookings.bookingStatus} in ('Confirmed', 'Completed')`)
+      )[0]?.value ?? 0;
 
     // get pending orders
     const pendingOrders =
-      this.db
-        .select({ value: sql<number>`count(*)` })
-        .from(bookings)
-        .where(eq(bookings.bookingStatus, 'Pending'))
-        .get()?.value ?? 0;
+      (
+        await this.db
+          .select({ value: sql<number>`count(*)` })
+          .from(bookings)
+          .where(eq(bookings.bookingStatus, 'Pending'))
+      )[0]?.value ?? 0;
 
     // get now playing movies
     const activeMoviesCount =
-      this.db
-        .select({ value: sql<number>`count(*)` })
-        .from(movies)
-        .where(eq(movies.status, 'NOW_PLAYING'))
-        .get()?.value ?? 0;
+      (
+        await this.db
+          .select({ value: sql<number>`count(*)` })
+          .from(movies)
+          .where(eq(movies.status, 'NOW_PLAYING'))
+      )[0]?.value ?? 0;
 
     return {
       totalRevenue: Number(totalRevenue),
@@ -202,18 +208,17 @@ export class AdminService {
   /* Dashboard Chart Service
    * @desc: Get revenue chart data grouped by payment date
    * @param: none
-   * @returns: DashboardChartPointResponseDto[]
+   * @returns: Promise<DashboardChartPointResponseDto[]>
    */
-  chart(): DashboardChartPointResponseDto[] {
-    const rows = this.db
+  async chart(): Promise<DashboardChartPointResponseDto[]> {
+    const rows = await this.db
       .select({
         date: sql<string>`date(${payments.paymentDate})`,
         total: sql<number>`sum(${payments.amount})`,
       })
       .from(payments)
       .where(eq(payments.paymentStatus, 'Completed'))
-      .groupBy(sql`date(${payments.paymentDate})`)
-      .all();
+      .groupBy(sql`date(${payments.paymentDate})`);
 
     return rows.map((row) => ({ name: row.date, total: Number(row.total) }));
   }
@@ -221,75 +226,104 @@ export class AdminService {
   /* Transactions Service
    * @desc: List bookings, F&B orders, and payments
    * @param: none
-   * @returns: AdminTransactionsResponseDto
+   * @returns: Promise<AdminTransactionsResponseDto>
    */
-  transactions(): AdminTransactionsResponseDto {
+  async transactions(): Promise<AdminTransactionsResponseDto> {
     return {
-      bookings: this.db.select().from(bookings).all(),
-      fnbOrders: this.db.select().from(fnbOrders).all(),
-      payments: this.db.select().from(payments).all(),
+      bookings: await this.db.select().from(bookings),
+      fnbOrders: await this.db.select().from(fnbOrders),
+      payments: await this.db.select().from(payments),
     };
   }
 
   /* Cancel Booking Service
    * @desc: Cancel a booking transaction
    * @param: bookingId
-   * @returns: BookingResponseDto
+   * @returns: Promise<BookingResponseDto>
    */
-  cancelBooking(bookingId: string): BookingResponseDto {
-    const booking = this.db
+  async cancelBooking(bookingId: string): Promise<BookingResponseDto> {
+    await this.db
       .update(bookings)
       .set({ bookingStatus: 'Cancelled' })
-      .where(eq(bookings.bookingId, bookingId))
-      .returning()
-      .get();
+      .where(eq(bookings.bookingId, bookingId));
 
-    return booking;
+    return this.findBooking(bookingId);
   }
 
   /* Verify Booking Service
    * @desc: Mark a booking transaction as completed
    * @param: bookingId
-   * @returns: BookingResponseDto
+   * @returns: Promise<BookingResponseDto>
    */
-  verifyBooking(bookingId: string): BookingResponseDto {
-    const booking = this.db
+  async verifyBooking(bookingId: string): Promise<BookingResponseDto> {
+    await this.db
       .update(bookings)
       .set({ bookingStatus: 'Completed' })
-      .where(eq(bookings.bookingId, bookingId))
-      .returning()
-      .get();
+      .where(eq(bookings.bookingId, bookingId));
 
-    return booking;
+    return this.findBooking(bookingId);
   }
 
   /* Cancel FNB Order Service
    * @desc: Cancel an F&B order transaction
    * @param: fnbOrderId
-   * @returns: Omit<FnbOrderResponseDto, 'items'>
+   * @returns: Promise<Omit<FnbOrderResponseDto, 'items'>>
    */
-  cancelFnbOrder(fnbOrderId: string): Omit<FnbOrderResponseDto, 'items'> {
-    const order = this.db
+  async cancelFnbOrder(
+    fnbOrderId: string,
+  ): Promise<Omit<FnbOrderResponseDto, 'items'>> {
+    await this.db
       .update(fnbOrders)
       .set({ orderStatus: 'Cancelled' })
-      .where(eq(fnbOrders.fnbOrderId, fnbOrderId))
-      .returning()
-      .get();
+      .where(eq(fnbOrders.fnbOrderId, fnbOrderId));
 
-    return order;
+    return this.findFnbOrder(fnbOrderId);
   }
 
   /* Admin Logs Service
    * @desc: List admin activity logs
    * @param: none
-   * @returns: AdminLogResponseDto[]
+   * @returns: Promise<AdminLogResponseDto[]>
    */
-  logs(): AdminLogResponseDto[] {
-    return this.db
+  async logs(): Promise<AdminLogResponseDto[]> {
+    return await this.db
       .select()
       .from(adminLogs)
-      .orderBy(desc(adminLogs.createdAt))
-      .all();
+      .orderBy(desc(adminLogs.createdAt));
+  }
+
+  /* Find Booking Helper
+   * @desc: Get booking by ID or throw if missing
+   * @param: bookingId
+   * @returns: Promise<BookingResponseDto>
+   */
+  private async findBooking(bookingId: string): Promise<BookingResponseDto> {
+    const [booking] = await this.db
+      .select()
+      .from(bookings)
+      .where(eq(bookings.bookingId, bookingId));
+
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    return booking;
+  }
+
+  /* Find FNB Order Helper
+   * @desc: Get F&B order by ID or throw if missing
+   * @param: fnbOrderId
+   * @returns: Promise<Omit<FnbOrderResponseDto, 'items'>>
+   */
+  private async findFnbOrder(
+    fnbOrderId: string,
+  ): Promise<Omit<FnbOrderResponseDto, 'items'>> {
+    const [order] = await this.db
+      .select()
+      .from(fnbOrders)
+      .where(eq(fnbOrders.fnbOrderId, fnbOrderId));
+
+    if (!order) throw new NotFoundException('FNB order not found');
+
+    return order;
   }
 
   /* Issue Admin Tokens Helper

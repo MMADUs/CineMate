@@ -20,7 +20,7 @@ export class AuthUserResponseDto {
 export class AuthMeResponseDto {
   @ApiProperty({ example: 1 })
   userId: number;
-  
+
   @ApiProperty({ example: 'jane@example.com' })
   email: string;
 }

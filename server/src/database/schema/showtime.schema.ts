@@ -1,26 +1,26 @@
 import {
+  decimal,
   index,
-  integer,
-  numeric,
-  sqliteTable,
-  text,
-} from 'drizzle-orm/sqlite-core';
+  int,
+  mysqlTable,
+  varchar,
+} from 'drizzle-orm/mysql-core';
 import { cinemaHalls } from './cinema-hall.schema';
 import { movies } from './movie.schema';
 
-export const showtimes = sqliteTable(
+export const showtimes = mysqlTable(
   'Showtime',
   {
-    showtimeId: integer('ShowtimeID').primaryKey({ autoIncrement: true }),
-    movieId: integer('MovieID')
+    showtimeId: int('ShowtimeID').primaryKey().autoincrement(),
+    movieId: int('MovieID')
       .notNull()
       .references(() => movies.movieId, { onDelete: 'cascade' }),
-    hallId: integer('HallID')
+    hallId: int('HallID')
       .notNull()
       .references(() => cinemaHalls.hallId, { onDelete: 'cascade' }),
-    showDate: text('showDate').notNull(),
-    showTime: text('showTime').notNull(),
-    price: numeric('price').notNull(),
+    showDate: varchar('showDate', { length: 10 }).notNull(),
+    showTime: varchar('showTime', { length: 5 }).notNull(),
+    price: decimal('price', { precision: 12, scale: 2 }).notNull(),
   },
   (table) => [
     index('showtime_movie_id_idx').on(table.movieId),

@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { and, eq, isNotNull } from 'drizzle-orm';
-import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { MySql2Database } from 'drizzle-orm/mysql2';
 import { randomUUID } from 'node:crypto';
 import { toNumber } from '../common/utils/money';
 import { DRIZZLE } from '../database/database.constants';
@@ -48,7 +48,7 @@ interface CheckoutTarget {
 @Injectable()
 export class PaymentsService {
   constructor(
-    @Inject(DRIZZLE) private readonly db: BetterSQLite3Database<typeof schema>,
+    @Inject(DRIZZLE) private readonly db: MySql2Database<typeof schema>,
     private readonly configService: ConfigService,
   ) {}
 
@@ -70,15 +70,14 @@ export class PaymentsService {
       );
     }
 
-    const user = this.db
+    const [user] = await this.db
       .select()
       .from(users)
-      .where(eq(users.userId, userId))
-      .get();
+      .where(eq(users.userId, userId));
     if (!user) throw new NotFoundException('User not found');
 
-    const target = this.resolveCheckoutTarget(userId, dto);
-    const existing = this.findExistingPendingPayment(dto);
+    const target = await this.resolveCheckoutTarget(userId, dto);
+    const existing = await this.findExistingPendingPayment(dto);
     if (existing?.invoiceUrl) return existing;
     if (existing)
       throw new BadRequestException('Payment already exists for this order');
@@ -95,7 +94,7 @@ export class PaymentsService {
       },
     });
 
-    const payment = this.db
+    const [insertedPayment] = await this.db
       .insert(payments)
       .values({
         bookingId: target.bookingId,
@@ -110,8 +109,12 @@ export class PaymentsService {
         paymentStatus: 'Pending',
         expiresAt: invoice.expiry_date,
       })
-      .returning()
-      .get();
+      .$returningId();
+
+    const [payment] = await this.db
+      .select()
+      .from(payments)
+      .where(eq(payments.paymentId, insertedPayment.paymentId));
 
     return payment as CreatePaymentResponseDto;
   }
@@ -121,21 +124,20 @@ export class PaymentsService {
    * @param: callbackToken, XenditInvoiceWebhookDto
    * @returns: PaymentWebhookResponseDto
    */
-  handleXenditNotification(
+  async handleXenditNotification(
     callbackToken: string | undefined,
     dto: XenditInvoiceWebhookDto,
-  ): PaymentWebhookResponseDto {
+  ): Promise<PaymentWebhookResponseDto> {
     this.verifyCallbackToken(callbackToken);
 
-    const payment = this.db
+    const [payment] = await this.db
       .select()
       .from(payments)
-      .where(eq(payments.externalId, dto.external_id))
-      .get();
+      .where(eq(payments.externalId, dto.external_id));
     if (!payment) throw new NotFoundException('Payment not found');
 
     const providerEventId = `${dto.id}:${dto.status}:${dto.paid_at ?? ''}`;
-    const existingEvent = this.db
+    const [existingEvent] = await this.db
       .select()
       .from(paymentWebhookEvents)
       .where(
@@ -143,25 +145,23 @@ export class PaymentsService {
           eq(paymentWebhookEvents.provider, 'XENDIT'),
           eq(paymentWebhookEvents.providerEventId, providerEventId),
         ),
-      )
-      .get();
+      );
     if (existingEvent) {
       return { received: true, paymentStatus: payment.paymentStatus };
     }
 
     const nextStatus = this.mapXenditStatus(dto.status);
-    this.db.transaction((tx) => {
-      tx.insert(paymentWebhookEvents)
-        .values({
-          paymentId: payment.paymentId,
-          provider: 'XENDIT',
-          providerEventId,
-          eventType: dto.status,
-          payload: JSON.stringify(dto),
-        })
-        .run();
+    await this.db.transaction(async (tx) => {
+      await tx.insert(paymentWebhookEvents).values({
+        paymentId: payment.paymentId,
+        provider: 'XENDIT',
+        providerEventId,
+        eventType: dto.status,
+        payload: JSON.stringify(dto),
+      });
 
-      tx.update(payments)
+      await tx
+        .update(payments)
         .set({
           providerPaymentId: dto.id,
           paymentMethod:
@@ -170,36 +170,35 @@ export class PaymentsService {
           paidAt: dto.paid_at ?? payment.paidAt,
           failureReason: dto.failure_reason ?? payment.failureReason,
         })
-        .where(eq(payments.paymentId, payment.paymentId))
-        .run();
+        .where(eq(payments.paymentId, payment.paymentId));
 
       if (nextStatus === 'Completed') {
         if (payment.bookingId) {
-          tx.update(bookings)
+          await tx
+            .update(bookings)
             .set({ bookingStatus: 'Confirmed' })
-            .where(eq(bookings.bookingId, payment.bookingId))
-            .run();
+            .where(eq(bookings.bookingId, payment.bookingId));
         }
         if (payment.fnbOrderId) {
-          tx.update(fnbOrders)
+          await tx
+            .update(fnbOrders)
             .set({ orderStatus: 'Confirmed' })
-            .where(eq(fnbOrders.fnbOrderId, payment.fnbOrderId))
-            .run();
+            .where(eq(fnbOrders.fnbOrderId, payment.fnbOrderId));
         }
       }
 
       if (nextStatus === 'Expired' || nextStatus === 'Failed') {
         if (payment.bookingId) {
-          tx.update(bookings)
+          await tx
+            .update(bookings)
             .set({ bookingStatus: 'Cancelled' })
-            .where(eq(bookings.bookingId, payment.bookingId))
-            .run();
+            .where(eq(bookings.bookingId, payment.bookingId));
         }
         if (payment.fnbOrderId) {
-          tx.update(fnbOrders)
+          await tx
+            .update(fnbOrders)
             .set({ orderStatus: 'Cancelled' })
-            .where(eq(fnbOrders.fnbOrderId, payment.fnbOrderId))
-            .run();
+            .where(eq(fnbOrders.fnbOrderId, payment.fnbOrderId));
         }
       }
     });
@@ -212,16 +211,15 @@ export class PaymentsService {
    * @param: userId, CreatePaymentDto
    * @returns: CheckoutTarget
    */
-  private resolveCheckoutTarget(
+  private async resolveCheckoutTarget(
     userId: number,
     dto: CreatePaymentDto,
-  ): CheckoutTarget {
+  ): Promise<CheckoutTarget> {
     if (dto.bookingId) {
-      const booking = this.db
+      const [booking] = await this.db
         .select()
         .from(bookings)
-        .where(eq(bookings.bookingId, dto.bookingId))
-        .get();
+        .where(eq(bookings.bookingId, dto.bookingId));
       if (!booking) throw new NotFoundException('Booking not found');
       if (booking.userId !== userId)
         throw new ForbiddenException('Booking does not belong to this user');
@@ -234,11 +232,10 @@ export class PaymentsService {
       };
     }
 
-    const order = this.db
+    const [order] = await this.db
       .select()
       .from(fnbOrders)
-      .where(eq(fnbOrders.fnbOrderId, dto.fnbOrderId!))
-      .get();
+      .where(eq(fnbOrders.fnbOrderId, dto.fnbOrderId!));
     if (!order) throw new NotFoundException('FNB order not found');
     if (order.userId !== userId)
       throw new ForbiddenException('FNB order does not belong to this user');
@@ -256,35 +253,31 @@ export class PaymentsService {
    * @param: CreatePaymentDto
    * @returns: CreatePaymentResponseDto | null
    */
-  private findExistingPendingPayment(
+  private async findExistingPendingPayment(
     dto: CreatePaymentDto,
-  ): CreatePaymentResponseDto | null {
+  ): Promise<CreatePaymentResponseDto | null> {
     if (dto.bookingId) {
-      const payment =
-        this.db
-          .select()
-          .from(payments)
-          .where(
-            and(
-              eq(payments.bookingId, dto.bookingId),
-              isNotNull(payments.invoiceUrl),
-            ),
-          )
-          .get() ?? null;
-      return payment?.invoiceUrl ? (payment as CreatePaymentResponseDto) : null;
-    }
-
-    const payment =
-      this.db
+      const [payment] = await this.db
         .select()
         .from(payments)
         .where(
           and(
-            eq(payments.fnbOrderId, dto.fnbOrderId!),
+            eq(payments.bookingId, dto.bookingId),
             isNotNull(payments.invoiceUrl),
           ),
-        )
-        .get() ?? null;
+        );
+      return payment?.invoiceUrl ? (payment as CreatePaymentResponseDto) : null;
+    }
+
+    const [payment] = await this.db
+      .select()
+      .from(payments)
+      .where(
+        and(
+          eq(payments.fnbOrderId, dto.fnbOrderId!),
+          isNotNull(payments.invoiceUrl),
+        ),
+      );
     return payment?.invoiceUrl ? (payment as CreatePaymentResponseDto) : null;
   }
 

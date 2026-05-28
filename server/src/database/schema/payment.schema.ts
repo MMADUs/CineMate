@@ -1,39 +1,40 @@
-import { sql } from 'drizzle-orm';
 import {
+  decimal,
   index,
-  integer,
-  numeric,
-  sqliteTable,
+  int,
+  mysqlTable,
   text,
-} from 'drizzle-orm/sqlite-core';
+  timestamp,
+  varchar,
+} from 'drizzle-orm/mysql-core';
 import { bookings } from './booking.schema';
 import { fnbOrders } from './fnb-order.schema';
 
-export const payments = sqliteTable(
+export const payments = mysqlTable(
   'Payment',
   {
-    paymentId: integer('PaymentID').primaryKey({ autoIncrement: true }),
-    bookingId: text('BookingID')
+    paymentId: int('PaymentID').primaryKey().autoincrement(),
+    bookingId: varchar('BookingID', { length: 36 })
       .unique()
       .references(() => bookings.bookingId, { onDelete: 'cascade' }),
-    fnbOrderId: text('FNBOrderID')
+    fnbOrderId: varchar('FNBOrderID', { length: 36 })
       .unique()
       .references(() => fnbOrders.fnbOrderId, { onDelete: 'cascade' }),
-    provider: text('provider', { length: 50 }).notNull().default('XENDIT'),
-    providerPaymentId: text('providerPaymentId', { length: 100 }),
-    externalId: text('externalId', { length: 100 }).notNull().unique(),
+    provider: varchar('provider', { length: 50 }).notNull().default('XENDIT'),
+    providerPaymentId: varchar('providerPaymentId', { length: 100 }),
+    externalId: varchar('externalId', { length: 100 }).notNull().unique(),
     invoiceUrl: text('invoiceUrl'),
-    paymentMethod: text('paymentMethod', { length: 100 }).notNull(),
-    amount: numeric('amount').notNull(),
-    currency: text('currency', { length: 3 }).notNull().default('IDR'),
-    paymentDate: text('paymentDate')
+    paymentMethod: varchar('paymentMethod', { length: 100 }).notNull(),
+    amount: decimal('amount', { precision: 12, scale: 2 }).notNull(),
+    currency: varchar('currency', { length: 3 }).notNull().default('IDR'),
+    paymentDate: timestamp('paymentDate', { mode: 'string' })
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    paymentStatus: text('paymentStatus', { length: 20 })
+      .defaultNow(),
+    paymentStatus: varchar('paymentStatus', { length: 20 })
       .notNull()
       .default('Pending'),
-    paidAt: text('paidAt'),
-    expiresAt: text('expiresAt'),
+    paidAt: varchar('paidAt', { length: 50 }),
+    expiresAt: varchar('expiresAt', { length: 50 }),
     failureReason: text('failureReason'),
   },
   (table) => [

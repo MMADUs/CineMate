@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, eq, ne } from 'drizzle-orm';
-import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { MySql2Database } from 'drizzle-orm/mysql2';
 import { DRIZZLE } from '../database/database.constants';
 import * as schema from '../database/schema';
 import {
@@ -22,7 +22,7 @@ import { UpdateShowtimeDto } from './dto/update-showtime.dto';
 export class ShowtimesService {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: BetterSQLite3Database<typeof schema>,
+    private readonly db: MySql2Database<typeof schema>,
   ) {}
 
   /* Find All Showtimes Service
@@ -30,7 +30,7 @@ export class ShowtimesService {
    * @param: QueryShowtimeDto
    * @returns: ShowtimeResponseDto[]
    */
-  findAll(query: QueryShowtimeDto = {}): ShowtimeResponseDto[] {
+  async findAll(query: QueryShowtimeDto = {}): Promise<ShowtimeResponseDto[]> {
     // get query filters
     const filters = [
       query.movieId ? eq(showtimes.movieId, query.movieId) : undefined,
@@ -39,12 +39,11 @@ export class ShowtimesService {
 
     // apply filters
     return filters.length
-      ? this.db
+      ? await this.db
           .select()
           .from(showtimes)
           .where(and(...filters))
-          .all()
-      : this.db.select().from(showtimes).all();
+      : await this.db.select().from(showtimes);
   }
 
   /* Create Showtime Service
@@ -52,14 +51,13 @@ export class ShowtimesService {
    * @param: CreateShowtimeDto
    * @returns: ShowtimeResponseDto
    */
-  create(dto: CreateShowtimeDto): ShowtimeResponseDto {
-    const showtime = this.db
+  async create(dto: CreateShowtimeDto): Promise<ShowtimeResponseDto> {
+    const [insertedShowtime] = await this.db
       .insert(showtimes)
       .values({ ...dto, price: String(dto.price) })
-      .returning()
-      .get();
+      .$returningId();
 
-    return showtime;
+    return this.findOne(insertedShowtime.showtimeId);
   }
 
   /* Update Showtime Service
@@ -67,21 +65,20 @@ export class ShowtimesService {
    * @param: showtimeId, UpdateShowtimeDto
    * @returns: ShowtimeResponseDto
    */
-  update(showtimeId: number, dto: UpdateShowtimeDto): ShowtimeResponseDto {
-    const showtime = this.db
+  async update(
+    showtimeId: number,
+    dto: UpdateShowtimeDto,
+  ): Promise<ShowtimeResponseDto> {
+    await this.findOne(showtimeId);
+    await this.db
       .update(showtimes)
       .set({
         ...dto,
         price: dto.price === undefined ? undefined : String(dto.price),
       })
-      .where(eq(showtimes.showtimeId, showtimeId))
-      .returning()
-      .get();
+      .where(eq(showtimes.showtimeId, showtimeId));
 
-    // check if showtime doesn't exist
-    if (!showtime) throw new NotFoundException('Showtime not found');
-
-    return showtime;
+    return this.findOne(showtimeId);
   }
 
   /* Remove Showtime Service
@@ -89,15 +86,9 @@ export class ShowtimesService {
    * @param: showtimeId
    * @returns: ShowtimeResponseDto
    */
-  remove(showtimeId: number): ShowtimeResponseDto {
-    const showtime = this.db
-      .delete(showtimes)
-      .where(eq(showtimes.showtimeId, showtimeId))
-      .returning()
-      .get();
-
-    // check if showtime doesn't exist
-    if (!showtime) throw new NotFoundException('Showtime not found');
+  async remove(showtimeId: number): Promise<ShowtimeResponseDto> {
+    const showtime = await this.findOne(showtimeId);
+    await this.db.delete(showtimes).where(eq(showtimes.showtimeId, showtimeId));
 
     return showtime;
   }
@@ -107,36 +98,27 @@ export class ShowtimesService {
    * @param: showtimeId
    * @returns: ShowtimeSeatsResponseDto
    */
-  getSeats(showtimeId: number): ShowtimeSeatsResponseDto {
+  async getSeats(showtimeId: number): Promise<ShowtimeSeatsResponseDto> {
     // get showtime
-    const showtime = this.db
-      .select()
-      .from(showtimes)
-      .where(eq(showtimes.showtimeId, showtimeId))
-      .get();
-
-    // check if showtime doesn't exist
-    if (!showtime) throw new NotFoundException('Showtime not found');
+    const showtime = await this.findOne(showtimeId);
 
     // get cinema hall
-    const hall = this.db
+    const [hall] = await this.db
       .select()
       .from(cinemaHalls)
-      .where(eq(cinemaHalls.hallId, showtime.hallId))
-      .get();
+      .where(eq(cinemaHalls.hallId, showtime.hallId));
 
     // check if cinema hall doesn't exist
     if (!hall) throw new NotFoundException('Cinema hall not found');
 
     // get seats
-    const hallSeats = this.db
+    const hallSeats = await this.db
       .select()
       .from(seats)
-      .where(eq(seats.hallId, showtime.hallId))
-      .all();
+      .where(eq(seats.hallId, showtime.hallId));
 
     // get occupied seats
-    const occupied = this.db
+    const occupied = await this.db
       .select({ seatId: bookingSeats.seatId })
       .from(bookingSeats)
       .innerJoin(bookings, eq(bookingSeats.bookingId, bookings.bookingId))
@@ -145,8 +127,7 @@ export class ShowtimesService {
           eq(bookings.showtimeId, showtimeId),
           ne(bookings.bookingStatus, 'Cancelled'),
         ),
-      )
-      .all();
+      );
 
     // create occupied seats set
     const occupiedIds = new Set(occupied.map((seat) => seat.seatId));
@@ -159,5 +140,22 @@ export class ShowtimesService {
         isOccupied: occupiedIds.has(seat.seatId),
       })),
     };
+  }
+
+  /* Find One Showtime Helper
+   * @desc: Get showtime detail by ID
+   * @param: showtimeId
+   * @returns: ShowtimeResponseDto
+   */
+  private async findOne(showtimeId: number): Promise<ShowtimeResponseDto> {
+    const [showtime] = await this.db
+      .select()
+      .from(showtimes)
+      .where(eq(showtimes.showtimeId, showtimeId));
+
+    // check if showtime doesn't exist
+    if (!showtime) throw new NotFoundException('Showtime not found');
+
+    return showtime;
   }
 }

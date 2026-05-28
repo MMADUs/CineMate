@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { MySql2Database } from 'drizzle-orm/mysql2';
 import { eq } from 'drizzle-orm';
 import { Response } from 'express';
 import * as argon2 from 'argon2';
@@ -27,7 +27,7 @@ import {
 export class AuthService {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: BetterSQLite3Database<typeof schema>,
+    private readonly db: MySql2Database<typeof schema>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
@@ -42,21 +42,23 @@ export class AuthService {
     res: Response,
   ): Promise<AuthUserResponseDto> {
     // check if email already exists
-    const existing = this.db
+    const [existing] = await this.db
       .select()
       .from(users)
-      .where(eq(users.email, dto.email))
-      .get();
+      .where(eq(users.email, dto.email));
 
     // check if email already exist
     if (existing) throw new ConflictException('Email is already registered');
 
     // hash password and insert user
-    const user = this.db
+    const [insertedUser] = await this.db
       .insert(users)
       .values({ ...dto, password: await argon2.hash(dto.password) })
-      .returning()
-      .get();
+      .$returningId();
+    const [user] = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.userId, insertedUser.userId));
 
     // issue tokens
     const tokens = await this.issueTokens(user.userId, user.email);
@@ -77,11 +79,10 @@ export class AuthService {
    */
   async login(dto: LoginDto, res: Response): Promise<AuthUserResponseDto> {
     // check if user exists by email
-    const user = this.db
+    const [user] = await this.db
       .select()
       .from(users)
-      .where(eq(users.email, dto.email))
-      .get();
+      .where(eq(users.email, dto.email));
 
     // if email doesn't exist or password is incorrect
     if (!user || !(await argon2.verify(user.password, dto.password))) {
@@ -107,11 +108,10 @@ export class AuthService {
    */
   async refresh(user: AuthUser, res: Response): Promise<RefreshResponseDto> {
     // check if user exists by id
-    const found = this.db
+    const [found] = await this.db
       .select()
       .from(users)
-      .where(eq(users.userId, user.userId))
-      .get();
+      .where(eq(users.userId, user.userId));
 
     // check if user doesn't exist or refresh token is invalid
     if (
@@ -139,12 +139,11 @@ export class AuthService {
    * @param: AuthUser, Response
    * @returns: LogoutResponseDto
    */
-  logout(user: AuthUser, res: Response): LogoutResponseDto {
-    this.db
+  async logout(user: AuthUser, res: Response): Promise<LogoutResponseDto> {
+    await this.db
       .update(users)
       .set({ refreshTokenHash: null })
-      .where(eq(users.userId, user.userId))
-      .run();
+      .where(eq(users.userId, user.userId));
 
     this.clearCookies(res);
 
@@ -188,11 +187,10 @@ export class AuthService {
     refreshToken: string,
   ): Promise<void> {
     // update user's refresh token hash
-    this.db
+    await this.db
       .update(users)
       .set({ refreshTokenHash: await argon2.hash(refreshToken) })
-      .where(eq(users.userId, userId))
-      .run();
+      .where(eq(users.userId, userId));
   }
 
   /* Set Cookies Helper

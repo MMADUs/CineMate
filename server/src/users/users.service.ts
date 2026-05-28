@@ -1,7 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { eq } from 'drizzle-orm';
-import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { MySql2Database } from 'drizzle-orm/mysql2';
 import { DRIZZLE } from '../database/database.constants';
 import * as schema from '../database/schema';
 import { users } from '../database/schema';
@@ -12,7 +12,7 @@ import { UserProfileResponseDto } from './dto/user-response.dto';
 export class UsersService {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: BetterSQLite3Database<typeof schema>,
+    private readonly db: MySql2Database<typeof schema>,
   ) {}
 
   /* Get Profile Service
@@ -20,12 +20,11 @@ export class UsersService {
    * @param: userId
    * @returns: UserProfileResponseDto
    */
-  getProfile(userId: number): UserProfileResponseDto {
-    const user = this.db
+  async getProfile(userId: number): Promise<UserProfileResponseDto> {
+    const [user] = await this.db
       .select()
       .from(users)
-      .where(eq(users.userId, userId))
-      .get();
+      .where(eq(users.userId, userId));
 
     // check if user doesn't exist
     if (!user) throw new NotFoundException('User not found');
@@ -50,12 +49,12 @@ export class UsersService {
     };
 
     // update user
-    const user = this.db
-      .update(users)
-      .set(update)
-      .where(eq(users.userId, userId))
-      .returning()
-      .get();
+    await this.db.update(users).set(update).where(eq(users.userId, userId));
+
+    const [user] = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.userId, userId));
 
     // check if user doesn't exist
     if (!user) throw new NotFoundException('User not found');

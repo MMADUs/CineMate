@@ -74,7 +74,7 @@ export class AdminController {
    * @desc: Logout an admin
    * @route: /admin/auth/logout
    * @param: AuthAdmin, Response
-   * @returns: AdminLogoutResponseDto
+   * @returns: Promise<AdminLogoutResponseDto>
    */
   @UseGuards(AdminJwtGuard)
   @Post('auth/logout')
@@ -84,7 +84,7 @@ export class AdminController {
   logout(
     @CurrentAdmin() admin: AuthAdmin,
     @Res({ passthrough: true }) res: Response,
-  ): AdminLogoutResponseDto {
+  ): Promise<AdminLogoutResponseDto> {
     return this.adminService.logout(admin, res);
   }
 
@@ -92,39 +92,39 @@ export class AdminController {
    * @desc: Get authenticated admin profile
    * @route: /admin/profile
    * @param: AuthAdmin
-   * @returns: AdminResponseDto
+   * @returns: Promise<AdminResponseDto>
    */
   @UseGuards(AdminJwtGuard)
   @Get('profile')
   @ApiOperation({ summary: 'Get authenticated admin profile' })
   @ApiOkResponse({ type: AdminResponseDto })
-  profile(@CurrentAdmin() admin: AuthAdmin): AdminResponseDto {
+  profile(@CurrentAdmin() admin: AuthAdmin): Promise<AdminResponseDto> {
     return this.adminService.profile(admin.adminId);
   }
 
   /* Dashboard Metrics Controller
    * @desc: Get dashboard KPI metrics
    * @route: /admin/dashboard/metrics
-   * @returns: DashboardMetricsResponseDto
+   * @returns: Promise<DashboardMetricsResponseDto>
    */
   @UseGuards(AdminJwtGuard)
   @Get('dashboard/metrics')
   @ApiOperation({ summary: 'Get dashboard metrics' })
   @ApiOkResponse({ type: DashboardMetricsResponseDto })
-  metrics(): DashboardMetricsResponseDto {
+  metrics(): Promise<DashboardMetricsResponseDto> {
     return this.adminService.metrics();
   }
 
   /* Dashboard Chart Controller
    * @desc: Get dashboard revenue chart data
    * @route: /admin/dashboard/chart
-   * @returns: DashboardChartPointResponseDto[]
+   * @returns: Promise<DashboardChartPointResponseDto[]>
    */
   @UseGuards(AdminJwtGuard)
   @Get('dashboard/chart')
   @ApiOperation({ summary: 'Get dashboard revenue chart data' })
   @ApiOkResponse({ type: [DashboardChartPointResponseDto] })
-  chart(): DashboardChartPointResponseDto[] {
+  chart(): Promise<DashboardChartPointResponseDto[]> {
     return this.adminService.chart();
   }
 
@@ -136,7 +136,7 @@ export class AdminController {
   @Get('transactions')
   @ApiOperation({ summary: 'List booking, F&B, and payment transactions' })
   @ApiOkResponse({ type: AdminTransactionsResponseDto })
-  transactions(): AdminTransactionsResponseDto {
+  transactions(): Promise<AdminTransactionsResponseDto> {
     return this.adminService.transactions();
   }
 
@@ -149,7 +149,9 @@ export class AdminController {
   @Patch('transactions/:bookingId/cancel')
   @ApiOperation({ summary: 'Cancel a booking transaction' })
   @ApiOkResponse({ type: BookingResponseDto })
-  cancelBooking(@Param('bookingId') bookingId: string): BookingResponseDto {
+  cancelBooking(
+    @Param('bookingId') bookingId: string,
+  ): Promise<BookingResponseDto> {
     return this.adminService.cancelBooking(bookingId);
   }
 
@@ -162,7 +164,9 @@ export class AdminController {
   @Patch('transactions/:bookingId/verify')
   @ApiOperation({ summary: 'Verify a booking transaction' })
   @ApiOkResponse({ type: BookingResponseDto })
-  verifyBooking(@Param('bookingId') bookingId: string): BookingResponseDto {
+  verifyBooking(
+    @Param('bookingId') bookingId: string,
+  ): Promise<BookingResponseDto> {
     return this.adminService.verifyBooking(bookingId);
   }
 
@@ -176,7 +180,7 @@ export class AdminController {
   @ApiOperation({ summary: 'Cancel an F&B order transaction' })
   cancelFnbOrder(
     @Param('fnbOrderId') fnbOrderId: string,
-  ): Omit<FnbOrderResponseDto, 'items'> {
+  ): Promise<Omit<FnbOrderResponseDto, 'items'>> {
     return this.adminService.cancelFnbOrder(fnbOrderId);
   }
 
@@ -188,7 +192,7 @@ export class AdminController {
   @Get('logs')
   @ApiOperation({ summary: 'List admin activity logs' })
   @ApiOkResponse({ type: [AdminLogResponseDto] })
-  logs(): AdminLogResponseDto[] {
+  logs(): Promise<AdminLogResponseDto[]> {
     return this.adminService.logs();
   }
 }

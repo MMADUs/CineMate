@@ -29,7 +29,7 @@ export class FnbOrderResponseDto {
 
   @ApiProperty({ example: 'Pending' })
   orderStatus: string;
-  
+
   @ApiProperty({ type: [FnbOrderItemResponseDto] })
   items: FnbOrderItemResponseDto[];
 }

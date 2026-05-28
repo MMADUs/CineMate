@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { and, eq, inArray, ne } from 'drizzle-orm';
-import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { MySql2Database } from 'drizzle-orm/mysql2';
 import { randomUUID } from 'node:crypto';
 import { calculateTaxedTotal, toNumber } from '../common/utils/money';
 import { DRIZZLE } from '../database/database.constants';
@@ -23,7 +23,7 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 export class BookingsService {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: BetterSQLite3Database<typeof schema>,
+    private readonly db: MySql2Database<typeof schema>,
   ) {}
 
   /* Create Booking Service
@@ -31,25 +31,26 @@ export class BookingsService {
    * @param: userId, CreateBookingDto
    * @returns: CreatedBookingResponseDto
    */
-  create(userId: number, dto: CreateBookingDto): CreatedBookingResponseDto {
+  async create(
+    userId: number,
+    dto: CreateBookingDto,
+  ): Promise<CreatedBookingResponseDto> {
     // start db transaction
-    return this.db.transaction((tx) => {
+    return await this.db.transaction(async (tx) => {
       // get showtime
-      const showtime = tx
+      const [showtime] = await tx
         .select()
         .from(showtimes)
-        .where(eq(showtimes.showtimeId, dto.showtimeId))
-        .get();
+        .where(eq(showtimes.showtimeId, dto.showtimeId));
 
       // check if showtime doesn't exists
       if (!showtime) throw new NotFoundException('Showtime not found');
 
       // get selected seats
-      const selectedSeats = tx
+      const selectedSeats = await tx
         .select()
         .from(seats)
-        .where(inArray(seats.seatId, dto.seatIds))
-        .all();
+        .where(inArray(seats.seatId, dto.seatIds));
 
       // check if selected seats belong to showtime hall
       if (
@@ -62,7 +63,7 @@ export class BookingsService {
       }
 
       // check if selected seats are already booked
-      const occupied = tx
+      const occupied = await tx
         .select({ seatId: bookingSeats.seatId })
         .from(bookingSeats)
         .innerJoin(bookings, eq(bookingSeats.bookingId, bookings.bookingId))
@@ -72,8 +73,7 @@ export class BookingsService {
             ne(bookings.bookingStatus, 'Cancelled'),
             inArray(bookingSeats.seatId, dto.seatIds),
           ),
-        )
-        .all();
+        );
 
       // check if any seat is occupied
       if (occupied.length)
@@ -85,26 +85,26 @@ export class BookingsService {
       );
 
       // create booking
-      const booking = tx
-        .insert(bookings)
-        .values({
-          bookingId: randomUUID(),
-          userId,
-          showtimeId: dto.showtimeId,
-          ...totals,
-        })
-        .returning()
-        .get();
+      const bookingId = randomUUID();
+      await tx.insert(bookings).values({
+        bookingId,
+        userId,
+        showtimeId: dto.showtimeId,
+        ...totals,
+      });
+
+      const [booking] = await tx
+        .select()
+        .from(bookings)
+        .where(eq(bookings.bookingId, bookingId));
 
       // attach seats to booking
-      tx.insert(bookingSeats)
-        .values(
-          dto.seatIds.map((seatId) => ({
-            bookingId: booking.bookingId,
-            seatId,
-          })),
-        )
-        .run();
+      await tx.insert(bookingSeats).values(
+        dto.seatIds.map((seatId) => ({
+          bookingId: booking.bookingId,
+          seatId,
+        })),
+      );
 
       // return booking info + seat IDs
       return { ...booking, seatIds: dto.seatIds };
@@ -116,12 +116,11 @@ export class BookingsService {
    * @param: userId
    * @returns: BookingResponseDto[]
    */
-  findUserBookings(userId: number): BookingResponseDto[] {
-    return this.db
+  async findUserBookings(userId: number): Promise<BookingResponseDto[]> {
+    return await this.db
       .select()
       .from(bookings)
-      .where(eq(bookings.userId, userId))
-      .all();
+      .where(eq(bookings.userId, userId));
   }
 
   /* Find User Booking
@@ -129,13 +128,15 @@ export class BookingsService {
    * @param: userId, bookingId
    * @returns: BookingDetailResponseDto
    */
-  findUserBooking(userId: number, bookingId: string): BookingDetailResponseDto {
+  async findUserBooking(
+    userId: number,
+    bookingId: string,
+  ): Promise<BookingDetailResponseDto> {
     // get booking data
-    const booking = this.db
+    const [booking] = await this.db
       .select()
       .from(bookings)
-      .where(eq(bookings.bookingId, bookingId))
-      .get();
+      .where(eq(bookings.bookingId, bookingId));
 
     // check if booking doesn't exist
     if (!booking) throw new NotFoundException('Booking not found');
@@ -145,11 +146,10 @@ export class BookingsService {
       throw new ForbiddenException('Booking does not belong to this user');
 
     // get booked seats
-    const bookedSeats = this.db
+    const bookedSeats = await this.db
       .select()
       .from(bookingSeats)
-      .where(eq(bookingSeats.bookingId, bookingId))
-      .all();
+      .where(eq(bookingSeats.bookingId, bookingId));
 
     return { ...booking, seats: bookedSeats };
   }

@@ -1,9 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { dirname, resolve } from 'node:path';
-import { mkdirSync } from 'node:fs';
+import { drizzle } from 'drizzle-orm/mysql2';
+import { createPool } from 'mysql2/promise';
 import { DRIZZLE } from './database.constants';
 import * as relations from './relations';
 import * as schema from './schema';
@@ -15,21 +13,22 @@ import * as schema from './schema';
       provide: DRIZZLE,
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        // db path
-        const dbPath =
-          configService.get<string>('DATABASE_URL') ?? './data/cinemate.db';
-        // resolved path
-        const resolvedPath = resolve(dbPath);
-        // make directory if not exists
-        mkdirSync(dirname(resolvedPath), { recursive: true });
+        const databaseUrl =
+          configService.get<string>('DATABASE_URL') ??
+          'mysql://cinemate:cinemate@localhost:3306/cinemate';
 
-        // new sqlite db
-        const sqlite = new Database(resolvedPath);
-        // foreign keys
-        sqlite.pragma('foreign_keys = ON');
+        const pool = createPool({
+          uri: databaseUrl,
+          waitForConnections: true,
+          connectionLimit: Number(
+            configService.get<number>('DATABASE_POOL_SIZE') ?? 10,
+          ),
+        });
 
-        // drizzle
-        return drizzle(sqlite, { schema: { ...schema, ...relations } });
+        return drizzle(pool, {
+          schema: { ...schema, ...relations },
+          mode: 'default',
+        });
       },
     },
   ],

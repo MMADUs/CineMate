@@ -1,21 +1,21 @@
 import {
   index,
-  integer,
-  sqliteTable,
-  text,
+  int,
+  mysqlTable,
   uniqueIndex,
-} from 'drizzle-orm/sqlite-core';
+  varchar,
+} from 'drizzle-orm/mysql-core';
 import { cinemaHalls } from './cinema-hall.schema';
 
-export const seats = sqliteTable(
+export const seats = mysqlTable(
   'Seat',
   {
-    seatId: integer('SeatID').primaryKey({ autoIncrement: true }),
-    hallId: integer('HallID')
+    seatId: int('SeatID').primaryKey().autoincrement(),
+    hallId: int('HallID')
       .notNull()
       .references(() => cinemaHalls.hallId, { onDelete: 'cascade' }),
-    rowLetter: text('rowLetter', { length: 1 }).notNull(),
-    seatNumber: integer('SeatNumber').notNull(),
+    rowLetter: varchar('rowLetter', { length: 1 }).notNull(),
+    seatNumber: int('SeatNumber').notNull(),
   },
   (table) => [
     uniqueIndex('seat_hall_row_number_unique').on(

@@ -62,7 +62,7 @@ export class PaymentsController {
   handleNotification(
     @Headers('x-callback-token') callbackToken: string | undefined,
     @Body() dto: XenditInvoiceWebhookDto,
-  ): PaymentWebhookResponseDto {
+  ): Promise<PaymentWebhookResponseDto> {
     return this.paymentsService.handleXenditNotification(callbackToken, dto);
   }
 }

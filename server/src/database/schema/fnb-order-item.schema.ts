@@ -1,25 +1,28 @@
 import {
+  decimal,
   index,
-  integer,
-  numeric,
+  int,
+  mysqlTable,
   primaryKey,
-  sqliteTable,
-  text,
-} from 'drizzle-orm/sqlite-core';
+  varchar,
+} from 'drizzle-orm/mysql-core';
 import { fnbOrders } from './fnb-order.schema';
 import { snacks } from './snack.schema';
 
-export const fnbOrderItems = sqliteTable(
+export const fnbOrderItems = mysqlTable(
   'FNB_Order_Item',
   {
-    fnbOrderId: text('FNBOrderID')
+    fnbOrderId: varchar('FNBOrderID', { length: 36 })
       .notNull()
       .references(() => fnbOrders.fnbOrderId, { onDelete: 'cascade' }),
-    snackId: integer('snackID')
+    snackId: int('snackID')
       .notNull()
       .references(() => snacks.snackId, { onDelete: 'cascade' }),
-    quantity: integer('quantity').notNull(),
-    subTotalPrice: numeric('subTotalPrice').notNull(),
+    quantity: int('quantity').notNull(),
+    subTotalPrice: decimal('subTotalPrice', {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.fnbOrderId, table.snackId] }),

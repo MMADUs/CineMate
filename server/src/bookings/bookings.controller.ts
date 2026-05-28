@@ -35,7 +35,7 @@ export class BookingsController {
    * @desc: Create a movie booking
    * @route: /bookings
    * @param: AuthUser, CreateBookingDto
-   * @returns: CreatedBookingResponseDto
+   * @returns: Promise<CreatedBookingResponseDto>
    */
   @Post('bookings')
   @HttpCode(HttpStatus.CREATED)
@@ -44,7 +44,7 @@ export class BookingsController {
   create(
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateBookingDto,
-  ): CreatedBookingResponseDto {
+  ): Promise<CreatedBookingResponseDto> {
     return this.bookingsService.create(user.userId, dto);
   }
 
@@ -52,13 +52,13 @@ export class BookingsController {
    * @desc: Get authenticated user's booking history
    * @route: /users/orders
    * @param: AuthUser
-   * @returns: BookingResponseDto[]
+   * @returns: Promise<BookingResponseDto[]>
    */
   @Get('users/orders')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get authenticated user booking history' })
   @ApiOkResponse({ type: [BookingResponseDto] })
-  findMine(@CurrentUser() user: AuthUser): BookingResponseDto[] {
+  findMine(@CurrentUser() user: AuthUser): Promise<BookingResponseDto[]> {
     return this.bookingsService.findUserBookings(user.userId);
   }
 
@@ -66,7 +66,7 @@ export class BookingsController {
    * @desc: Get authenticated user's booking detail
    * @route: /users/orders/:bookingId
    * @param: AuthUser, bookingId
-   * @returns: BookingDetailResponseDto
+   * @returns: Promise<BookingDetailResponseDto>
    */
   @Get('users/orders/:bookingId')
   @HttpCode(HttpStatus.OK)
@@ -75,7 +75,7 @@ export class BookingsController {
   findOne(
     @CurrentUser() user: AuthUser,
     @Param('bookingId') bookingId: string,
-  ): BookingDetailResponseDto {
+  ): Promise<BookingDetailResponseDto> {
     return this.bookingsService.findUserBooking(user.userId, bookingId);
   }
 }

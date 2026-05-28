@@ -81,7 +81,7 @@ export class AdminLogResponseDto {
 
   @ApiPropertyOptional({ example: '{"title":"Interstellar"}', nullable: true })
   details: string | null;
-  
+
   @ApiProperty({ example: '2026-05-23 10:00:00' })
   createdAt: string;
 }

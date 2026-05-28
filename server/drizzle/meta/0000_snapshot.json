@@ -1,7 +1,7 @@
 {
-  "version": "6",
-  "dialect": "sqlite",
-  "id": "a78a4169-de66-4d75-9850-07edfdb0f0fc",
+  "version": "5",
+  "dialect": "mysql",
+  "id": "e86ade26-ba1b-4749-a2e9-5d2c7b1424d4",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "AdminLog": {
@@ -9,35 +9,35 @@
       "columns": {
         "LogID": {
           "name": "LogID",
-          "type": "integer",
-          "primaryKey": true,
+          "type": "int",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": true
         },
         "AdminID": {
           "name": "AdminID",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "action": {
           "name": "action",
-          "type": "text(100)",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "entity": {
           "name": "entity",
-          "type": "text(50)",
+          "type": "varchar(50)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "entityId": {
           "name": "entityId",
-          "type": "text",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -51,11 +51,11 @@
         },
         "createdAt": {
           "name": "createdAt",
-          "type": "text",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(now())"
         }
       },
       "indexes": {
@@ -82,76 +82,89 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "AdminLog_LogID": {
+          "name": "AdminLog_LogID",
+          "columns": [
+            "LogID"
+          ]
+        }
+      },
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraint": {}
     },
     "Admin": {
       "name": "Admin",
       "columns": {
         "AdminID": {
           "name": "AdminID",
-          "type": "integer",
-          "primaryKey": true,
+          "type": "int",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": true
         },
         "username": {
           "name": "username",
-          "type": "text(100)",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "email": {
           "name": "email",
-          "type": "text(100)",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "password": {
           "name": "password",
-          "type": "text(255)",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "refreshTokenHash": {
           "name": "refreshTokenHash",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         }
       },
-      "indexes": {
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "Admin_AdminID": {
+          "name": "Admin_AdminID",
+          "columns": [
+            "AdminID"
+          ]
+        }
+      },
+      "uniqueConstraints": {
         "Admin_email_unique": {
           "name": "Admin_email_unique",
           "columns": [
             "email"
-          ],
-          "isUnique": true
+          ]
         }
       },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraint": {}
     },
     "Booking_Seat": {
       "name": "Booking_Seat",
       "columns": {
         "BookingID": {
           "name": "BookingID",
-          "type": "text",
+          "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "SeatID": {
           "name": "SeatID",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -196,65 +209,65 @@
       },
       "compositePrimaryKeys": {
         "Booking_Seat_BookingID_SeatID_pk": {
+          "name": "Booking_Seat_BookingID_SeatID_pk",
           "columns": [
             "BookingID",
             "SeatID"
-          ],
-          "name": "Booking_Seat_BookingID_SeatID_pk"
+          ]
         }
       },
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraint": {}
     },
     "Booking": {
       "name": "Booking",
       "columns": {
         "BookingID": {
           "name": "BookingID",
-          "type": "text",
-          "primaryKey": true,
+          "type": "varchar(36)",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "UserID": {
           "name": "UserID",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "ShowtimeID": {
           "name": "ShowtimeID",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "bookingDate": {
           "name": "bookingDate",
-          "type": "text",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(now())"
         },
         "taxAmount": {
           "name": "taxAmount",
-          "type": "numeric",
+          "type": "decimal(12,2)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "totalAmount": {
           "name": "totalAmount",
-          "type": "numeric",
+          "type": "decimal(12,2)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "bookingStatus": {
           "name": "bookingStatus",
-          "type": "text(20)",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -305,44 +318,51 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "Booking_BookingID": {
+          "name": "Booking_BookingID",
+          "columns": [
+            "BookingID"
+          ]
+        }
+      },
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraint": {}
     },
     "CinemaHall": {
       "name": "CinemaHall",
       "columns": {
         "HallID": {
           "name": "HallID",
-          "type": "integer",
-          "primaryKey": true,
+          "type": "int",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": true
         },
         "CinemaName": {
           "name": "CinemaName",
-          "type": "text(100)",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "StudioName": {
           "name": "StudioName",
-          "type": "text(50)",
+          "type": "varchar(50)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "totalRows": {
           "name": "totalRows",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "seatsPerRow": {
           "name": "seatsPerRow",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -350,37 +370,44 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "CinemaHall_HallID": {
+          "name": "CinemaHall_HallID",
+          "columns": [
+            "HallID"
+          ]
+        }
+      },
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraint": {}
     },
     "FNB_Order_Item": {
       "name": "FNB_Order_Item",
       "columns": {
         "FNBOrderID": {
           "name": "FNBOrderID",
-          "type": "text",
+          "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "snackID": {
           "name": "snackID",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "quantity": {
           "name": "quantity",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "subTotalPrice": {
           "name": "subTotalPrice",
-          "type": "numeric",
+          "type": "decimal(12,2)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -425,58 +452,58 @@
       },
       "compositePrimaryKeys": {
         "FNB_Order_Item_FNBOrderID_snackID_pk": {
+          "name": "FNB_Order_Item_FNBOrderID_snackID_pk",
           "columns": [
             "FNBOrderID",
             "snackID"
-          ],
-          "name": "FNB_Order_Item_FNBOrderID_snackID_pk"
+          ]
         }
       },
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraint": {}
     },
     "FNB_Order": {
       "name": "FNB_Order",
       "columns": {
         "FNBOrderID": {
           "name": "FNBOrderID",
-          "type": "text",
-          "primaryKey": true,
+          "type": "varchar(36)",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "UserID": {
           "name": "UserID",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "orderDate": {
           "name": "orderDate",
-          "type": "text",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(now())"
         },
         "taxAmount": {
           "name": "taxAmount",
-          "type": "numeric",
+          "type": "decimal(12,2)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "totalAmount": {
           "name": "totalAmount",
-          "type": "numeric",
+          "type": "decimal(12,2)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "orderStatus": {
           "name": "orderStatus",
-          "type": "text(20)",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -507,23 +534,30 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "FNB_Order_FNBOrderID": {
+          "name": "FNB_Order_FNBOrderID",
+          "columns": [
+            "FNBOrderID"
+          ]
+        }
+      },
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraint": {}
     },
     "Movie": {
       "name": "Movie",
       "columns": {
         "MovieID": {
           "name": "MovieID",
-          "type": "integer",
-          "primaryKey": true,
+          "type": "int",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": true
         },
         "title": {
           "name": "title",
-          "type": "text(255)",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -537,56 +571,56 @@
         },
         "genre": {
           "name": "genre",
-          "type": "text(100)",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "AgeRate": {
           "name": "AgeRate",
-          "type": "text(10)",
+          "type": "varchar(10)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "DurationMinutes": {
           "name": "DurationMinutes",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "PosterURL": {
           "name": "PosterURL",
-          "type": "text(255)",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "TrailerURL": {
           "name": "TrailerURL",
-          "type": "text(255)",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "releaseDate": {
           "name": "releaseDate",
-          "type": "text",
+          "type": "varchar(10)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "endDate": {
           "name": "endDate",
-          "type": "text",
+          "type": "varchar(10)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "status": {
           "name": "status",
-          "type": "text(20)",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -594,29 +628,163 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "Movie_MovieID": {
+          "name": "Movie_MovieID",
+          "columns": [
+            "MovieID"
+          ]
+        }
+      },
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraint": {}
+    },
+    "PaymentWebhookEvent": {
+      "name": "PaymentWebhookEvent",
+      "columns": {
+        "EventID": {
+          "name": "EventID",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "PaymentID": {
+          "name": "PaymentID",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'XENDIT'"
+        },
+        "providerEventId": {
+          "name": "providerEventId",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "eventType": {
+          "name": "eventType",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "receivedAt": {
+          "name": "receivedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {
+        "payment_webhook_event_payment_id_idx": {
+          "name": "payment_webhook_event_payment_id_idx",
+          "columns": [
+            "PaymentID"
+          ],
+          "isUnique": false
+        },
+        "payment_webhook_event_provider_event_idx": {
+          "name": "payment_webhook_event_provider_event_idx",
+          "columns": [
+            "provider",
+            "providerEventId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "PaymentWebhookEvent_PaymentID_Payment_PaymentID_fk": {
+          "name": "PaymentWebhookEvent_PaymentID_Payment_PaymentID_fk",
+          "tableFrom": "PaymentWebhookEvent",
+          "tableTo": "Payment",
+          "columnsFrom": [
+            "PaymentID"
+          ],
+          "columnsTo": [
+            "PaymentID"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "PaymentWebhookEvent_EventID": {
+          "name": "PaymentWebhookEvent_EventID",
+          "columns": [
+            "EventID"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
     },
     "Payment": {
       "name": "Payment",
       "columns": {
         "PaymentID": {
           "name": "PaymentID",
-          "type": "integer",
-          "primaryKey": true,
+          "type": "int",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": true
         },
         "BookingID": {
           "name": "BookingID",
-          "type": "text",
+          "type": "varchar(36)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "FNBOrderID": {
           "name": "FNBOrderID",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'XENDIT'"
+        },
+        "providerPaymentId": {
+          "name": "providerPaymentId",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "externalId": {
+          "name": "externalId",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "invoiceUrl": {
+          "name": "invoiceUrl",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -624,49 +792,78 @@
         },
         "paymentMethod": {
           "name": "paymentMethod",
-          "type": "text(100)",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "amount": {
           "name": "amount",
-          "type": "numeric",
+          "type": "decimal(12,2)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "paymentDate": {
-          "name": "paymentDate",
-          "type": "text",
+        "currency": {
+          "name": "currency",
+          "type": "varchar(3)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "'IDR'"
+        },
+        "paymentDate": {
+          "name": "paymentDate",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
         },
         "paymentStatus": {
           "name": "paymentStatus",
-          "type": "text(20)",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": "'Pending'"
+        },
+        "paidAt": {
+          "name": "paidAt",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "expiresAt": {
+          "name": "expiresAt",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "failureReason": {
+          "name": "failureReason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
-        "Payment_BookingID_unique": {
-          "name": "Payment_BookingID_unique",
+        "payment_external_id_idx": {
+          "name": "payment_external_id_idx",
           "columns": [
-            "BookingID"
+            "externalId"
           ],
-          "isUnique": true
+          "isUnique": false
         },
-        "Payment_FNBOrderID_unique": {
-          "name": "Payment_FNBOrderID_unique",
+        "payment_provider_payment_id_idx": {
+          "name": "payment_provider_payment_id_idx",
           "columns": [
-            "FNBOrderID"
+            "providerPaymentId"
           ],
-          "isUnique": true
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -697,37 +894,63 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
+      "compositePrimaryKeys": {
+        "Payment_PaymentID": {
+          "name": "Payment_PaymentID",
+          "columns": [
+            "PaymentID"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "Payment_BookingID_unique": {
+          "name": "Payment_BookingID_unique",
+          "columns": [
+            "BookingID"
+          ]
+        },
+        "Payment_FNBOrderID_unique": {
+          "name": "Payment_FNBOrderID_unique",
+          "columns": [
+            "FNBOrderID"
+          ]
+        },
+        "Payment_externalId_unique": {
+          "name": "Payment_externalId_unique",
+          "columns": [
+            "externalId"
+          ]
+        }
+      },
+      "checkConstraint": {}
     },
     "Seat": {
       "name": "Seat",
       "columns": {
         "SeatID": {
           "name": "SeatID",
-          "type": "integer",
-          "primaryKey": true,
+          "type": "int",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": true
         },
         "HallID": {
           "name": "HallID",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "rowLetter": {
           "name": "rowLetter",
-          "type": "text(1)",
+          "type": "varchar(1)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "SeatNumber": {
           "name": "SeatNumber",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -766,51 +989,58 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "Seat_SeatID": {
+          "name": "Seat_SeatID",
+          "columns": [
+            "SeatID"
+          ]
+        }
+      },
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraint": {}
     },
     "Showtime": {
       "name": "Showtime",
       "columns": {
         "ShowtimeID": {
           "name": "ShowtimeID",
-          "type": "integer",
-          "primaryKey": true,
+          "type": "int",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": true
         },
         "MovieID": {
           "name": "MovieID",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "HallID": {
           "name": "HallID",
-          "type": "integer",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "showDate": {
           "name": "showDate",
-          "type": "text",
+          "type": "varchar(10)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "showTime": {
           "name": "showTime",
-          "type": "text",
+          "type": "varchar(5)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "price": {
           "name": "price",
-          "type": "numeric",
+          "type": "decimal(12,2)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -860,44 +1090,51 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "Showtime_ShowtimeID": {
+          "name": "Showtime_ShowtimeID",
+          "columns": [
+            "ShowtimeID"
+          ]
+        }
+      },
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraint": {}
     },
     "Snack": {
       "name": "Snack",
       "columns": {
         "SnackID": {
           "name": "SnackID",
-          "type": "integer",
-          "primaryKey": true,
+          "type": "int",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": true
         },
         "snackName": {
           "name": "snackName",
-          "type": "text(100)",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "category": {
           "name": "category",
-          "type": "text(50)",
+          "type": "varchar(50)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "price": {
           "name": "price",
-          "type": "numeric",
+          "type": "decimal(12,2)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "imageURL": {
           "name": "imageURL",
-          "type": "text(255)",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -905,87 +1142,100 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "Snack_SnackID": {
+          "name": "Snack_SnackID",
+          "columns": [
+            "SnackID"
+          ]
+        }
+      },
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraint": {}
     },
     "User": {
       "name": "User",
       "columns": {
         "UserID": {
           "name": "UserID",
-          "type": "integer",
-          "primaryKey": true,
+          "type": "int",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": true
         },
         "FullName": {
           "name": "FullName",
-          "type": "text(50)",
+          "type": "varchar(50)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "Email": {
           "name": "Email",
-          "type": "text(100)",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "PhoneNum": {
           "name": "PhoneNum",
-          "type": "text(20)",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "Password": {
           "name": "Password",
-          "type": "text(255)",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "refreshTokenHash": {
           "name": "refreshTokenHash",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "createdAt": {
           "name": "createdAt",
-          "type": "text",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "(now())"
         }
       },
-      "indexes": {
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "User_UserID": {
+          "name": "User_UserID",
+          "columns": [
+            "UserID"
+          ]
+        }
+      },
+      "uniqueConstraints": {
         "User_Email_unique": {
           "name": "User_Email_unique",
           "columns": [
             "Email"
-          ],
-          "isUnique": true
+          ]
         }
       },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraint": {}
     }
   },
   "views": {},
-  "enums": {},
   "_meta": {
     "schemas": {},
     "tables": {},
     "columns": {}
   },
   "internal": {
+    "tables": {},
     "indexes": {}
   }
 }

@@ -25,13 +25,13 @@ export class UsersController {
    * @desc: Get authenticated user's profile
    * @route: /users/profile
    * @param: AuthUser
-   * @returns: UserProfileResponseDto
+   * @returns: Promise<UserProfileResponseDto>
    */
   @Get('profile')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get authenticated user profile' })
   @ApiOkResponse({ type: UserProfileResponseDto })
-  getProfile(@CurrentUser() user: AuthUser): UserProfileResponseDto {
+  getProfile(@CurrentUser() user: AuthUser): Promise<UserProfileResponseDto> {
     return this.usersService.getProfile(user.userId);
   }
 

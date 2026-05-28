@@ -31,7 +31,7 @@ export class CreatedBookingResponseDto extends BookingResponseDto {
 export class BookingSeatResponseDto {
   @ApiProperty({ example: 'booking-uuid' })
   bookingId: string;
-  
+
   @ApiProperty({ example: 1 })
   seatId: number;
 }

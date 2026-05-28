@@ -1,26 +1,26 @@
-import { sql } from 'drizzle-orm';
 import {
+  decimal,
   index,
-  integer,
-  numeric,
-  sqliteTable,
-  text,
-} from 'drizzle-orm/sqlite-core';
+  int,
+  mysqlTable,
+  timestamp,
+  varchar,
+} from 'drizzle-orm/mysql-core';
 import { users } from './user.schema';
 
-export const fnbOrders = sqliteTable(
+export const fnbOrders = mysqlTable(
   'FNB_Order',
   {
-    fnbOrderId: text('FNBOrderID').primaryKey(),
-    userId: integer('UserID')
+    fnbOrderId: varchar('FNBOrderID', { length: 36 }).primaryKey(),
+    userId: int('UserID')
       .notNull()
       .references(() => users.userId, { onDelete: 'cascade' }),
-    orderDate: text('orderDate')
+    orderDate: timestamp('orderDate', { mode: 'string' })
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    taxAmount: numeric('taxAmount').notNull(),
-    totalAmount: numeric('totalAmount').notNull(),
-    orderStatus: text('orderStatus', { length: 20 })
+      .defaultNow(),
+    taxAmount: decimal('taxAmount', { precision: 12, scale: 2 }).notNull(),
+    totalAmount: decimal('totalAmount', { precision: 12, scale: 2 }).notNull(),
+    orderStatus: varchar('orderStatus', { length: 20 })
       .notNull()
       .default('Pending'),
   },

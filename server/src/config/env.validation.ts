@@ -5,7 +5,26 @@ export function validateEnv(config: Record<string, unknown>) {
     // application port
     PORT: config.PORT ?? 3000,
     // database url
-    DATABASE_URL: config.DATABASE_URL ?? './data/cinemate.db',
+    DATABASE_URL:
+      config.DATABASE_URL ??
+      'mysql://cinemate:cinemate@localhost:3306/cinemate',
+    // mysql connection pool size
+    DATABASE_POOL_SIZE: config.DATABASE_POOL_SIZE ?? 10,
+    // public backend base url used when generating file URLs
+    APP_BASE_URL: config.APP_BASE_URL ?? 'http://localhost:3000',
+    // s3-compatible object storage endpoint
+    OBJECT_STORAGE_ENDPOINT:
+      config.OBJECT_STORAGE_ENDPOINT ?? 'http://localhost:9000',
+    // s3-compatible object storage region
+    OBJECT_STORAGE_REGION: config.OBJECT_STORAGE_REGION ?? 'us-east-1',
+    // object storage access key
+    OBJECT_STORAGE_ACCESS_KEY:
+      config.OBJECT_STORAGE_ACCESS_KEY ?? 'rustfsadmin',
+    // object storage secret key
+    OBJECT_STORAGE_SECRET_KEY:
+      config.OBJECT_STORAGE_SECRET_KEY ?? 'rustfsadmin',
+    // bucket used for uploaded app images
+    OBJECT_STORAGE_BUCKET: config.OBJECT_STORAGE_BUCKET ?? 'cinemate-images',
     // jwt access secret
     JWT_ACCESS_SECRET: config.JWT_ACCESS_SECRET ?? 'dev-access-secret',
     // jwt refresh secret

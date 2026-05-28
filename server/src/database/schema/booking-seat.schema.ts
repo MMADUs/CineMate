@@ -1,20 +1,20 @@
 import {
   index,
-  integer,
+  int,
+  mysqlTable,
   primaryKey,
-  sqliteTable,
-  text,
-} from 'drizzle-orm/sqlite-core';
+  varchar,
+} from 'drizzle-orm/mysql-core';
 import { bookings } from './booking.schema';
 import { seats } from './seat.schema';
 
-export const bookingSeats = sqliteTable(
+export const bookingSeats = mysqlTable(
   'Booking_Seat',
   {
-    bookingId: text('BookingID')
+    bookingId: varchar('BookingID', { length: 36 })
       .notNull()
       .references(() => bookings.bookingId, { onDelete: 'cascade' }),
-    seatId: integer('SeatID')
+    seatId: int('SeatID')
       .notNull()
       .references(() => seats.seatId, { onDelete: 'cascade' }),
   },

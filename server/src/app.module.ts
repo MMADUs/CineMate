@@ -14,6 +14,7 @@ import { MoviesModule } from './movies/movies.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ShowtimesModule } from './showtimes/showtimes.module';
 import { SnacksModule } from './snacks/snacks.module';
+import { StorageModule } from './storage/storage.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -30,6 +31,7 @@ import { UsersModule } from './users/users.module';
     SnacksModule,
     FnbOrdersModule,
     PaymentsModule,
+    StorageModule,
     AdminModule,
   ],
   controllers: [AppController],

@@ -30,7 +30,7 @@ export class MovieResponseDto {
 
   @ApiProperty({ example: '2026-06-01' })
   endDate: string;
-  
+
   @ApiProperty({ example: 'NOW_PLAYING' })
   status: string;
 }

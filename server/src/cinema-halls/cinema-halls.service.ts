@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { MySql2Database } from 'drizzle-orm/mysql2';
 import { DRIZZLE } from '../database/database.constants';
 import * as schema from '../database/schema';
 import { cinemaHalls, seats } from '../database/schema';
@@ -12,7 +12,7 @@ import { UpdateHallDto } from './dto/update-hall.dto';
 export class CinemaHallsService {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: BetterSQLite3Database<typeof schema>,
+    private readonly db: MySql2Database<typeof schema>,
   ) {}
 
   /* Find All Halls Service
@@ -20,8 +20,8 @@ export class CinemaHallsService {
    * @param: none
    * @returns: HallResponseDto[]
    */
-  findAll(): HallResponseDto[] {
-    return this.db.select().from(cinemaHalls).all();
+  async findAll(): Promise<HallResponseDto[]> {
+    return await this.db.select().from(cinemaHalls);
   }
 
   /* Create Hall Service
@@ -29,11 +29,18 @@ export class CinemaHallsService {
    * @param: CreateHallDto
    * @returns: HallResponseDto
    */
-  create(dto: CreateHallDto): HallResponseDto {
+  async create(dto: CreateHallDto): Promise<HallResponseDto> {
     // start db transaction
-    return this.db.transaction((tx) => {
+    return await this.db.transaction(async (tx) => {
       // insert hall
-      const hall = tx.insert(cinemaHalls).values(dto).returning().get();
+      const [insertedHall] = await tx
+        .insert(cinemaHalls)
+        .values(dto)
+        .$returningId();
+      const [hall] = await tx
+        .select()
+        .from(cinemaHalls)
+        .where(eq(cinemaHalls.hallId, insertedHall.hallId));
 
       // build seats
       const values = this.buildSeats(
@@ -43,7 +50,7 @@ export class CinemaHallsService {
       );
 
       // insert seats
-      if (values.length) tx.insert(seats).values(values).run();
+      if (values.length) await tx.insert(seats).values(values);
 
       return hall;
     });
@@ -54,31 +61,32 @@ export class CinemaHallsService {
    * @param: hallId, UpdateHallDto
    * @returns: HallResponseDto
    */
-  update(hallId: number, dto: UpdateHallDto): HallResponseDto {
+  async update(hallId: number, dto: UpdateHallDto): Promise<HallResponseDto> {
     // start db transaction
-    return this.db.transaction((tx) => {
+    return await this.db.transaction(async (tx) => {
       // get existing hall
-      const existing = tx
+      const [existing] = await tx
         .select()
         .from(cinemaHalls)
-        .where(eq(cinemaHalls.hallId, hallId))
-        .get();
+        .where(eq(cinemaHalls.hallId, hallId));
 
       // check if hall doesn't exist
       if (!existing) throw new NotFoundException('Cinema hall not found');
 
       // update hall
-      const hall = tx
+      await tx
         .update(cinemaHalls)
         .set(dto)
-        .where(eq(cinemaHalls.hallId, hallId))
-        .returning()
-        .get();
+        .where(eq(cinemaHalls.hallId, hallId));
+      const [hall] = await tx
+        .select()
+        .from(cinemaHalls)
+        .where(eq(cinemaHalls.hallId, hallId));
 
       // if dimensions are changed, regenerate seats
       if (dto.totalRows || dto.seatsPerRow) {
         // delete existing seats
-        tx.delete(seats).where(eq(seats.hallId, hallId)).run();
+        await tx.delete(seats).where(eq(seats.hallId, hallId));
 
         // build new seats
         const values = this.buildSeats(
@@ -88,7 +96,7 @@ export class CinemaHallsService {
         );
 
         // insert seats
-        if (values.length) tx.insert(seats).values(values).run();
+        if (values.length) await tx.insert(seats).values(values);
       }
 
       return hall;
@@ -100,16 +108,18 @@ export class CinemaHallsService {
    * @param: hallId
    * @returns: HallResponseDto
    */
-  remove(hallId: number): HallResponseDto {
-    // delete hall
-    const hall = this.db
-      .delete(cinemaHalls)
-      .where(eq(cinemaHalls.hallId, hallId))
-      .returning()
-      .get();
+  async remove(hallId: number): Promise<HallResponseDto> {
+    // get hall before delete
+    const [hall] = await this.db
+      .select()
+      .from(cinemaHalls)
+      .where(eq(cinemaHalls.hallId, hallId));
 
     // check if hall doesn't exist
     if (!hall) throw new NotFoundException('Cinema hall not found');
+
+    // delete hall
+    await this.db.delete(cinemaHalls).where(eq(cinemaHalls.hallId, hallId));
 
     return hall;
   }

@@ -44,11 +44,17 @@ The API will be available at:
 - API base URL: `http://localhost:3000/api`
 - Swagger docs: `http://localhost:3000/api/docs`
 - Healthcheck: `http://localhost:3000/api/health`
+- phpMyAdmin: `http://localhost:8080`
+- RustFS S3 API: `http://localhost:9000`
+- RustFS console: `http://localhost:9001`
 
 On container startup, the app automatically:
 
-- runs Drizzle migrations against SQLite
-- creates the local SQLite database in the `cinemate-data` Docker volume
+- starts MySQL 8
+- starts RustFS object storage
+- runs Drizzle migrations against MySQL
+- persists database data in the `cinemate-mysql-data` Docker volume
+- persists uploaded images in the `cinemate-rustfs-data` Docker volume
 - seeds one admin account if it does not already exist
 
 Default seeded admin:
@@ -58,9 +64,27 @@ email: admin@cinemate.local
 password: Admin@123456
 ```
 
+Default RustFS credentials:
+
+```text
+access key: rustfsadmin
+secret key: rustfsadmin
+bucket: cinemate-images
+```
+
 For real integration, copy `.env.docker.example` values into `docker-compose.yml`
 or your deployment environment and replace all secrets, especially JWT and Xendit
 settings.
+
+Default local MySQL connection:
+
+```text
+host: localhost
+port: 3306
+database: cinemate
+user: cinemate
+password: cinemate
+```
 
 ## Compile and run the project
 

@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { MySql2Database } from 'drizzle-orm/mysql2';
 import { DRIZZLE } from '../database/database.constants';
 import * as schema from '../database/schema';
 import { snacks } from '../database/schema';
@@ -13,7 +13,7 @@ import { UpdateSnackDto } from './dto/update-snack.dto';
 export class SnacksService {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: BetterSQLite3Database<typeof schema>,
+    private readonly db: MySql2Database<typeof schema>,
   ) {}
 
   /* Find All Snacks Service
@@ -21,14 +21,13 @@ export class SnacksService {
    * @param: QuerySnackDto
    * @returns: SnackResponseDto[]
    */
-  findAll(query: QuerySnackDto = {}): SnackResponseDto[] {
+  async findAll(query: QuerySnackDto = {}): Promise<SnackResponseDto[]> {
     return query.category
-      ? this.db
+      ? await this.db
           .select()
           .from(snacks)
           .where(eq(snacks.category, query.category))
-          .all()
-      : this.db.select().from(snacks).all();
+      : await this.db.select().from(snacks);
   }
 
   /* Create Snack Service
@@ -36,18 +35,17 @@ export class SnacksService {
    * @param: CreateSnackDto
    * @returns: SnackResponseDto
    */
-  create(dto: CreateSnackDto): SnackResponseDto {
-    const snack = this.db
+  async create(dto: CreateSnackDto): Promise<SnackResponseDto> {
+    const [insertedSnack] = await this.db
       .insert(snacks)
       .values({
         ...dto,
         price: String(dto.price),
         imageUrl: dto.imageUrl ?? '',
       })
-      .returning()
-      .get();
+      .$returningId();
 
-    return snack;
+    return this.findOne(insertedSnack.snackId);
   }
 
   /* Update Snack Service
@@ -55,21 +53,20 @@ export class SnacksService {
    * @param: snackId, UpdateSnackDto
    * @returns: SnackResponseDto
    */
-  update(snackId: number, dto: UpdateSnackDto): SnackResponseDto {
-    const snack = this.db
+  async update(
+    snackId: number,
+    dto: UpdateSnackDto,
+  ): Promise<SnackResponseDto> {
+    await this.findOne(snackId);
+    await this.db
       .update(snacks)
       .set({
         ...dto,
         price: dto.price === undefined ? undefined : String(dto.price),
       })
-      .where(eq(snacks.snackId, snackId))
-      .returning()
-      .get();
+      .where(eq(snacks.snackId, snackId));
 
-    // check if snack doesn't exist
-    if (!snack) throw new NotFoundException('Snack not found');
-
-    return snack;
+    return this.findOne(snackId);
   }
 
   /* Remove Snack Service
@@ -77,12 +74,23 @@ export class SnacksService {
    * @param: snackId
    * @returns: SnackResponseDto
    */
-  remove(snackId: number): SnackResponseDto {
-    const snack = this.db
-      .delete(snacks)
-      .where(eq(snacks.snackId, snackId))
-      .returning()
-      .get();
+  async remove(snackId: number): Promise<SnackResponseDto> {
+    const snack = await this.findOne(snackId);
+    await this.db.delete(snacks).where(eq(snacks.snackId, snackId));
+
+    return snack;
+  }
+
+  /* Find One Snack Helper
+   * @desc: Get snack detail by ID
+   * @param: snackId
+   * @returns: SnackResponseDto
+   */
+  private async findOne(snackId: number): Promise<SnackResponseDto> {
+    const [snack] = await this.db
+      .select()
+      .from(snacks)
+      .where(eq(snacks.snackId, snackId));
 
     // check if snack doesn't exist
     if (!snack) throw new NotFoundException('Snack not found');

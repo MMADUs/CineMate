@@ -24,7 +24,7 @@ export class FnbOrdersController {
    * @desc: Create an F&B order
    * @route: /fnb-orders
    * @param: AuthUser, CreateFnbOrderDto
-   * @returns: FnbOrderResponseDto
+   * @returns: Promise<FnbOrderResponseDto>
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -33,7 +33,7 @@ export class FnbOrdersController {
   create(
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateFnbOrderDto,
-  ): FnbOrderResponseDto {
+  ): Promise<FnbOrderResponseDto> {
     return this.fnbOrdersService.create(user.userId, dto);
   }
 }

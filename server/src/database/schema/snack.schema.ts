@@ -1,9 +1,9 @@
-import { integer, numeric, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { decimal, int, mysqlTable, varchar } from 'drizzle-orm/mysql-core';
 
-export const snacks = sqliteTable('Snack', {
-  snackId: integer('SnackID').primaryKey({ autoIncrement: true }),
-  snackName: text('snackName', { length: 100 }).notNull(),
-  category: text('category', { length: 50 }).notNull(),
-  price: numeric('price').notNull(),
-  imageUrl: text('imageURL', { length: 255 }).notNull(),
+export const snacks = mysqlTable('Snack', {
+  snackId: int('SnackID').primaryKey().autoincrement(),
+  snackName: varchar('snackName', { length: 100 }).notNull(),
+  category: varchar('category', { length: 50 }).notNull(),
+  price: decimal('price', { precision: 12, scale: 2 }).notNull(),
+  imageUrl: varchar('imageURL', { length: 255 }).notNull(),
 });

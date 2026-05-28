@@ -1,9 +1,9 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { int, mysqlTable, varchar } from 'drizzle-orm/mysql-core';
 
-export const cinemaHalls = sqliteTable('CinemaHall', {
-  hallId: integer('HallID').primaryKey({ autoIncrement: true }),
-  cinemaName: text('CinemaName', { length: 100 }).notNull(),
-  studioName: text('StudioName', { length: 50 }).notNull(),
-  totalRows: integer('totalRows').notNull(),
-  seatsPerRow: integer('seatsPerRow').notNull(),
+export const cinemaHalls = mysqlTable('CinemaHall', {
+  hallId: int('HallID').primaryKey().autoincrement(),
+  cinemaName: varchar('CinemaName', { length: 100 }).notNull(),
+  studioName: varchar('StudioName', { length: 50 }).notNull(),
+  totalRows: int('totalRows').notNull(),
+  seatsPerRow: int('seatsPerRow').notNull(),
 });

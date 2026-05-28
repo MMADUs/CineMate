@@ -1,17 +1,80 @@
 services:
+  rustfs-perms:
+    image: alpine:3.20
+    container_name: cinemate-rustfs-perms
+    command: sh -c "chown -R 10001:10001 /data"
+    volumes:
+      - cinemate-rustfs-data:/data
+    restart: "no"
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: cinemate-rustfs
+    restart: unless-stopped
+    depends_on:
+      rustfs-perms:
+        condition: service_completed_successfully
+    environment:
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+      RUSTFS_CONSOLE_ENABLE: "true"
+    command: ["/data"]
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - cinemate-rustfs-data:/data
+
+  mysql:
+    image: mysql:8.4
+    container_name: cinemate-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cinemate
+      MYSQL_USER: cinemate
+      MYSQL_PASSWORD: cinemate
+    ports:
+      - "3306:3306"
+    volumes:
+      - cinemate-mysql-data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -ucinemate -pcinemate --silent",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   api:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: cinemate-api
     restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rustfs:
+        condition: service_started
     ports:
       - "3000:3000"
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: /app/data/cinemate.db
+      DATABASE_URL: mysql://cinemate:cinemate@mysql:3306/cinemate
+      DATABASE_POOL_SIZE: 10
       DRIZZLE_MIGRATIONS_DIR: /app/drizzle
+      APP_BASE_URL: http://localhost:3000
+      OBJECT_STORAGE_ENDPOINT: http://rustfs:9000
+      OBJECT_STORAGE_REGION: us-east-1
+      OBJECT_STORAGE_ACCESS_KEY: rustfsadmin
+      OBJECT_STORAGE_SECRET_KEY: rustfsadmin
+      OBJECT_STORAGE_BUCKET: cinemate-images
       JWT_ACCESS_SECRET: change-me-user-access-secret
       JWT_REFRESH_SECRET: change-me-user-refresh-secret
       JWT_ADMIN_ACCESS_SECRET: change-me-admin-access-secret
@@ -24,8 +87,6 @@ services:
       XENDIT_INVOICE_DURATION_SECONDS: 86400
       FRONTEND_SUCCESS_URL: http://localhost:5173/payment/success
       FRONTEND_FAILURE_URL: http://localhost:5173/payment/failed
-    volumes:
-      - cinemate-data:/app/data
     healthcheck:
       test:
         [
@@ -37,5 +98,22 @@ services:
       retries: 3
       start_period: 20s
 
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: cinemate-phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: cinemate
+      PMA_PASSWORD: cinemate
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "8080:80"
+
 volumes:
-  cinemate-data:
+  cinemate-mysql-data:
+  cinemate-rustfs-data:

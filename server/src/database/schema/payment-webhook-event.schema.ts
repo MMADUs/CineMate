@@ -1,21 +1,27 @@
-import { sql } from 'drizzle-orm';
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import {
+  index,
+  int,
+  mysqlTable,
+  text,
+  timestamp,
+  varchar,
+} from 'drizzle-orm/mysql-core';
 import { payments } from './payment.schema';
 
-export const paymentWebhookEvents = sqliteTable(
+export const paymentWebhookEvents = mysqlTable(
   'PaymentWebhookEvent',
   {
-    eventId: integer('EventID').primaryKey({ autoIncrement: true }),
-    paymentId: integer('PaymentID').references(() => payments.paymentId, {
+    eventId: int('EventID').primaryKey().autoincrement(),
+    paymentId: int('PaymentID').references(() => payments.paymentId, {
       onDelete: 'set null',
     }),
-    provider: text('provider', { length: 50 }).notNull().default('XENDIT'),
-    providerEventId: text('providerEventId', { length: 255 }).notNull(),
-    eventType: text('eventType', { length: 100 }).notNull(),
+    provider: varchar('provider', { length: 50 }).notNull().default('XENDIT'),
+    providerEventId: varchar('providerEventId', { length: 255 }).notNull(),
+    eventType: varchar('eventType', { length: 100 }).notNull(),
     payload: text('payload').notNull(),
-    receivedAt: text('receivedAt')
+    receivedAt: timestamp('receivedAt', { mode: 'string' })
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .defaultNow(),
   },
   (table) => [
     index('payment_webhook_event_payment_id_idx').on(table.paymentId),

@@ -34,13 +34,13 @@ export class MoviesController {
    * @desc: List public movies
    * @route: /movies
    * @param: QueryMovieDto
-   * @returns: MovieResponseDto[]
+   * @returns: Promise<MovieResponseDto[]>
    */
   @Get('movies')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'List public movies' })
   @ApiOkResponse({ type: [MovieResponseDto] })
-  findAll(@Query() query: QueryMovieDto): MovieResponseDto[] {
+  findAll(@Query() query: QueryMovieDto): Promise<MovieResponseDto[]> {
     return this.moviesService.findAll(query);
   }
 
@@ -48,27 +48,29 @@ export class MoviesController {
    * @desc: Get public movie detail
    * @route: /movies/:movieId
    * @param: movieId
-   * @returns: MovieResponseDto
+   * @returns: Promise<MovieResponseDto>
    */
   @Get('movies/:movieId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get movie detail' })
   @ApiOkResponse({ type: MovieResponseDto })
-  findOne(@Param('movieId', ParseIntPipe) movieId: number): MovieResponseDto {
+  findOne(
+    @Param('movieId', ParseIntPipe) movieId: number,
+  ): Promise<MovieResponseDto> {
     return this.moviesService.findOne(movieId);
   }
 
   /* Admin Find All Movies Controller
    * @desc: List all movies for admin
    * @route: /admin/movies
-   * @returns: MovieResponseDto[]
+   * @returns: Promise<MovieResponseDto[]>
    */
   @UseGuards(AdminJwtGuard)
   @Get('admin/movies')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'List all movies for admin' })
   @ApiOkResponse({ type: [MovieResponseDto] })
-  adminFindAll(): MovieResponseDto[] {
+  adminFindAll(): Promise<MovieResponseDto[]> {
     return this.moviesService.findAll({});
   }
 
@@ -76,14 +78,14 @@ export class MoviesController {
    * @desc: Create a movie
    * @route: /admin/movies
    * @param: CreateMovieDto
-   * @returns: MovieResponseDto
+   * @returns: Promise<MovieResponseDto>
    */
   @UseGuards(AdminJwtGuard)
   @Post('admin/movies')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create movie' })
   @ApiCreatedResponse({ type: MovieResponseDto })
-  create(@Body() dto: CreateMovieDto): MovieResponseDto {
+  create(@Body() dto: CreateMovieDto): Promise<MovieResponseDto> {
     return this.moviesService.create(dto);
   }
 
@@ -91,7 +93,7 @@ export class MoviesController {
    * @desc: Update a movie
    * @route: /admin/movies/:movieId
    * @param: movieId, UpdateMovieDto
-   * @returns: MovieResponseDto
+   * @returns: Promise<MovieResponseDto>
    */
   @UseGuards(AdminJwtGuard)
   @Put('admin/movies/:movieId')
@@ -101,7 +103,7 @@ export class MoviesController {
   update(
     @Param('movieId', ParseIntPipe) movieId: number,
     @Body() dto: UpdateMovieDto,
-  ): MovieResponseDto {
+  ): Promise<MovieResponseDto> {
     return this.moviesService.update(movieId, dto);
   }
 
@@ -109,14 +111,16 @@ export class MoviesController {
    * @desc: Delete a movie
    * @route: /admin/movies/:movieId
    * @param: movieId
-   * @returns: MovieResponseDto
+   * @returns: Promise<MovieResponseDto>
    */
   @UseGuards(AdminJwtGuard)
   @Delete('admin/movies/:movieId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete movie' })
   @ApiOkResponse({ type: MovieResponseDto })
-  remove(@Param('movieId', ParseIntPipe) movieId: number): MovieResponseDto {
+  remove(
+    @Param('movieId', ParseIntPipe) movieId: number,
+  ): Promise<MovieResponseDto> {
     return this.moviesService.remove(movieId);
   }
 }

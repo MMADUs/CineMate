@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { inArray } from 'drizzle-orm';
-import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { eq, inArray } from 'drizzle-orm';
+import { MySql2Database } from 'drizzle-orm/mysql2';
 import { randomUUID } from 'node:crypto';
 import { calculateTaxedTotal, toNumber } from '../common/utils/money';
 import { DRIZZLE } from '../database/database.constants';
@@ -13,7 +13,7 @@ import { FnbOrderResponseDto } from './dto/fnb-order-response.dto';
 export class FnbOrdersService {
   constructor(
     @Inject(DRIZZLE)
-    private readonly db: BetterSQLite3Database<typeof schema>,
+    private readonly db: MySql2Database<typeof schema>,
   ) {}
 
   /* Create FNB Order Service
@@ -21,18 +21,20 @@ export class FnbOrdersService {
    * @param: userId, CreateFnbOrderDto
    * @returns: FnbOrderResponseDto
    */
-  create(userId: number, dto: CreateFnbOrderDto): FnbOrderResponseDto {
+  async create(
+    userId: number,
+    dto: CreateFnbOrderDto,
+  ): Promise<FnbOrderResponseDto> {
     // start db transaction
-    return this.db.transaction((tx) => {
+    return await this.db.transaction(async (tx) => {
       // get snack ids
       const ids = dto.items.map((item) => item.snackId);
 
       // get snacks
-      const foundSnacks = tx
+      const foundSnacks = await tx
         .select()
         .from(snacks)
-        .where(inArray(snacks.snackId, ids))
-        .all();
+        .where(inArray(snacks.snackId, ids));
 
       // check if any snacks are missing
       if (foundSnacks.length !== new Set(ids).size)
@@ -57,18 +59,20 @@ export class FnbOrdersService {
       );
 
       // create fnb order
-      const order = tx
-        .insert(fnbOrders)
-        .values({ fnbOrderId: randomUUID(), userId, ...totals })
-        .returning()
-        .get();
+      const fnbOrderId = randomUUID();
+      await tx.insert(fnbOrders).values({ fnbOrderId, userId, ...totals });
+
+      const [order] = await tx
+        .select()
+        .from(fnbOrders)
+        .where(eq(fnbOrders.fnbOrderId, fnbOrderId));
 
       // insert fnb order items
-      tx.insert(fnbOrderItems)
+      await tx
+        .insert(fnbOrderItems)
         .values(
           orderItems.map((item) => ({ fnbOrderId: order.fnbOrderId, ...item })),
-        )
-        .run();
+        );
 
       return { ...order, items: orderItems };
     });

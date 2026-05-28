@@ -1,9 +1,9 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { int, mysqlTable, varchar } from 'drizzle-orm/mysql-core';
 
-export const admins = sqliteTable('Admin', {
-  adminId: integer('AdminID').primaryKey({ autoIncrement: true }),
-  username: text('username', { length: 100 }).notNull(),
-  email: text('email', { length: 100 }).notNull().unique(),
-  password: text('password', { length: 255 }).notNull(),
-  refreshTokenHash: text('refreshTokenHash'),
+export const admins = mysqlTable('Admin', {
+  adminId: int('AdminID').primaryKey().autoincrement(),
+  username: varchar('username', { length: 100 }).notNull(),
+  email: varchar('email', { length: 100 }).notNull().unique(),
+  password: varchar('password', { length: 255 }).notNull(),
+  refreshTokenHash: varchar('refreshTokenHash', { length: 255 }),
 });

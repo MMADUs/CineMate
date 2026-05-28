@@ -37,13 +37,13 @@ export class ShowtimesController {
    * @desc: List public showtimes
    * @route: /showtimes
    * @param: QueryShowtimeDto
-   * @returns: ShowtimeResponseDto[]
+   * @returns: Promise<ShowtimeResponseDto[]>
    */
   @Get('showtimes')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'List public showtimes' })
   @ApiOkResponse({ type: [ShowtimeResponseDto] })
-  findAll(@Query() query: QueryShowtimeDto): ShowtimeResponseDto[] {
+  findAll(@Query() query: QueryShowtimeDto): Promise<ShowtimeResponseDto[]> {
     return this.showtimesService.findAll(query);
   }
 
@@ -51,7 +51,7 @@ export class ShowtimesController {
    * @desc: Get hall layout and seat availability
    * @route: /showtimes/:showtimeId/seats
    * @param: showtimeId
-   * @returns: ShowtimeSeatsResponseDto
+   * @returns: Promise<ShowtimeSeatsResponseDto>
    */
   @Get('showtimes/:showtimeId/seats')
   @HttpCode(HttpStatus.OK)
@@ -59,21 +59,21 @@ export class ShowtimesController {
   @ApiOkResponse({ type: ShowtimeSeatsResponseDto })
   getSeats(
     @Param('showtimeId', ParseIntPipe) showtimeId: number,
-  ): ShowtimeSeatsResponseDto {
+  ): Promise<ShowtimeSeatsResponseDto> {
     return this.showtimesService.getSeats(showtimeId);
   }
 
   /* Admin Find All Showtimes Controller
    * @desc: List all showtimes for admin
    * @route: /admin/showtimes
-   * @returns: ShowtimeResponseDto[]
+   * @returns: Promise<ShowtimeResponseDto[]>
    */
   @UseGuards(AdminJwtGuard)
   @Get('admin/showtimes')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'List all showtimes for admin' })
   @ApiOkResponse({ type: [ShowtimeResponseDto] })
-  adminFindAll(): ShowtimeResponseDto[] {
+  adminFindAll(): Promise<ShowtimeResponseDto[]> {
     return this.showtimesService.findAll({});
   }
 
@@ -81,14 +81,14 @@ export class ShowtimesController {
    * @desc: Create a showtime
    * @route: /admin/showtimes
    * @param: CreateShowtimeDto
-   * @returns: ShowtimeResponseDto
+   * @returns: Promise<ShowtimeResponseDto>
    */
   @UseGuards(AdminJwtGuard)
   @Post('admin/showtimes')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create showtime' })
   @ApiCreatedResponse({ type: ShowtimeResponseDto })
-  create(@Body() dto: CreateShowtimeDto): ShowtimeResponseDto {
+  create(@Body() dto: CreateShowtimeDto): Promise<ShowtimeResponseDto> {
     return this.showtimesService.create(dto);
   }
 
@@ -96,7 +96,7 @@ export class ShowtimesController {
    * @desc: Update a showtime
    * @route: /admin/showtimes/:showtimeId
    * @param: showtimeId, UpdateShowtimeDto
-   * @returns: ShowtimeResponseDto
+   * @returns: Promise<ShowtimeResponseDto>
    */
   @UseGuards(AdminJwtGuard)
   @Put('admin/showtimes/:showtimeId')
@@ -106,7 +106,7 @@ export class ShowtimesController {
   update(
     @Param('showtimeId', ParseIntPipe) showtimeId: number,
     @Body() dto: UpdateShowtimeDto,
-  ): ShowtimeResponseDto {
+  ): Promise<ShowtimeResponseDto> {
     return this.showtimesService.update(showtimeId, dto);
   }
 
@@ -114,7 +114,7 @@ export class ShowtimesController {
    * @desc: Delete a showtime
    * @route: /admin/showtimes/:showtimeId
    * @param: showtimeId
-   * @returns: ShowtimeResponseDto
+   * @returns: Promise<ShowtimeResponseDto>
    */
   @UseGuards(AdminJwtGuard)
   @Delete('admin/showtimes/:showtimeId')
@@ -123,7 +123,7 @@ export class ShowtimesController {
   @ApiOkResponse({ type: ShowtimeResponseDto })
   remove(
     @Param('showtimeId', ParseIntPipe) showtimeId: number,
-  ): ShowtimeResponseDto {
+  ): Promise<ShowtimeResponseDto> {
     return this.showtimesService.remove(showtimeId);
   }
 }

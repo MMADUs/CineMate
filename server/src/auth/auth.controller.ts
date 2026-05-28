@@ -100,7 +100,7 @@ export class AuthController {
   logout(
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) res: Response,
-  ): LogoutResponseDto {
+  ): Promise<LogoutResponseDto> {
     return this.authService.logout(user, res);
   }
 
