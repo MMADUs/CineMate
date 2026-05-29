@@ -1,0 +1,24 @@
+meta {
+  name: Create Hall
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{apiUrl}}/admin/halls
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "cinemaName": "CGV Grand Indonesia",
+    "studioName": "Studio 1",
+    "totalRows": 8,
+    "seatsPerRow": 12
+  }
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Admin Create Showtime
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{apiUrl}}/admin/showtimes
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "movieId": {{movieId}},
+    "hallId": {{hallId}},
+    "showDate": "2026-05-23",
+    "showTime": "19:30",
+    "price": 50000
+  }
+}
+​

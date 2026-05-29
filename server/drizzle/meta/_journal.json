@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1779971830154,
+      "tag": "0000_clammy_ronan",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1779973715559,
+      "tag": "0001_greedy_deathbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1780020791769,
+      "tag": "0002_blushing_shiva",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1780025867598,
+      "tag": "0003_great_zzzax",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1780026340372,
+      "tag": "0004_fine_hemingway",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1780030000000,
+      "tag": "0005_rename_image_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1780049531790,
+      "tag": "0006_premium_grim_reaper",
+      "breakpoints": true
+    }
+  ]
+}
