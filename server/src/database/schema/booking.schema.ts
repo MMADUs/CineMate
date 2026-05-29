@@ -27,6 +27,9 @@ export const bookings = mysqlTable(
       .defaultNow(),
     taxAmount: decimal('taxAmount', { precision: 12, scale: 2 }).notNull(),
     totalAmount: decimal('totalAmount', { precision: 12, scale: 2 }).notNull(),
+    orderStatus: varchar('orderStatus', { length: 30 })
+      .notNull()
+      .default('PendingPayment'),
   },
   (table) => [
     index('booking_user_id_idx').on(table.userId),

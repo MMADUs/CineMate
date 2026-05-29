@@ -2,6 +2,7 @@
 
 question mark:
 - current google sign in implementation only using client id while, some implementation uses oauth callback flow, figure this out, there is a straightforward practice by using nestjs/passport
+- current payment implementation is using the hosted payment approach where client are redirected to xendit payment page, although there is more flexible but more complicated approach called embedded payment, this way client can have custom UI for the payment page, interesting but hard, so figure this out later
 
 review list:
 - unit testing

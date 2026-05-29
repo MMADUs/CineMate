@@ -21,9 +21,9 @@ import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { BookingsService } from './bookings.service';
 import {
+  BookingCheckoutResponseDto,
   BookingDetailResponseDto,
   BookingResponseDto,
-  CreatedBookingResponseDto,
 } from './dto/booking-response.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
@@ -33,28 +33,28 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
-  /* Create Booking Controller
-   * @desc: Create a movie booking
-   * @route: /bookings
+  /* Checkout Booking Controller
+   * @desc: Create a movie booking and Xendit payment invoice
+   * @route: /bookings/checkout
    * @param: AuthUser, CreateBookingDto
-   * @returns: Promise<CreatedBookingResponseDto>
+   * @returns: Promise<BookingCheckoutResponseDto>
    */
-  @Post('bookings')
+  @Post('bookings/checkout')
   @HttpCode(HttpStatus.CREATED)
   @Idempotent()
-  @ApiOperation({ summary: 'Create movie booking' })
+  @ApiOperation({ summary: 'Checkout movie booking' })
   @ApiHeader({
     name: 'Idempotency-Key',
     required: false,
     description:
-      'Required only when IDEMPOTENCY_FLAG=true. Reuse the same UUID for retries of the same booking request.',
+      'Required only when IDEMPOTENCY_FLAG=true. Reuse the same UUID for retries of the same booking checkout request.',
   })
-  @ApiCreatedResponse({ type: CreatedBookingResponseDto })
-  create(
+  @ApiCreatedResponse({ type: BookingCheckoutResponseDto })
+  checkout(
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateBookingDto,
-  ): Promise<CreatedBookingResponseDto> {
-    return this.bookingsService.create(user.userId, dto);
+  ): Promise<BookingCheckoutResponseDto> {
+    return this.bookingsService.checkout(user.userId, dto);
   }
 
   /* Find My Bookings Controller

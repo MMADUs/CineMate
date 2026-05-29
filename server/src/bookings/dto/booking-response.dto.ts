@@ -27,6 +27,9 @@ export class BookingResponseDto {
   @ApiProperty({ example: '111000' })
   totalAmount: string;
 
+  @ApiProperty({ example: 'PendingPayment' })
+  orderStatus: string;
+
   @ApiPropertyOptional({ type: PaymentResponseDto, nullable: true })
   payment?: PaymentResponseDto | null;
 
@@ -50,4 +53,12 @@ export class BookingSeatResponseDto {
 export class BookingDetailResponseDto extends BookingResponseDto {
   @ApiProperty({ type: [BookingSeatResponseDto] })
   seats: BookingSeatResponseDto[];
+}
+
+export class BookingCheckoutResponseDto {
+  @ApiProperty({ type: BookingDetailResponseDto })
+  booking: BookingDetailResponseDto;
+
+  @ApiProperty({ type: PaymentResponseDto })
+  payment: PaymentResponseDto;
 }

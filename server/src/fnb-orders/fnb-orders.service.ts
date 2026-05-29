@@ -14,25 +14,61 @@ import * as schema from '../database/schema';
 import {
   fnbOrderItems,
   fnbOrders,
+  payments,
   showtimes,
   snacks,
 } from '../database/schema';
+import { PaymentsService } from '../payments/payments.service';
 import { CreateFnbOrderDto } from './dto/create-fnb-order.dto';
-import { FnbOrderResponseDto } from './dto/fnb-order-response.dto';
+import {
+  FnbOrderCheckoutResponseDto,
+  FnbOrderResponseDto,
+} from './dto/fnb-order-response.dto';
 
 @Injectable()
 export class FnbOrdersService {
   constructor(
     @Inject(DRIZZLE)
     private readonly db: MySql2Database<typeof schema>,
+    private readonly paymentsService: PaymentsService,
   ) {}
 
-  /* Create FNB Order Service
-   * @desc: Create an F&B order and calculate totals server-side
+  /* Checkout FNB Order Service
+   * @desc: Create a pending F&B order and Xendit payment invoice
+   * @param: userId, CreateFnbOrderDto
+   * @returns: FnbOrderCheckoutResponseDto
+   */
+  async checkout(
+    userId: string,
+    dto: CreateFnbOrderDto,
+  ): Promise<FnbOrderCheckoutResponseDto> {
+    // first create order with pending status
+    const order = await this.createPendingOrder(userId, dto);
+
+    try {
+      // create payment for the order
+      const payment = await this.paymentsService.create(userId, {
+        fnbOrderId: order.fnbOrderId,
+        paymentMethod: 'XENDIT_INVOICE',
+      });
+
+      return {
+        order: await this.findUserOrder(userId, order.fnbOrderId),
+        payment,
+      };
+    } catch (error) {
+      // if error occured during payment creation, restore stock
+      await this.expireOrderAndRestoreStock(order.fnbOrderId);
+      throw error;
+    }
+  }
+
+  /* Create Pending FNB Order Helper
+   * @desc: Reserve snack stock with PendingPayment order status
    * @param: userId, CreateFnbOrderDto
    * @returns: FnbOrderResponseDto
    */
-  async create(
+  private async createPendingOrder(
     userId: string,
     dto: CreateFnbOrderDto,
   ): Promise<FnbOrderResponseDto> {
@@ -102,6 +138,7 @@ export class FnbOrdersService {
         fnbOrderId,
         userId,
         showtimeId: dto.showtimeId ?? null,
+        orderStatus: 'PendingPayment',
         ...totals,
       });
 
@@ -163,9 +200,23 @@ export class FnbOrdersService {
         ),
       );
 
+    const orderPayments = await this.db
+      .select()
+      .from(payments)
+      .where(
+        inArray(
+          payments.fnbOrderId,
+          orders.map((order) => order.fnbOrderId),
+        ),
+      );
+
     return orders.map((order) => ({
       ...order,
       items: items.filter((item) => item.fnbOrderId === order.fnbOrderId),
+      payment:
+        orderPayments.find(
+          (payment) => payment.fnbOrderId === order.fnbOrderId,
+        ) ?? null,
     }));
   }
 
@@ -184,6 +235,7 @@ export class FnbOrdersService {
       .where(eq(fnbOrders.fnbOrderId, fnbOrderId));
 
     if (!order) throw new NotFoundException('F&B order not found');
+    
     if (order.userId !== userId)
       throw new ForbiddenException('F&B order does not belong to this user');
 
@@ -192,7 +244,41 @@ export class FnbOrdersService {
       .from(fnbOrderItems)
       .where(eq(fnbOrderItems.fnbOrderId, fnbOrderId));
 
-    return { ...order, items };
+    const [payment] = await this.db
+      .select()
+      .from(payments)
+      .where(eq(payments.fnbOrderId, fnbOrderId));
+
+    return { ...order, items, payment: payment ?? null };
+  }
+
+  /* Expire Order And Restore Stock Helper
+   * @desc: Mark pending F&B order expired and restore reserved stock
+   * @param: fnbOrderId
+   * @returns: Promise<void>
+   */
+  private async expireOrderAndRestoreStock(fnbOrderId: string): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      // get order items
+      const orderItems = await tx
+        .select()
+        .from(fnbOrderItems)
+        .where(eq(fnbOrderItems.fnbOrderId, fnbOrderId));
+
+      // restore stock
+      for (const item of orderItems) {
+        await tx
+          .update(snacks)
+          .set({ stock: sql`${snacks.stock} + ${item.quantity}` })
+          .where(eq(snacks.snackId, item.snackId));
+      }
+
+      // update order status
+      await tx
+        .update(fnbOrders)
+        .set({ orderStatus: 'Expired' })
+        .where(eq(fnbOrders.fnbOrderId, fnbOrderId));
+    });
   }
 
   /* Get Affected Rows Helper

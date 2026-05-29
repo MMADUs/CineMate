@@ -11,7 +11,9 @@ import { AppLoggingInterceptor } from './common/logging/app-logging.interceptor'
 
 async function bootstrap() {
   // nest app
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true,
+  });
 
   // Global prefix
   app.setGlobalPrefix('api');

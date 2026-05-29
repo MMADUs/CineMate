@@ -1,20 +1,13 @@
-import { Body, Controller, Headers, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Headers, Post, Req } from '@nestjs/common';
+import type { RawBodyRequest } from '@nestjs/common';
+import type { Request } from 'express';
 import {
-  ApiCreatedResponse,
   ApiHeader,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Idempotent } from '../common/decorators/idempotent.decorator';
-import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
-import type { AuthUser } from '../common/interfaces/auth-user.interface';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import {
-  CreatePaymentResponseDto,
-  PaymentWebhookResponseDto,
-} from './dto/payment-response.dto';
+import { PaymentWebhookResponseDto } from './dto/payment-response.dto';
 import { XenditInvoiceWebhookDto } from './dto/xendit-webhook.dto';
 import { PaymentsService } from './payments.service';
 
@@ -22,33 +15,6 @@ import { PaymentsService } from './payments.service';
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
-
-  /* Create Payment Controller
-   * @desc: Create a Xendit invoice for a booking or F&B order
-   * @route: /payments
-   * @param: AuthUser, CreatePaymentDto
-   */
-  @UseGuards(JwtAccessGuard)
-  @Post()
-  @Idempotent()
-  @ApiOperation({
-    summary: 'Create Xendit hosted checkout invoice',
-    description:
-      'Creates a pending local payment and a Xendit invoice. The frontend should redirect/open invoiceUrl. Booking/order is confirmed only after webhook payment success.',
-  })
-  @ApiHeader({
-    name: 'Idempotency-Key',
-    required: false,
-    description:
-      'Required only when IDEMPOTENCY_FLAG=true. Reuse the same UUID for retries of the same payment invoice request.',
-  })
-  @ApiCreatedResponse({ type: CreatePaymentResponseDto })
-  create(
-    @CurrentUser() user: AuthUser,
-    @Body() dto: CreatePaymentDto,
-  ): Promise<CreatePaymentResponseDto> {
-    return this.paymentsService.create(user.userId, dto);
-  }
 
   /* Xendit Notification Controller
    * @desc: Receive Xendit invoice payment webhook
@@ -69,8 +35,14 @@ export class PaymentsController {
   @ApiOkResponse({ type: PaymentWebhookResponseDto })
   handleNotification(
     @Headers('x-callback-token') callbackToken: string | undefined,
+    @Headers('webhook-id') webhookId: string | undefined,
+    @Req() req: RawBodyRequest<Request>,
     @Body() dto: XenditInvoiceWebhookDto,
   ): Promise<PaymentWebhookResponseDto> {
+    console.log('Xendit webhook-id:', webhookId);
+    console.log('Xendit raw body:', req.rawBody?.toString('utf8'));
+    console.log('Xendit parsed body:', req.body);
+
     return this.paymentsService.handleXenditNotification(callbackToken, dto);
   }
 }

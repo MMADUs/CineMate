@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, ne } from 'drizzle-orm';
 import { MySql2Database } from 'drizzle-orm/mysql2';
 import { randomUUID } from 'node:crypto';
 import { calculateTaxedTotal, toNumber } from '../common/utils/money';
@@ -19,8 +19,10 @@ import {
   seats,
   showtimes,
 } from '../database/schema';
+import { PaymentsService } from '../payments/payments.service';
 import { StorageService } from '../storage/storage.service';
 import {
+  BookingCheckoutResponseDto,
   BookingDetailResponseDto,
   BookingResponseDto,
   CreatedBookingResponseDto,
@@ -32,15 +34,50 @@ export class BookingsService {
   constructor(
     @Inject(DRIZZLE)
     private readonly db: MySql2Database<typeof schema>,
+    private readonly paymentsService: PaymentsService,
     private readonly storageService: StorageService,
   ) {}
 
-  /* Create Booking Service
-   * @desc: Create a new movie booking
+  /* Checkout Booking Service
+   * @desc: Create a pending movie booking and Xendit payment invoice
+   * @param: userId, CreateBookingDto
+   * @returns: BookingCheckoutResponseDto
+   */
+  async checkout(
+    userId: string,
+    dto: CreateBookingDto,
+  ): Promise<BookingCheckoutResponseDto> {
+    // first create booking with pending status
+    const booking = await this.createPendingBooking(userId, dto);
+
+    try {
+      // create payment for the booking
+      const payment = await this.paymentsService.create(userId, {
+        bookingId: booking.bookingId,
+        paymentMethod: 'XENDIT_INVOICE',
+      });
+
+      return {
+        booking: await this.findUserBooking(userId, booking.bookingId),
+        payment,
+      };
+    } catch (error) {
+      // if error occured during payment creation, the order status is expired
+      await this.db
+        .update(bookings)
+        .set({ orderStatus: 'Expired' })
+        .where(eq(bookings.bookingId, booking.bookingId));
+
+      throw error;
+    }
+  }
+
+  /* Create Pending Booking Helper
+   * @desc: Reserve selected seats with PendingPayment order status
    * @param: userId, CreateBookingDto
    * @returns: CreatedBookingResponseDto
    */
-  async create(
+  private async createPendingBooking(
     userId: string,
     dto: CreateBookingDto,
   ): Promise<CreatedBookingResponseDto> {
@@ -80,6 +117,7 @@ export class BookingsService {
           and(
             eq(bookings.showtimeId, dto.showtimeId),
             inArray(bookingSeats.seatId, dto.seatIds),
+            ne(bookings.orderStatus, 'Expired'),
           ),
         );
 
@@ -98,6 +136,7 @@ export class BookingsService {
         bookingId,
         userId,
         showtimeId: dto.showtimeId,
+        orderStatus: 'PendingPayment',
         ...totals,
       });
 

@@ -23,9 +23,8 @@ describe('Payments feature', () => {
     failureReason: null,
   };
 
-  it('controller delegates payment creation and webhook handling', async () => {
+  it('controller delegates webhook handling', async () => {
     const service = {
-      create: jest.fn().mockResolvedValue(payment),
       handleXenditNotification: jest.fn().mockResolvedValue({
         received: true,
         paymentStatus: 'Completed',
@@ -34,14 +33,7 @@ describe('Payments feature', () => {
     const controller = new PaymentsController(
       service as unknown as PaymentsService,
     );
-    const user = { userId, email: 'user@mail.test' };
 
-    await expect(
-      controller.create(user, {
-        bookingId: 'booking-id',
-        paymentMethod: 'QRIS',
-      }),
-    ).resolves.toEqual(payment);
     await expect(
       controller.handleNotification('callback-token', {
         id: 'invoice-id',
@@ -71,6 +63,7 @@ describe('Payments feature', () => {
               bookingId: 'booking-id',
               userId,
               totalAmount: '55500',
+              orderStatus: 'PendingPayment',
             },
           ]),
         )

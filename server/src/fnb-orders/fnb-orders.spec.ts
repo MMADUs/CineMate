@@ -13,12 +13,32 @@ describe('F&B orders feature', () => {
     orderDate: '2026-05-28 00:00:00',
     taxAmount: '9900',
     totalAmount: '99900',
-    orderStatus: 'Pending',
+    orderStatus: 'PendingPayment',
+  };
+  const payment = {
+    paymentId: 1,
+    bookingId: null,
+    fnbOrderId: order.fnbOrderId,
+    provider: 'XENDIT',
+    providerPaymentId: 'invoice-id',
+    externalId: 'pay-id',
+    invoiceUrl: 'https://checkout.test',
+    paymentMethod: 'XENDIT_INVOICE',
+    amount: order.totalAmount,
+    currency: 'IDR',
+    paymentDate: '2026-05-28 00:00:00',
+    paymentStatus: 'Pending',
+    paidAt: null,
+    expiresAt: null,
+    failureReason: null,
   };
 
   it('controller delegates F&B order creation', async () => {
     const service = {
-      create: jest.fn().mockResolvedValue({ ...order, items: [] }),
+      checkout: jest.fn().mockResolvedValue({
+        order: { ...order, items: [], payment },
+        payment,
+      }),
       findUserOrders: jest.fn().mockResolvedValue([{ ...order, items: [] }]),
       findUserOrder: jest.fn().mockResolvedValue({ ...order, items: [] }),
     };
@@ -27,11 +47,14 @@ describe('F&B orders feature', () => {
     );
 
     await expect(
-      controller.create(
+      controller.checkout(
         { userId, email: 'user@mail.test' },
         { items: [{ snackId: 1, quantity: 2 }] },
       ),
-    ).resolves.toEqual({ ...order, items: [] });
+    ).resolves.toEqual({
+      order: { ...order, items: [], payment },
+      payment,
+    });
     await expect(
       controller.findMine({ userId, email: 'user@mail.test' }),
     ).resolves.toEqual([{ ...order, items: [] }]);
@@ -64,25 +87,42 @@ describe('F&B orders feature', () => {
         }),
       }),
     };
-    const service = new FnbOrdersService({
-      transaction: jest.fn((callback: (txArg: typeof tx) => Promise<unknown>) =>
-        callback(tx),
-      ),
-    });
+    const service = new FnbOrdersService(
+      {
+        transaction: jest.fn(
+          (callback: (txArg: typeof tx) => Promise<unknown>) => callback(tx),
+        ),
+        select: jest
+          .fn()
+          .mockReturnValueOnce(selectWhere([order]))
+          .mockReturnValueOnce(
+            selectWhere([
+              { snackId: 1, quantity: 1, subTotalPrice: '45000' },
+              { snackId: 2, quantity: 1, subTotalPrice: '45000' },
+            ]),
+          )
+          .mockReturnValueOnce(selectWhere([payment])),
+      } as never,
+      { create: jest.fn().mockResolvedValue(payment) } as never,
+    );
 
     await expect(
-      service.create(userId, {
+      service.checkout(userId, {
         items: [
           { snackId: 1, quantity: 1 },
           { snackId: 2, quantity: 1 },
         ],
       }),
     ).resolves.toEqual({
-      ...order,
-      items: [
-        { snackId: 1, quantity: 1, subTotalPrice: '45000' },
-        { snackId: 2, quantity: 1, subTotalPrice: '45000' },
-      ],
+      order: {
+        ...order,
+        items: [
+          { snackId: 1, quantity: 1, subTotalPrice: '45000' },
+          { snackId: 2, quantity: 1, subTotalPrice: '45000' },
+        ],
+        payment,
+      },
+      payment,
     });
     expect(insertedValues[0]).toEqual(
       expect.objectContaining({ taxAmount: '9900', totalAmount: '99900' }),
@@ -101,14 +141,17 @@ describe('F&B orders feature', () => {
       insert: jest.fn(),
       update: jest.fn(),
     };
-    const service = new FnbOrdersService({
-      transaction: jest.fn((callback: (txArg: typeof tx) => Promise<unknown>) =>
-        callback(tx),
-      ),
-    });
+    const service = new FnbOrdersService(
+      {
+        transaction: jest.fn(
+          (callback: (txArg: typeof tx) => Promise<unknown>) => callback(tx),
+        ),
+      } as never,
+      { create: jest.fn() } as never,
+    );
 
     await expect(
-      service.create(userId, { items: [{ snackId: 1, quantity: 2 }] }),
+      service.checkout(userId, { items: [{ snackId: 1, quantity: 2 }] }),
     ).rejects.toThrow(BadRequestException);
     expect(tx.insert).not.toHaveBeenCalled();
   });
@@ -127,26 +170,39 @@ describe('F&B orders feature', () => {
         .fn()
         .mockReturnValueOnce(selectWhere([order]))
         .mockReturnValueOnce(selectWhere(items))
+        .mockReturnValueOnce(selectWhere([payment]))
         .mockReturnValueOnce(selectWhere([order]))
-        .mockReturnValueOnce(selectWhere(items)),
+        .mockReturnValueOnce(selectWhere(items))
+        .mockReturnValueOnce(selectWhere([payment])),
     };
-    const service = new FnbOrdersService(db);
+    const service = new FnbOrdersService(
+      db as never,
+      {
+        create: jest.fn(),
+      } as never,
+    );
 
     await expect(service.findUserOrders(userId)).resolves.toEqual([
-      { ...order, items },
+      { ...order, items, payment },
     ]);
     await expect(service.findUserOrder(userId, 'fnb-id')).resolves.toEqual({
       ...order,
       items,
+      payment,
     });
   });
 
   it('service rejects F&B order detail from another user', async () => {
-    const service = new FnbOrdersService({
-      select: jest
-        .fn()
-        .mockReturnValueOnce(selectWhere([{ ...order, userId: otherUserId }])),
-    });
+    const service = new FnbOrdersService(
+      {
+        select: jest
+          .fn()
+          .mockReturnValueOnce(
+            selectWhere([{ ...order, userId: otherUserId }]),
+          ),
+      } as never,
+      { create: jest.fn() } as never,
+    );
 
     await expect(service.findUserOrder(userId, 'fnb-id')).rejects.toThrow(
       ForbiddenException,

@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PaymentResponseDto } from '../../payments/dto/payment-response.dto';
 
 export class FnbOrderItemResponseDto {
   @ApiProperty({ example: 1 })
@@ -30,9 +31,20 @@ export class FnbOrderResponseDto {
   @ApiProperty({ example: '99900' })
   totalAmount: string;
 
-  @ApiProperty({ example: 'Pending' })
+  @ApiProperty({ example: 'PendingPayment' })
   orderStatus: string;
 
   @ApiProperty({ type: [FnbOrderItemResponseDto] })
   items: FnbOrderItemResponseDto[];
+
+  @ApiPropertyOptional({ type: PaymentResponseDto, nullable: true })
+  payment?: PaymentResponseDto | null;
+}
+
+export class FnbOrderCheckoutResponseDto {
+  @ApiProperty({ type: FnbOrderResponseDto })
+  order: FnbOrderResponseDto;
+
+  @ApiProperty({ type: PaymentResponseDto })
+  payment: PaymentResponseDto;
 }

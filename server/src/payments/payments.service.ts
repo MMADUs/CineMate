@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { and, eq, isNotNull } from 'drizzle-orm';
+import { and, eq, isNotNull, sql } from 'drizzle-orm';
 import { MySql2Database } from 'drizzle-orm/mysql2';
 import { randomUUID } from 'node:crypto';
 import { toNumber } from '../common/utils/money';
@@ -16,9 +16,11 @@ import { DRIZZLE } from '../database/database.constants';
 import * as schema from '../database/schema';
 import {
   bookings,
+  fnbOrderItems,
   fnbOrders,
   paymentWebhookEvents,
   payments,
+  snacks,
   users,
 } from '../database/schema';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -74,15 +76,20 @@ export class PaymentsService {
       .select()
       .from(users)
       .where(eq(users.userId, userId));
+
     if (!user) throw new NotFoundException('User not found');
 
     const target = await this.resolveCheckoutTarget(userId, dto);
+
     const existing = await this.findExistingPendingPayment(dto);
+
     if (existing?.invoiceUrl) return existing;
+
     if (existing)
       throw new BadRequestException('Payment already exists for this order');
 
     const externalId = `pay_${randomUUID()}`;
+
     const invoice = await this.createXenditInvoice({
       externalId,
       amount: toNumber(target.amount),
@@ -134,9 +141,11 @@ export class PaymentsService {
       .select()
       .from(payments)
       .where(eq(payments.externalId, dto.external_id));
+
     if (!payment) throw new NotFoundException('Payment not found');
 
     const providerEventId = `${dto.id}:${dto.status}:${dto.paid_at ?? ''}`;
+
     const [existingEvent] = await this.db
       .select()
       .from(paymentWebhookEvents)
@@ -146,11 +155,16 @@ export class PaymentsService {
           eq(paymentWebhookEvents.providerEventId, providerEventId),
         ),
       );
+
     if (existingEvent) {
       return { received: true, paymentStatus: payment.paymentStatus };
     }
 
-    const nextStatus = this.mapXenditStatus(dto.status);
+    const nextStatus = this.resolveNextPaymentStatus(
+      payment.paymentStatus,
+      dto.status,
+    );
+
     await this.db.transaction(async (tx) => {
       await tx.insert(paymentWebhookEvents).values({
         paymentId: payment.paymentId,
@@ -173,6 +187,13 @@ export class PaymentsService {
         .where(eq(payments.paymentId, payment.paymentId));
 
       if (nextStatus === 'Completed') {
+        if (payment.bookingId) {
+          await tx
+            .update(bookings)
+            .set({ orderStatus: 'Confirmed' })
+            .where(eq(bookings.bookingId, payment.bookingId));
+        }
+
         if (payment.fnbOrderId) {
           await tx
             .update(fnbOrders)
@@ -182,10 +203,31 @@ export class PaymentsService {
       }
 
       if (nextStatus === 'Expired' || nextStatus === 'Failed') {
+        if (payment.bookingId) {
+          await tx
+            .update(bookings)
+            .set({ orderStatus: 'Expired' })
+            .where(eq(bookings.bookingId, payment.bookingId));
+        }
+
         if (payment.fnbOrderId) {
+          if (!this.isFailedOrExpired(payment.paymentStatus)) {
+            const items = await tx
+              .select()
+              .from(fnbOrderItems)
+              .where(eq(fnbOrderItems.fnbOrderId, payment.fnbOrderId));
+
+            for (const item of items) {
+              await tx
+                .update(snacks)
+                .set({ stock: sql`${snacks.stock} + ${item.quantity}` })
+                .where(eq(snacks.snackId, item.snackId));
+            }
+          }
+
           await tx
             .update(fnbOrders)
-            .set({ orderStatus: 'Cancelled' })
+            .set({ orderStatus: 'Expired' })
             .where(eq(fnbOrders.fnbOrderId, payment.fnbOrderId));
         }
       }
@@ -208,9 +250,15 @@ export class PaymentsService {
         .select()
         .from(bookings)
         .where(eq(bookings.bookingId, dto.bookingId));
+
       if (!booking) throw new NotFoundException('Booking not found');
+
       if (booking.userId !== userId)
         throw new ForbiddenException('Booking does not belong to this user');
+
+      if (booking.orderStatus !== 'PendingPayment')
+        throw new BadRequestException('Booking is not payable');
+
       return {
         bookingId: booking.bookingId,
         amount: booking.totalAmount,
@@ -222,11 +270,15 @@ export class PaymentsService {
       .select()
       .from(fnbOrders)
       .where(eq(fnbOrders.fnbOrderId, dto.fnbOrderId!));
+
     if (!order) throw new NotFoundException('FNB order not found');
+
     if (order.userId !== userId)
       throw new ForbiddenException('FNB order does not belong to this user');
-    if (order.orderStatus !== 'Pending')
+
+    if (order.orderStatus !== 'PendingPayment')
       throw new BadRequestException('FNB order is not payable');
+
     return {
       fnbOrderId: order.fnbOrderId,
       amount: order.totalAmount,
@@ -252,6 +304,7 @@ export class PaymentsService {
             isNotNull(payments.invoiceUrl),
           ),
         );
+
       return payment?.invoiceUrl ? (payment as CreatePaymentResponseDto) : null;
     }
 
@@ -264,6 +317,7 @@ export class PaymentsService {
           isNotNull(payments.invoiceUrl),
         ),
       );
+
     return payment?.invoiceUrl ? (payment as CreatePaymentResponseDto) : null;
   }
 
@@ -283,6 +337,7 @@ export class PaymentsService {
     };
   }): Promise<XenditInvoiceResponse> {
     const apiKey = this.configService.get<string>('XENDIT_API_KEY');
+
     if (!apiKey) {
       throw new InternalServerErrorException(
         'XENDIT_API_KEY is not configured',
@@ -338,11 +393,13 @@ export class PaymentsService {
     const expectedToken = this.configService.get<string>(
       'XENDIT_CALLBACK_TOKEN',
     );
+
     if (!expectedToken) {
       throw new InternalServerErrorException(
         'XENDIT_CALLBACK_TOKEN is not configured',
       );
     }
+
     if (callbackToken !== expectedToken) {
       throw new UnauthorizedException('Invalid Xendit callback token');
     }
@@ -365,5 +422,37 @@ export class PaymentsService {
       default:
         return 'Pending';
     }
+  }
+
+  /* Resolve Next Payment Status Helper
+   * @desc: Prevent terminal completed payments from being downgraded by later webhook events
+   * @param: currentStatus, providerStatus
+   * @returns: string
+   */
+  private resolveNextPaymentStatus(
+    currentStatus: string,
+    providerStatus: string,
+  ): string {
+    if (this.isTerminalPaymentStatus(currentStatus)) return currentStatus;
+
+    return this.mapXenditStatus(providerStatus);
+  }
+
+  /* Is Terminal Payment Status Helper
+   * @desc: Detect whether a payment attempt should no longer transition
+   * @param: paymentStatus
+   * @returns: boolean
+   */
+  private isTerminalPaymentStatus(paymentStatus: string): boolean {
+    return ['Completed', 'Expired', 'Failed'].includes(paymentStatus);
+  }
+
+  /* Is Failed Or Expired Helper
+   * @desc: Detect whether reserved stock was already released
+   * @param: paymentStatus
+   * @returns: boolean
+   */
+  private isFailedOrExpired(paymentStatus: string): boolean {
+    return ['Expired', 'Failed'].includes(paymentStatus);
   }
 }

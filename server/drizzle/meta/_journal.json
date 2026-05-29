@@ -43,6 +43,13 @@
       "when": 1780030000000,
       "tag": "0005_rename_image_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1780049531790,
+      "tag": "0006_premium_grim_reaper",
+      "breakpoints": true
     }
   ]
 }

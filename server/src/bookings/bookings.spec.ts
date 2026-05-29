@@ -12,6 +12,7 @@ describe('Bookings feature', () => {
     bookingDate: '2026-05-28 00:00:00',
     taxAmount: '5500',
     totalAmount: '55500',
+    orderStatus: 'PendingPayment',
   };
   const payment = {
     paymentId: 1,
@@ -63,7 +64,10 @@ describe('Bookings feature', () => {
 
   it('controller delegates booking operations', async () => {
     const service = {
-      create: jest.fn().mockResolvedValue({ ...booking, seatIds: [1] }),
+      checkout: jest.fn().mockResolvedValue({
+        booking: { ...booking, seats: [] },
+        payment,
+      }),
       findUserBookings: jest.fn().mockResolvedValue([booking]),
       findUserBooking: jest.fn().mockResolvedValue({ ...booking, seats: [] }),
     };
@@ -72,10 +76,10 @@ describe('Bookings feature', () => {
     );
 
     await expect(
-      controller.create(user, { showtimeId: 1, seatIds: [1] }),
+      controller.checkout(user, { showtimeId: 1, seatIds: [1] }),
     ).resolves.toEqual({
-      ...booking,
-      seatIds: [1],
+      booking: { ...booking, seats: [] },
+      payment,
     });
     await expect(controller.findMine(user)).resolves.toEqual([booking]);
     await expect(controller.findOne(user, 'booking-id')).resolves.toEqual({
@@ -106,11 +110,12 @@ describe('Bookings feature', () => {
           (callback: (txArg: typeof tx) => Promise<unknown>) => callback(tx),
         ),
       } as never,
+      { create: jest.fn() } as never,
       { buildImageUrl: jest.fn() } as never,
     );
 
     await expect(
-      service.create(userId, { showtimeId: 1, seatIds: [10, 11] }),
+      service.checkout(userId, { showtimeId: 1, seatIds: [10, 11] }),
     ).rejects.toThrow(BadRequestException);
     expect(tx.insert).not.toHaveBeenCalled();
   });
@@ -131,6 +136,7 @@ describe('Bookings feature', () => {
     };
     const service = new BookingsService(
       db as never,
+      { create: jest.fn() } as never,
       {
         buildImageUrl: jest.fn().mockReturnValue(movieImageUrl),
       } as never,

@@ -8,13 +8,13 @@ Use the `Local` environment, then run:
 2. `Admin/Auth Login` to set admin cookies
 3. admin create requests for movie, hall, showtime, and snack data
 4. `Auth/Register`, `Auth/Login`, or `Auth/Google` to set user cookies
-5. booking, F&B order, and payment requests
+5. `Bookings/Checkout Booking` or `FNB Orders/Checkout FNB Order`
 
 The backend uses HttpOnly cookies, so Bruno's cookie jar should keep auth cookies
 after login requests.
 
 If `IDEMPOTENCY_FLAG=true`, update `idempotencyKey` in the Local environment for
-each new booking, F&B order, or payment action. Keep the same key only when
+each new booking checkout or F&B checkout. Keep the same key only when
 retrying the same request.
 
 For `Storage/Upload Image`, put the test image inside `bruno/files`, then update

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class XenditInvoiceWebhookDto {
   @ApiProperty({ example: '6748105a77f16ebe0cc583a7' })
@@ -45,4 +45,64 @@ export class XenditInvoiceWebhookDto {
   @IsOptional()
   @IsString()
   failure_reason?: string;
+
+  @ApiPropertyOptional({ example: '5781d19b2e2385880609791c' })
+  @IsOptional()
+  @IsString()
+  user_id?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  is_high?: boolean;
+
+  @ApiPropertyOptional({ example: 'Xendit' })
+  @IsOptional()
+  @IsString()
+  merchant_name?: string;
+
+  @ApiPropertyOptional({ example: 'PERMATA' })
+  @IsOptional()
+  @IsString()
+  bank_code?: string;
+
+  @ApiPropertyOptional({ example: 'wildan@xendit.co' })
+  @IsOptional()
+  @IsString()
+  payer_email?: string;
+
+  @ApiPropertyOptional({ example: 'CineMate booking booking-uuid' })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ example: 47500 })
+  @IsOptional()
+  @IsNumber()
+  adjusted_received_amount?: number;
+
+  @ApiPropertyOptional({ example: 0 })
+  @IsOptional()
+  @IsNumber()
+  fees_paid_amount?: number;
+
+  @ApiPropertyOptional({ example: '2026-05-23T10:05:00.000Z' })
+  @IsOptional()
+  @IsString()
+  updated?: string;
+
+  @ApiPropertyOptional({ example: '2026-05-23T10:00:00.000Z' })
+  @IsOptional()
+  @IsString()
+  created?: string;
+
+  @ApiPropertyOptional({ example: 'IDR' })
+  @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @ApiPropertyOptional({ example: '888888888888' })
+  @IsOptional()
+  @IsString()
+  payment_destination?: string;
 }
