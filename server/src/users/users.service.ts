@@ -20,7 +20,7 @@ export class UsersService {
    * @param: userId
    * @returns: UserProfileResponseDto
    */
-  async getProfile(userId: number): Promise<UserProfileResponseDto> {
+  async getProfile(userId: string): Promise<UserProfileResponseDto> {
     const [user] = await this.db
       .select()
       .from(users)
@@ -38,7 +38,7 @@ export class UsersService {
    * @returns: Promise<UserProfileResponseDto>
    */
   async updateProfile(
-    userId: number,
+    userId: string,
     dto: UpdateProfileDto,
   ): Promise<UserProfileResponseDto> {
     // build update user data
@@ -69,8 +69,9 @@ export class UsersService {
    */
   private serializeUser<
     T extends UserProfileResponseDto & {
-      password?: string;
+      password?: string | null;
       refreshTokenHash?: string | null;
+      googleId?: string | null;
     },
   >(user: T): UserProfileResponseDto {
     const safeUser = { ...user };
@@ -78,6 +79,7 @@ export class UsersService {
     // remove sensitive fields
     delete safeUser.password;
     delete safeUser.refreshTokenHash;
+    delete safeUser.googleId;
 
     return safeUser;
   }

@@ -58,7 +58,7 @@ export class PaymentsService {
    * @returns: Promise<CreatePaymentResponseDto>
    */
   async create(
-    userId: number,
+    userId: string,
     dto: CreatePaymentDto,
   ): Promise<CreatePaymentResponseDto> {
     if (
@@ -90,7 +90,7 @@ export class PaymentsService {
       customer: {
         given_names: user.fullName,
         email: user.email,
-        mobile_number: user.phoneNum,
+        mobile_number: user.phoneNum ?? undefined,
       },
     });
 
@@ -173,12 +173,6 @@ export class PaymentsService {
         .where(eq(payments.paymentId, payment.paymentId));
 
       if (nextStatus === 'Completed') {
-        if (payment.bookingId) {
-          await tx
-            .update(bookings)
-            .set({ bookingStatus: 'Confirmed' })
-            .where(eq(bookings.bookingId, payment.bookingId));
-        }
         if (payment.fnbOrderId) {
           await tx
             .update(fnbOrders)
@@ -188,12 +182,6 @@ export class PaymentsService {
       }
 
       if (nextStatus === 'Expired' || nextStatus === 'Failed') {
-        if (payment.bookingId) {
-          await tx
-            .update(bookings)
-            .set({ bookingStatus: 'Cancelled' })
-            .where(eq(bookings.bookingId, payment.bookingId));
-        }
         if (payment.fnbOrderId) {
           await tx
             .update(fnbOrders)
@@ -212,7 +200,7 @@ export class PaymentsService {
    * @returns: CheckoutTarget
    */
   private async resolveCheckoutTarget(
-    userId: number,
+    userId: string,
     dto: CreatePaymentDto,
   ): Promise<CheckoutTarget> {
     if (dto.bookingId) {
@@ -223,8 +211,6 @@ export class PaymentsService {
       if (!booking) throw new NotFoundException('Booking not found');
       if (booking.userId !== userId)
         throw new ForbiddenException('Booking does not belong to this user');
-      if (booking.bookingStatus !== 'Pending')
-        throw new BadRequestException('Booking is not payable');
       return {
         bookingId: booking.bookingId,
         amount: booking.totalAmount,
@@ -293,7 +279,7 @@ export class PaymentsService {
     customer: {
       given_names: string;
       email: string;
-      mobile_number: string;
+      mobile_number?: string;
     };
   }): Promise<XenditInvoiceResponse> {
     const apiKey = this.configService.get<string>('XENDIT_API_KEY');

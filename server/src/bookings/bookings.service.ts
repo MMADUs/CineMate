@@ -5,13 +5,21 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, eq, inArray, ne } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { MySql2Database } from 'drizzle-orm/mysql2';
 import { randomUUID } from 'node:crypto';
 import { calculateTaxedTotal, toNumber } from '../common/utils/money';
 import { DRIZZLE } from '../database/database.constants';
 import * as schema from '../database/schema';
-import { bookingSeats, bookings, seats, showtimes } from '../database/schema';
+import {
+  bookingSeats,
+  bookings,
+  movies,
+  payments,
+  seats,
+  showtimes,
+} from '../database/schema';
+import { StorageService } from '../storage/storage.service';
 import {
   BookingDetailResponseDto,
   BookingResponseDto,
@@ -24,6 +32,7 @@ export class BookingsService {
   constructor(
     @Inject(DRIZZLE)
     private readonly db: MySql2Database<typeof schema>,
+    private readonly storageService: StorageService,
   ) {}
 
   /* Create Booking Service
@@ -32,7 +41,7 @@ export class BookingsService {
    * @returns: CreatedBookingResponseDto
    */
   async create(
-    userId: number,
+    userId: string,
     dto: CreateBookingDto,
   ): Promise<CreatedBookingResponseDto> {
     // start db transaction
@@ -70,7 +79,6 @@ export class BookingsService {
         .where(
           and(
             eq(bookings.showtimeId, dto.showtimeId),
-            ne(bookings.bookingStatus, 'Cancelled'),
             inArray(bookingSeats.seatId, dto.seatIds),
           ),
         );
@@ -116,11 +124,21 @@ export class BookingsService {
    * @param: userId
    * @returns: BookingResponseDto[]
    */
-  async findUserBookings(userId: number): Promise<BookingResponseDto[]> {
-    return await this.db
-      .select()
+  async findUserBookings(userId: string): Promise<BookingResponseDto[]> {
+    const rows = await this.db
+      .select({
+        booking: bookings,
+        payment: payments,
+        showtime: showtimes,
+        movie: movies,
+      })
       .from(bookings)
+      .innerJoin(showtimes, eq(bookings.showtimeId, showtimes.showtimeId))
+      .innerJoin(movies, eq(showtimes.movieId, movies.movieId))
+      .leftJoin(payments, eq(bookings.bookingId, payments.bookingId))
       .where(eq(bookings.userId, userId));
+
+    return rows.map((row) => this.toBookingResponse(row));
   }
 
   /* Find User Booking
@@ -129,20 +147,27 @@ export class BookingsService {
    * @returns: BookingDetailResponseDto
    */
   async findUserBooking(
-    userId: number,
+    userId: string,
     bookingId: string,
   ): Promise<BookingDetailResponseDto> {
-    // get booking data
-    const [booking] = await this.db
-      .select()
+    const [row] = await this.db
+      .select({
+        booking: bookings,
+        payment: payments,
+        showtime: showtimes,
+        movie: movies,
+      })
       .from(bookings)
+      .innerJoin(showtimes, eq(bookings.showtimeId, showtimes.showtimeId))
+      .innerJoin(movies, eq(showtimes.movieId, movies.movieId))
+      .leftJoin(payments, eq(bookings.bookingId, payments.bookingId))
       .where(eq(bookings.bookingId, bookingId));
 
     // check if booking doesn't exist
-    if (!booking) throw new NotFoundException('Booking not found');
+    if (!row) throw new NotFoundException('Booking not found');
 
     // check if booking doesn't belong to user
-    if (booking.userId !== userId)
+    if (row.booking.userId !== userId)
       throw new ForbiddenException('Booking does not belong to this user');
 
     // get booked seats
@@ -151,6 +176,30 @@ export class BookingsService {
       .from(bookingSeats)
       .where(eq(bookingSeats.bookingId, bookingId));
 
-    return { ...booking, seats: bookedSeats };
+    return { ...this.toBookingResponse(row), seats: bookedSeats };
+  }
+
+  /* To Booking Response Helper
+   * @desc: Map booking joins into booking response with payment, showtime, and movie
+   * @param: joined booking row
+   * @returns: BookingResponseDto
+   */
+  private toBookingResponse(row: {
+    booking: typeof bookings.$inferSelect;
+    payment: typeof payments.$inferSelect | null;
+    showtime: typeof showtimes.$inferSelect;
+    movie: typeof movies.$inferSelect;
+  }): BookingResponseDto {
+    return {
+      ...row.booking,
+      payment: row.payment,
+      showtime: {
+        ...row.showtime,
+        movie: {
+          ...row.movie,
+          imageUrl: this.storageService.buildImageUrl(row.movie.imageKey),
+        },
+      },
+    };
   }
 }

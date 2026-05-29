@@ -1,0 +1,11 @@
+meta {
+  name: Admin Delete Movie
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{apiUrl}}/admin/movies/{{movieId}}
+  body: none
+  auth: none
+}

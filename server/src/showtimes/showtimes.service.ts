@@ -1,5 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { and, eq, ne } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { MySql2Database } from 'drizzle-orm/mysql2';
 import { DRIZZLE } from '../database/database.constants';
 import * as schema from '../database/schema';
@@ -122,12 +122,7 @@ export class ShowtimesService {
       .select({ seatId: bookingSeats.seatId })
       .from(bookingSeats)
       .innerJoin(bookings, eq(bookingSeats.bookingId, bookings.bookingId))
-      .where(
-        and(
-          eq(bookings.showtimeId, showtimeId),
-          ne(bookings.bookingStatus, 'Cancelled'),
-        ),
-      );
+      .where(eq(bookings.showtimeId, showtimeId));
 
     // create occupied seats set
     const occupiedIds = new Set(occupied.map((seat) => seat.seatId));

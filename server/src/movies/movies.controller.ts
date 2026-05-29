@@ -20,7 +20,10 @@ import {
 } from '@nestjs/swagger';
 import { AdminJwtGuard } from '../common/guards/admin-jwt.guard';
 import { CreateMovieDto } from './dto/create-movie.dto';
-import { MovieResponseDto } from './dto/movie-response.dto';
+import {
+  MovieDetailResponseDto,
+  MovieResponseDto,
+} from './dto/movie-response.dto';
 import { QueryMovieDto } from './dto/query-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
 import { MoviesService } from './movies.service';
@@ -48,15 +51,15 @@ export class MoviesController {
    * @desc: Get public movie detail
    * @route: /movies/:movieId
    * @param: movieId
-   * @returns: Promise<MovieResponseDto>
+   * @returns: Promise<MovieDetailResponseDto>
    */
   @Get('movies/:movieId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get movie detail' })
-  @ApiOkResponse({ type: MovieResponseDto })
+  @ApiOkResponse({ type: MovieDetailResponseDto })
   findOne(
     @Param('movieId', ParseIntPipe) movieId: number,
-  ): Promise<MovieResponseDto> {
+  ): Promise<MovieDetailResponseDto> {
     return this.moviesService.findOne(movieId);
   }
 

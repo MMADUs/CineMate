@@ -1,0 +1,29 @@
+meta {
+  name: Xendit Webhook
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{apiUrl}}/payments/notification
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  x-callback-token: {{xenditCallbackToken}}
+}
+
+body:json {
+  {
+    "id": "{{xenditInvoiceId}}",
+    "external_id": "{{xenditExternalId}}",
+    "status": "PAID",
+    "amount": 111000,
+    "paid_amount": 111000,
+    "paid_at": "2026-05-23T10:05:00.000Z",
+    "payment_method": "EWALLET",
+    "payment_channel": "OVO"
+  }
+}

@@ -13,6 +13,18 @@ export class SnackResponseDto {
   @ApiProperty({ example: '45000' })
   price: string;
 
-  @ApiProperty({ example: 'https://example.com/popcorn.jpg' })
-  imageUrl: string;
+  @ApiProperty({ example: 100 })
+  stock: number;
+
+  @ApiProperty({
+    example: 'snacks/4f8f4f86-a5db-47fd-81ea-3f0a92f8e9a1.webp',
+  })
+  imageKey: string;
+
+  @ApiProperty({
+    example:
+      'http://localhost:3000/api/assets/images/snacks/4f8f4f86-a5db-47fd-81ea-3f0a92f8e9a1.webp',
+    nullable: true,
+  })
+  imageUrl: string | null;
 }

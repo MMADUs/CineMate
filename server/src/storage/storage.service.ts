@@ -6,11 +6,14 @@ import {
 import { ConfigService } from '@nestjs/config';
 import {
   CreateBucketCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   HeadBucketCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { DeleteImageResponseDto } from './dto/delete-image-response.dto';
 import { randomUUID } from 'node:crypto';
 import { UploadImageResponseDto } from './dto/upload-image-response.dto';
 
@@ -93,10 +96,24 @@ export class StorageService {
 
     return {
       key,
-      url: this.buildImageUrl(key),
+      url: this.buildImageUrl(key) ?? '',
       contentType: file.mimetype,
       size: file.size,
     };
+  }
+
+  /* Build Image URL Service
+   * @desc: Generate a backend asset URL from a stored object key
+   * @param: object key
+   * @returns: string | null
+   */
+  buildImageUrl(key: string | null | undefined): string | null {
+    if (!key) return null;
+
+    const [folder, filename, extra] = key.split('/');
+    if (extra || !this.isValidImagePath(folder, filename)) return null;
+
+    return `${this.appBaseUrl}/api/assets/images/${folder}/${filename}`;
   }
 
   /* Get Image Service
@@ -136,6 +153,44 @@ export class StorageService {
     }
   }
 
+  /* Delete Image Service
+   * @desc: Delete an uploaded image object from S3-compatible object storage
+   * @param: folder, filename
+   * @returns: Promise<DeleteImageResponseDto>
+   */
+  async deleteImage(
+    folder: ImageFolder,
+    filename: string,
+  ): Promise<DeleteImageResponseDto> {
+    this.validateImagePath(folder, filename);
+
+    const key = `${folder}/${filename}`;
+
+    try {
+      await this.s3.send(
+        new HeadObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        }),
+      );
+    } catch (error) {
+      if (this.isMissingObjectError(error)) {
+        throw new NotFoundException('Image not found');
+      }
+
+      throw error;
+    }
+
+    await this.s3.send(
+      new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      }),
+    );
+
+    return { key, deleted: true };
+  }
+
   /* Ensure Bucket Helper
    * @desc: Lazily create the configured bucket if it does not exist
    * @param: none
@@ -158,17 +213,6 @@ export class StorageService {
     } catch {
       await this.s3.send(new CreateBucketCommand({ Bucket: this.bucket }));
     }
-  }
-
-  /* Build Image URL Helper
-   * @desc: Generate a backend URL that proxies the private stored object
-   * @param: object key
-   * @returns: string
-   */
-  private buildImageUrl(key: string): string {
-    const [folder, filename] = key.split('/');
-
-    return `${this.appBaseUrl}/api/assets/images/${folder}/${filename}`;
   }
 
   /* Get Extension Helper
@@ -197,13 +241,21 @@ export class StorageService {
    * @returns: void
    */
   private validateImagePath(folder: string, filename: string): void {
-    if (!['movies', 'snacks'].includes(folder)) {
+    if (!this.isValidImagePath(folder, filename)) {
       throw new NotFoundException('Image not found');
     }
+  }
 
-    if (!/^[a-f0-9-]+\.(jpg|png|webp)$/.test(filename)) {
-      throw new NotFoundException('Image not found');
-    }
+  /* Is Valid Image Path Helper
+   * @desc: Validate object storage folder and image filename format
+   * @param: folder, filename
+   * @returns: boolean
+   */
+  private isValidImagePath(folder: string, filename: string): boolean {
+    return (
+      ['movies', 'snacks'].includes(folder) &&
+      /^[a-f0-9-]+\.(jpg|png|webp)$/.test(filename)
+    );
   }
 
   /* Is Missing Object Error Helper

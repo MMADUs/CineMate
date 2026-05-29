@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import {
   decimal,
   index,
@@ -6,6 +7,7 @@ import {
   varchar,
 } from 'drizzle-orm/mysql-core';
 import { cinemaHalls } from './cinema-hall.schema';
+import { bookings } from './booking.schema';
 import { movies } from './movie.schema';
 
 export const showtimes = mysqlTable(
@@ -27,3 +29,15 @@ export const showtimes = mysqlTable(
     index('showtime_hall_id_idx').on(table.hallId),
   ],
 );
+
+export const showtimesRelations = relations(showtimes, ({ one, many }) => ({
+  movie: one(movies, {
+    fields: [showtimes.movieId],
+    references: [movies.movieId],
+  }),
+  hall: one(cinemaHalls, {
+    fields: [showtimes.hallId],
+    references: [cinemaHalls.hallId],
+  }),
+  bookings: many(bookings),
+}));

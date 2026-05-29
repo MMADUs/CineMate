@@ -25,7 +25,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
     });
   }
 
-  validate(req: CookieRequest, payload: { sub: number; email: string }) {
+  validate(req: CookieRequest, payload: { sub: string; email: string }) {
     return {
       userId: payload.sub,
       email: payload.email,

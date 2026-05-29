@@ -4,8 +4,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
-  Patch,
   Post,
   Res,
   UseGuards,
@@ -19,16 +17,12 @@ import type { AuthAdmin } from '../common/interfaces/auth-user.interface';
 import { AdminService } from './admin.service';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import {
-  AdminLogResponseDto,
   AdminLogoutResponseDto,
   AdminRefreshResponseDto,
   AdminResponseDto,
+  AdminDashboardResponseDto,
   AdminTransactionsResponseDto,
-  DashboardChartPointResponseDto,
-  DashboardMetricsResponseDto,
 } from './dto/admin-response.dto';
-import { BookingResponseDto } from '../bookings/dto/booking-response.dto';
-import { FnbOrderResponseDto } from '../fnb-orders/dto/fnb-order-response.dto';
 
 @ApiTags('Admin')
 @Controller('admin')
@@ -102,30 +96,17 @@ export class AdminController {
     return this.adminService.profile(admin.adminId);
   }
 
-  /* Dashboard Metrics Controller
-   * @desc: Get dashboard KPI metrics
-   * @route: /admin/dashboard/metrics
-   * @returns: Promise<DashboardMetricsResponseDto>
+  /* Dashboard Controller
+   * @desc: Get dashboard metrics, chart, and recent sales
+   * @route: /admin/dashboard
+   * @returns: Promise<AdminDashboardResponseDto>
    */
   @UseGuards(AdminJwtGuard)
-  @Get('dashboard/metrics')
-  @ApiOperation({ summary: 'Get dashboard metrics' })
-  @ApiOkResponse({ type: DashboardMetricsResponseDto })
-  metrics(): Promise<DashboardMetricsResponseDto> {
-    return this.adminService.metrics();
-  }
-
-  /* Dashboard Chart Controller
-   * @desc: Get dashboard revenue chart data
-   * @route: /admin/dashboard/chart
-   * @returns: Promise<DashboardChartPointResponseDto[]>
-   */
-  @UseGuards(AdminJwtGuard)
-  @Get('dashboard/chart')
-  @ApiOperation({ summary: 'Get dashboard revenue chart data' })
-  @ApiOkResponse({ type: [DashboardChartPointResponseDto] })
-  chart(): Promise<DashboardChartPointResponseDto[]> {
-    return this.adminService.chart();
+  @Get('dashboard')
+  @ApiOperation({ summary: 'Get dashboard metrics, chart, and recent sales' })
+  @ApiOkResponse({ type: AdminDashboardResponseDto })
+  dashboard(): Promise<AdminDashboardResponseDto> {
+    return this.adminService.dashboard();
   }
 
   /* Transactions Controller
@@ -138,61 +119,5 @@ export class AdminController {
   @ApiOkResponse({ type: AdminTransactionsResponseDto })
   transactions(): Promise<AdminTransactionsResponseDto> {
     return this.adminService.transactions();
-  }
-
-  /* Cancel Booking Controller
-   * @desc: Cancel a booking transaction
-   * @route: /admin/transactions/:bookingId/cancel
-   * @param: bookingId
-   */
-  @UseGuards(AdminJwtGuard)
-  @Patch('transactions/:bookingId/cancel')
-  @ApiOperation({ summary: 'Cancel a booking transaction' })
-  @ApiOkResponse({ type: BookingResponseDto })
-  cancelBooking(
-    @Param('bookingId') bookingId: string,
-  ): Promise<BookingResponseDto> {
-    return this.adminService.cancelBooking(bookingId);
-  }
-
-  /* Verify Booking Controller
-   * @desc: Mark a booking transaction as completed
-   * @route: /admin/transactions/:bookingId/verify
-   * @param: bookingId
-   */
-  @UseGuards(AdminJwtGuard)
-  @Patch('transactions/:bookingId/verify')
-  @ApiOperation({ summary: 'Verify a booking transaction' })
-  @ApiOkResponse({ type: BookingResponseDto })
-  verifyBooking(
-    @Param('bookingId') bookingId: string,
-  ): Promise<BookingResponseDto> {
-    return this.adminService.verifyBooking(bookingId);
-  }
-
-  /* Cancel FNB Order Controller
-   * @desc: Cancel an F&B order transaction
-   * @route: /admin/transactions/fnb/:fnbOrderId/cancel
-   * @param: fnbOrderId
-   */
-  @UseGuards(AdminJwtGuard)
-  @Patch('transactions/fnb/:fnbOrderId/cancel')
-  @ApiOperation({ summary: 'Cancel an F&B order transaction' })
-  cancelFnbOrder(
-    @Param('fnbOrderId') fnbOrderId: string,
-  ): Promise<Omit<FnbOrderResponseDto, 'items'>> {
-    return this.adminService.cancelFnbOrder(fnbOrderId);
-  }
-
-  /* Admin Logs Controller
-   * @desc: List admin activity logs
-   * @route: /admin/logs
-   */
-  @UseGuards(AdminJwtGuard)
-  @Get('logs')
-  @ApiOperation({ summary: 'List admin activity logs' })
-  @ApiOkResponse({ type: [AdminLogResponseDto] })
-  logs(): Promise<AdminLogResponseDto[]> {
-    return this.adminService.logs();
   }
 }

@@ -1,11 +1,22 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { eq, inArray } from 'drizzle-orm';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { and, eq, gte, inArray, sql } from 'drizzle-orm';
 import { MySql2Database } from 'drizzle-orm/mysql2';
 import { randomUUID } from 'node:crypto';
 import { calculateTaxedTotal, toNumber } from '../common/utils/money';
 import { DRIZZLE } from '../database/database.constants';
 import * as schema from '../database/schema';
-import { fnbOrderItems, fnbOrders, snacks } from '../database/schema';
+import {
+  fnbOrderItems,
+  fnbOrders,
+  showtimes,
+  snacks,
+} from '../database/schema';
 import { CreateFnbOrderDto } from './dto/create-fnb-order.dto';
 import { FnbOrderResponseDto } from './dto/fnb-order-response.dto';
 
@@ -22,13 +33,32 @@ export class FnbOrdersService {
    * @returns: FnbOrderResponseDto
    */
   async create(
-    userId: number,
+    userId: string,
     dto: CreateFnbOrderDto,
   ): Promise<FnbOrderResponseDto> {
     // start db transaction
     return await this.db.transaction(async (tx) => {
+      // verify optional showtime reference
+      if (dto.showtimeId) {
+        const [showtime] = await tx
+          .select()
+          .from(showtimes)
+          .where(eq(showtimes.showtimeId, dto.showtimeId));
+
+        if (!showtime) throw new NotFoundException('Showtime not found');
+      }
+
+      // aggregate repeated snack items before stock and total calculation
+      const quantityBySnackId = new Map<number, number>();
+      for (const item of dto.items) {
+        quantityBySnackId.set(
+          item.snackId,
+          (quantityBySnackId.get(item.snackId) ?? 0) + item.quantity,
+        );
+      }
+
       // get snack ids
-      const ids = dto.items.map((item) => item.snackId);
+      const ids = [...quantityBySnackId.keys()];
 
       // get snacks
       const foundSnacks = await tx
@@ -44,12 +74,20 @@ export class FnbOrdersService {
       const byId = new Map(foundSnacks.map((snack) => [snack.snackId, snack]));
 
       // build order items
-      const orderItems = dto.items.map((item) => {
-        const snack = byId.get(item.snackId)!;
+      const orderItems = ids.map((snackId) => {
+        const snack = byId.get(snackId)!;
+        const quantity = quantityBySnackId.get(snackId)!;
+
+        if (snack.stock < quantity) {
+          throw new BadRequestException(
+            `Insufficient stock for ${snack.snackName}`,
+          );
+        }
+
         return {
-          snackId: item.snackId,
-          quantity: item.quantity,
-          subTotalPrice: String(toNumber(snack.price) * item.quantity),
+          snackId,
+          quantity,
+          subTotalPrice: String(toNumber(snack.price) * quantity),
         };
       });
 
@@ -60,12 +98,36 @@ export class FnbOrdersService {
 
       // create fnb order
       const fnbOrderId = randomUUID();
-      await tx.insert(fnbOrders).values({ fnbOrderId, userId, ...totals });
+      await tx.insert(fnbOrders).values({
+        fnbOrderId,
+        userId,
+        showtimeId: dto.showtimeId ?? null,
+        ...totals,
+      });
 
       const [order] = await tx
         .select()
         .from(fnbOrders)
         .where(eq(fnbOrders.fnbOrderId, fnbOrderId));
+
+      // decrement stock with a conditional update as a concurrency guard
+      for (const item of orderItems) {
+        const stockUpdateResult = await tx
+          .update(snacks)
+          .set({ stock: sql`${snacks.stock} - ${item.quantity}` })
+          .where(
+            and(
+              eq(snacks.snackId, item.snackId),
+              gte(snacks.stock, item.quantity),
+            ),
+          );
+
+        if (this.getAffectedRows(stockUpdateResult) === 0) {
+          throw new BadRequestException(
+            `Insufficient stock for snack ${item.snackId}`,
+          );
+        }
+      }
 
       // insert fnb order items
       await tx
@@ -76,5 +138,84 @@ export class FnbOrdersService {
 
       return { ...order, items: orderItems };
     });
+  }
+
+  /* Find User FNB Orders Service
+   * @desc: Find all F&B orders for a user
+   * @param: userId
+   * @returns: FnbOrderResponseDto[]
+   */
+  async findUserOrders(userId: string): Promise<FnbOrderResponseDto[]> {
+    const orders = await this.db
+      .select()
+      .from(fnbOrders)
+      .where(eq(fnbOrders.userId, userId));
+
+    if (!orders.length) return [];
+
+    const items = await this.db
+      .select()
+      .from(fnbOrderItems)
+      .where(
+        inArray(
+          fnbOrderItems.fnbOrderId,
+          orders.map((order) => order.fnbOrderId),
+        ),
+      );
+
+    return orders.map((order) => ({
+      ...order,
+      items: items.filter((item) => item.fnbOrderId === order.fnbOrderId),
+    }));
+  }
+
+  /* Find User FNB Order Service
+   * @desc: Find one F&B order detail for a user
+   * @param: userId, fnbOrderId
+   * @returns: FnbOrderResponseDto
+   */
+  async findUserOrder(
+    userId: string,
+    fnbOrderId: string,
+  ): Promise<FnbOrderResponseDto> {
+    const [order] = await this.db
+      .select()
+      .from(fnbOrders)
+      .where(eq(fnbOrders.fnbOrderId, fnbOrderId));
+
+    if (!order) throw new NotFoundException('F&B order not found');
+    if (order.userId !== userId)
+      throw new ForbiddenException('F&B order does not belong to this user');
+
+    const items = await this.db
+      .select()
+      .from(fnbOrderItems)
+      .where(eq(fnbOrderItems.fnbOrderId, fnbOrderId));
+
+    return { ...order, items };
+  }
+
+  /* Get Affected Rows Helper
+   * @desc: Read affected row count from mysql2/drizzle mutation results
+   * @param: result
+   * @returns: number | undefined
+   */
+  private getAffectedRows(result: unknown): number | undefined {
+    const value: unknown = Array.isArray(result) ? result[0] : result;
+
+    if (typeof value !== 'object' || value === null) return undefined;
+
+    const mutationResult = value as {
+      affectedRows?: unknown;
+      rowsAffected?: unknown;
+    };
+
+    if (typeof mutationResult.affectedRows === 'number')
+      return mutationResult.affectedRows;
+
+    if (typeof mutationResult.rowsAffected === 'number')
+      return mutationResult.rowsAffected;
+
+    return undefined;
   }
 }

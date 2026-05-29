@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -26,6 +27,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import type { Response } from 'express';
 import { AdminJwtGuard } from '../common/guards/admin-jwt.guard';
+import { DeleteImageResponseDto } from './dto/delete-image-response.dto';
 import { UploadImageDto } from './dto/upload-image.dto';
 import { UploadImageResponseDto } from './dto/upload-image-response.dto';
 import { StorageService, UploadedImageFile } from './storage.service';
@@ -88,6 +90,29 @@ export class StorageController {
     @UploadedFile() file: UploadedImageFile | undefined,
   ): Promise<UploadImageResponseDto> {
     return this.storageService.uploadImage(dto.folder, file);
+  }
+
+  /* Delete Image Controller
+   * @desc: Delete an uploaded image from object storage
+   * @route: /admin/uploads/images/:folder/:filename
+   * @param: folder, filename
+   * @returns: Promise<DeleteImageResponseDto>
+   */
+  @UseGuards(AdminJwtGuard)
+  @Delete('admin/uploads/images/:folder/:filename')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete uploaded movie or snack image' })
+  @ApiParam({ name: 'folder', enum: ['movies', 'snacks'] })
+  @ApiParam({
+    name: 'filename',
+    example: '4f8f4f86-a5db-47fd-81ea-3f0a92f8e9a1.webp',
+  })
+  @ApiOkResponse({ type: DeleteImageResponseDto })
+  deleteImage(
+    @Param('folder') folder: 'movies' | 'snacks',
+    @Param('filename') filename: string,
+  ): Promise<DeleteImageResponseDto> {
+    return this.storageService.deleteImage(folder, filename);
   }
 
   /* Get Image Controller

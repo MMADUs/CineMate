@@ -50,9 +50,7 @@ async function bootstrap() {
   // Swagger documentation
   const swaggerConfig = new DocumentBuilder()
     .setTitle('CineMate API')
-    .setDescription(
-      'CineMate backend API with user auth, admin auth, movie catalog, bookings, F&B orders, Xendit invoice payments, and webhook handling.',
-    )
+    .setDescription('CineMate backend API documentation.')
     .setVersion('1.0')
     .addCookieAuth('access_token', {
       type: 'apiKey',

@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import {
   decimal,
   index,
@@ -29,3 +30,14 @@ export const fnbOrderItems = mysqlTable(
     index('fnb_order_item_snack_id_idx').on(table.snackId),
   ],
 );
+
+export const fnbOrderItemsRelations = relations(fnbOrderItems, ({ one }) => ({
+  order: one(fnbOrders, {
+    fields: [fnbOrderItems.fnbOrderId],
+    references: [fnbOrders.fnbOrderId],
+  }),
+  snack: one(snacks, {
+    fields: [fnbOrderItems.snackId],
+    references: [snacks.snackId],
+  }),
+}));

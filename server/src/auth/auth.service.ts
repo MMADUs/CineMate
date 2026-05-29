@@ -1,18 +1,22 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { MySql2Database } from 'drizzle-orm/mysql2';
-import { eq } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
 import { Response } from 'express';
 import * as argon2 from 'argon2';
+import { randomUUID } from 'node:crypto';
 import { DRIZZLE } from '../database/database.constants';
 import * as schema from '../database/schema';
 import { users } from '../database/schema';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthUser } from '../common/interfaces/auth-user.interface';
@@ -22,6 +26,15 @@ import {
   RefreshResponseDto,
   TokenPair,
 } from './dto/auth-response.dto';
+
+interface GoogleTokenInfo {
+  sub: string;
+  aud: string;
+  email: string;
+  email_verified: string | boolean;
+  name?: string;
+  picture?: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -51,14 +64,19 @@ export class AuthService {
     if (existing) throw new ConflictException('Email is already registered');
 
     // hash password and insert user
-    const [insertedUser] = await this.db
-      .insert(users)
-      .values({ ...dto, password: await argon2.hash(dto.password) })
-      .$returningId();
+    const userId = randomUUID();
+    await this.db.insert(users).values({
+      userId,
+      ...dto,
+      authProvider: 'LOCAL',
+      password: await argon2.hash(dto.password),
+    });
+
+    // retrieve user from database
     const [user] = await this.db
       .select()
       .from(users)
-      .where(eq(users.userId, insertedUser.userId));
+      .where(eq(users.userId, userId));
 
     // issue tokens
     const tokens = await this.issueTokens(user.userId, user.email);
@@ -85,8 +103,91 @@ export class AuthService {
       .where(eq(users.email, dto.email));
 
     // if email doesn't exist or password is incorrect
-    if (!user || !(await argon2.verify(user.password, dto.password))) {
+    if (
+      !user?.password ||
+      !(await argon2.verify(user.password, dto.password))
+    ) {
       throw new UnauthorizedException('Invalid email or password');
+    }
+
+    // issue tokens
+    const tokens = await this.issueTokens(user.userId, user.email);
+
+    // save refresh token
+    await this.saveRefreshHash(user.userId, tokens.refreshToken);
+
+    // set cookies
+    this.setCookies(res, tokens.accessToken, tokens.refreshToken);
+
+    return this.serializeUser(user);
+  }
+
+  /* Google Auth Service
+   * @desc: Verify Google ID token, create or link a user, and set auth cookies
+   * @param: GoogleAuthDto, Response
+   * @returns: Promise<AuthUserResponseDto>
+   */
+  async google(
+    dto: GoogleAuthDto,
+    res: Response,
+  ): Promise<AuthUserResponseDto> {
+    const tokenInfo = await this.verifyGoogleIdToken(dto.idToken);
+
+    // find existing user by google id or email
+    const [existing] = await this.db
+      .select()
+      .from(users)
+      .where(
+        or(eq(users.googleId, tokenInfo.sub), eq(users.email, tokenInfo.email)),
+      );
+
+    let user = existing;
+
+    // if user doesn't exist
+    if (!user) {
+      const fullName = (tokenInfo.name ?? tokenInfo.email).slice(0, 50);
+
+      // register new user with google account
+      const userId = randomUUID();
+      await this.db.insert(users).values({
+        userId,
+        fullName,
+        email: tokenInfo.email,
+        phoneNum: null,
+        password: null,
+        authProvider: 'GOOGLE',
+        googleId: tokenInfo.sub,
+        avatarUrl: tokenInfo.picture ?? null,
+      });
+
+      // retrieve newly created user
+      const [created] = await this.db
+        .select()
+        .from(users)
+        .where(eq(users.userId, userId));
+
+      user = created;
+      // if user exists but google id doesn't match
+    } else if (user.googleId && user.googleId !== tokenInfo.sub) {
+      throw new UnauthorizedException('Google account does not match user');
+      // if user exists but google id is null
+    } else if (!user.googleId) {
+      // link google account to existing user
+      await this.db
+        .update(users)
+        .set({
+          googleId: tokenInfo.sub,
+          avatarUrl: tokenInfo.picture ?? user.avatarUrl,
+        })
+        .where(eq(users.userId, user.userId));
+
+      // retrieve newly created user
+      const [linked] = await this.db
+        .select()
+        .from(users)
+        .where(eq(users.userId, user.userId));
+
+      user = linked;
     }
 
     // issue tokens
@@ -155,7 +256,7 @@ export class AuthService {
    * @param: userId, email
    * @returns: Promise<TokenPair>
    */
-  private async issueTokens(userId: number, email: string): Promise<TokenPair> {
+  private async issueTokens(userId: string, email: string): Promise<TokenPair> {
     const payload = { sub: userId, email };
 
     // issue access token
@@ -183,7 +284,7 @@ export class AuthService {
    * @returns: Promise<void>
    */
   private async saveRefreshHash(
-    userId: number,
+    userId: string,
     refreshToken: string,
   ): Promise<void> {
     // update user's refresh token hash
@@ -191,6 +292,45 @@ export class AuthService {
       .update(users)
       .set({ refreshTokenHash: await argon2.hash(refreshToken) })
       .where(eq(users.userId, userId));
+  }
+
+  /* Verify Google ID Token Helper
+   * @desc: Verify token authenticity and audience with Google tokeninfo
+   * @param: idToken
+   * @returns: GoogleTokenInfo
+   */
+  private async verifyGoogleIdToken(idToken: string): Promise<GoogleTokenInfo> {
+    const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
+    if (!clientId) {
+      throw new InternalServerErrorException(
+        'GOOGLE_CLIENT_ID is not configured',
+      );
+    }
+
+    // fetch Google tokeninfo
+    const response = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(
+        idToken,
+      )}`,
+    );
+
+    const body = (await response.json()) as Partial<GoogleTokenInfo> & {
+      error_description?: string;
+    };
+
+    if (!response.ok || !body.sub || !body.email || !body.aud) {
+      throw new UnauthorizedException('Invalid Google ID token');
+    }
+
+    if (body.aud !== clientId) {
+      throw new UnauthorizedException('Invalid Google token audience');
+    }
+
+    if (body.email_verified !== true && body.email_verified !== 'true') {
+      throw new BadRequestException('Google email is not verified');
+    }
+
+    return body as GoogleTokenInfo;
   }
 
   /* Set Cookies Helper
@@ -241,8 +381,9 @@ export class AuthService {
    */
   private serializeUser<
     T extends AuthUserResponseDto & {
-      password?: string;
+      password?: string | null;
       refreshTokenHash?: string | null;
+      googleId?: string | null;
     },
   >(user: T): AuthUserResponseDto {
     const safeUser = { ...user };
@@ -250,6 +391,7 @@ export class AuthService {
     // remove sensitive fields
     delete safeUser.password;
     delete safeUser.refreshTokenHash;
+    delete safeUser.googleId;
 
     return safeUser;
   }

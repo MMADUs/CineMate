@@ -1,21 +1,14 @@
-import {
-  Inject,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { desc, eq, sql } from 'drizzle-orm';
 import { MySql2Database } from 'drizzle-orm/mysql2';
 import { Response } from 'express';
-import { BookingResponseDto } from '../bookings/dto/booking-response.dto';
 import { AuthAdmin } from '../common/interfaces/auth-user.interface';
 import { DRIZZLE } from '../database/database.constants';
 import * as schema from '../database/schema';
 import {
-  adminLogs,
   admins,
   bookingSeats,
   bookings,
@@ -23,10 +16,10 @@ import {
   movies,
   payments,
 } from '../database/schema';
-import { FnbOrderResponseDto } from '../fnb-orders/dto/fnb-order-response.dto';
+import { PaymentResponseDto } from '../payments/dto/payment-response.dto';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import {
-  AdminLogResponseDto,
+  AdminDashboardResponseDto,
   AdminLogoutResponseDto,
   AdminRefreshResponseDto,
   AdminResponseDto,
@@ -175,17 +168,17 @@ export class AdminService {
         await this.db
           .select({ value: sql<number>`count(*)` })
           .from(bookingSeats)
-          .innerJoin(bookings, eq(bookingSeats.bookingId, bookings.bookingId))
-          .where(sql`${bookings.bookingStatus} in ('Confirmed', 'Completed')`)
+          .innerJoin(payments, eq(bookingSeats.bookingId, payments.bookingId))
+          .where(eq(payments.paymentStatus, 'Completed'))
       )[0]?.value ?? 0;
 
-    // get pending orders
+    // get pending payment orders
     const pendingOrders =
       (
         await this.db
           .select({ value: sql<number>`count(*)` })
-          .from(bookings)
-          .where(eq(bookings.bookingStatus, 'Pending'))
+          .from(payments)
+          .where(eq(payments.paymentStatus, 'Pending'))
       )[0]?.value ?? 0;
 
     // get now playing movies
@@ -223,6 +216,33 @@ export class AdminService {
     return rows.map((row) => ({ name: row.date, total: Number(row.total) }));
   }
 
+  /* Dashboard Service
+   * @desc: Get admin dashboard metrics, chart, and recent sales
+   * @param: none
+   * @returns: Promise<AdminDashboardResponseDto>
+   */
+  async dashboard(): Promise<AdminDashboardResponseDto> {
+    const [metrics, chart, recentSales] = await Promise.all([
+      this.metrics(),
+      this.chart(),
+      this.recentSales(),
+    ]);
+
+    return { metrics, chart, recentSales };
+  }
+
+  /* Recent Sales Service
+   * @desc: Get recent payment sales for dashboard
+   * @param: none
+   * @returns: Promise<PaymentResponseDto[]>
+   */
+  async recentSales(): Promise<PaymentResponseDto[]> {
+    return await this.db
+      .select()
+      .from(payments)
+      .orderBy(desc(payments.paymentDate));
+  }
+
   /* Transactions Service
    * @desc: List bookings, F&B orders, and payments
    * @param: none
@@ -234,96 +254,6 @@ export class AdminService {
       fnbOrders: await this.db.select().from(fnbOrders),
       payments: await this.db.select().from(payments),
     };
-  }
-
-  /* Cancel Booking Service
-   * @desc: Cancel a booking transaction
-   * @param: bookingId
-   * @returns: Promise<BookingResponseDto>
-   */
-  async cancelBooking(bookingId: string): Promise<BookingResponseDto> {
-    await this.db
-      .update(bookings)
-      .set({ bookingStatus: 'Cancelled' })
-      .where(eq(bookings.bookingId, bookingId));
-
-    return this.findBooking(bookingId);
-  }
-
-  /* Verify Booking Service
-   * @desc: Mark a booking transaction as completed
-   * @param: bookingId
-   * @returns: Promise<BookingResponseDto>
-   */
-  async verifyBooking(bookingId: string): Promise<BookingResponseDto> {
-    await this.db
-      .update(bookings)
-      .set({ bookingStatus: 'Completed' })
-      .where(eq(bookings.bookingId, bookingId));
-
-    return this.findBooking(bookingId);
-  }
-
-  /* Cancel FNB Order Service
-   * @desc: Cancel an F&B order transaction
-   * @param: fnbOrderId
-   * @returns: Promise<Omit<FnbOrderResponseDto, 'items'>>
-   */
-  async cancelFnbOrder(
-    fnbOrderId: string,
-  ): Promise<Omit<FnbOrderResponseDto, 'items'>> {
-    await this.db
-      .update(fnbOrders)
-      .set({ orderStatus: 'Cancelled' })
-      .where(eq(fnbOrders.fnbOrderId, fnbOrderId));
-
-    return this.findFnbOrder(fnbOrderId);
-  }
-
-  /* Admin Logs Service
-   * @desc: List admin activity logs
-   * @param: none
-   * @returns: Promise<AdminLogResponseDto[]>
-   */
-  async logs(): Promise<AdminLogResponseDto[]> {
-    return await this.db
-      .select()
-      .from(adminLogs)
-      .orderBy(desc(adminLogs.createdAt));
-  }
-
-  /* Find Booking Helper
-   * @desc: Get booking by ID or throw if missing
-   * @param: bookingId
-   * @returns: Promise<BookingResponseDto>
-   */
-  private async findBooking(bookingId: string): Promise<BookingResponseDto> {
-    const [booking] = await this.db
-      .select()
-      .from(bookings)
-      .where(eq(bookings.bookingId, bookingId));
-
-    if (!booking) throw new NotFoundException('Booking not found');
-
-    return booking;
-  }
-
-  /* Find FNB Order Helper
-   * @desc: Get F&B order by ID or throw if missing
-   * @param: fnbOrderId
-   * @returns: Promise<Omit<FnbOrderResponseDto, 'items'>>
-   */
-  private async findFnbOrder(
-    fnbOrderId: string,
-  ): Promise<Omit<FnbOrderResponseDto, 'items'>> {
-    const [order] = await this.db
-      .select()
-      .from(fnbOrders)
-      .where(eq(fnbOrders.fnbOrderId, fnbOrderId));
-
-    if (!order) throw new NotFoundException('FNB order not found');
-
-    return order;
   }
 
   /* Issue Admin Tokens Helper

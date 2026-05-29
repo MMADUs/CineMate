@@ -4,6 +4,7 @@ import { MySql2Database } from 'drizzle-orm/mysql2';
 import { DRIZZLE } from '../database/database.constants';
 import * as schema from '../database/schema';
 import { snacks } from '../database/schema';
+import { StorageService } from '../storage/storage.service';
 import { CreateSnackDto } from './dto/create-snack.dto';
 import { QuerySnackDto } from './dto/query-snack.dto';
 import { SnackResponseDto } from './dto/snack-response.dto';
@@ -14,6 +15,7 @@ export class SnacksService {
   constructor(
     @Inject(DRIZZLE)
     private readonly db: MySql2Database<typeof schema>,
+    private readonly storageService: StorageService,
   ) {}
 
   /* Find All Snacks Service
@@ -22,12 +24,14 @@ export class SnacksService {
    * @returns: SnackResponseDto[]
    */
   async findAll(query: QuerySnackDto = {}): Promise<SnackResponseDto[]> {
-    return query.category
+    const result = query.category
       ? await this.db
           .select()
           .from(snacks)
           .where(eq(snacks.category, query.category))
       : await this.db.select().from(snacks);
+
+    return result.map((snack) => this.toResponse(snack));
   }
 
   /* Create Snack Service
@@ -41,7 +45,7 @@ export class SnacksService {
       .values({
         ...dto,
         price: String(dto.price),
-        imageUrl: dto.imageUrl ?? '',
+        imageKey: dto.imageKey ?? '',
       })
       .$returningId();
 
@@ -95,6 +99,18 @@ export class SnacksService {
     // check if snack doesn't exist
     if (!snack) throw new NotFoundException('Snack not found');
 
-    return snack;
+    return this.toResponse(snack);
+  }
+
+  /* To Response Helper
+   * @desc: Map snack database row into API response with public image URL
+   * @param: snack row
+   * @returns: SnackResponseDto
+   */
+  private toResponse(snack: typeof snacks.$inferSelect): SnackResponseDto {
+    return {
+      ...snack,
+      imageUrl: this.storageService.buildImageUrl(snack.imageKey),
+    };
   }
 }

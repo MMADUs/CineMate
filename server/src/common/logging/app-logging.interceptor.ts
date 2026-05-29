@@ -11,7 +11,7 @@ import { catchError, Observable, tap, throwError } from 'rxjs';
 import { AppLoggingService } from './app-logging.service';
 
 type RequestWithUser = Request & {
-  user?: { userId?: number; adminId?: number };
+  user?: { userId?: string; adminId?: number };
 };
 
 @Injectable()

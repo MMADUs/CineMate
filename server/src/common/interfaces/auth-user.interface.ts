@@ -1,5 +1,5 @@
 export interface AuthUser {
-  userId: number;
+  userId: string;
   email: string;
   refreshToken?: string;
 }

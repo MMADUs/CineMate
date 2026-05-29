@@ -209,7 +209,7 @@ export class IdempotencyService {
    * @returns: string
    */
   buildScope(user: unknown): string {
-    const auth = user as { userId?: number; adminId?: number } | undefined;
+    const auth = user as { userId?: string; adminId?: number } | undefined;
 
     if (auth?.userId) return `user:${auth.userId}`;
     if (auth?.adminId) return `admin:${auth.adminId}`;

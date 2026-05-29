@@ -1,11 +1,19 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { MovieResponseDto } from '../../movies/dto/movie-response.dto';
+import { PaymentResponseDto } from '../../payments/dto/payment-response.dto';
+import { ShowtimeResponseDto } from '../../showtimes/dto/showtime-response.dto';
+
+export class BookingShowtimeResponseDto extends ShowtimeResponseDto {
+  @ApiProperty({ type: MovieResponseDto })
+  movie: MovieResponseDto;
+}
 
 export class BookingResponseDto {
   @ApiProperty({ example: 'booking-uuid' })
   bookingId: string;
 
-  @ApiProperty({ example: 1 })
-  userId: number;
+  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
+  userId: string;
 
   @ApiProperty({ example: 1 })
   showtimeId: number;
@@ -19,8 +27,11 @@ export class BookingResponseDto {
   @ApiProperty({ example: '111000' })
   totalAmount: string;
 
-  @ApiProperty({ example: 'Pending' })
-  bookingStatus: string;
+  @ApiPropertyOptional({ type: PaymentResponseDto, nullable: true })
+  payment?: PaymentResponseDto | null;
+
+  @ApiPropertyOptional({ type: BookingShowtimeResponseDto })
+  showtime?: BookingShowtimeResponseDto;
 }
 
 export class CreatedBookingResponseDto extends BookingResponseDto {

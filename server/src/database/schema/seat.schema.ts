@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import {
   index,
   int,
@@ -6,6 +7,7 @@ import {
   varchar,
 } from 'drizzle-orm/mysql-core';
 import { cinemaHalls } from './cinema-hall.schema';
+import { bookingSeats } from './booking-seat.schema';
 
 export const seats = mysqlTable(
   'Seat',
@@ -26,3 +28,11 @@ export const seats = mysqlTable(
     index('seat_hall_id_idx').on(table.hallId),
   ],
 );
+
+export const seatsRelations = relations(seats, ({ one, many }) => ({
+  hall: one(cinemaHalls, {
+    fields: [seats.hallId],
+    references: [cinemaHalls.hallId],
+  }),
+  bookingSeats: many(bookingSeats),
+}));

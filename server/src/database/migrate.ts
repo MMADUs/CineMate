@@ -2,6 +2,9 @@ import { migrate } from 'drizzle-orm/mysql2/migrator';
 import { drizzle } from 'drizzle-orm/mysql2';
 import { createPool } from 'mysql2/promise';
 import { resolve } from 'node:path';
+import { config as loadEnv } from 'dotenv';
+
+loadEnv({ path: resolve(process.cwd(), '.env'), override: true });
 
 const databaseUrl =
   process.env.DATABASE_URL ??

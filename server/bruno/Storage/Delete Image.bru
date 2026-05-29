@@ -1,0 +1,11 @@
+meta {
+  name: Delete Image
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{apiUrl}}/admin/uploads/images/{{imageFolder}}/{{imageFilename}}
+  body: none
+  auth: none
+}

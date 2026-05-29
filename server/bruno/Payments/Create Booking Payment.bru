@@ -1,0 +1,23 @@
+meta {
+  name: Create Booking Payment
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{apiUrl}}/payments
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{idempotencyKey}}
+}
+
+body:json {
+  {
+    "bookingId": "{{bookingId}}",
+    "paymentMethod": "XENDIT_INVOICE"
+  }
+}

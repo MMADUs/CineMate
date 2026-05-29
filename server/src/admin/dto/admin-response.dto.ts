@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { BookingResponseDto } from '../../bookings/dto/booking-response.dto';
 import { FnbOrderResponseDto } from '../../fnb-orders/dto/fnb-order-response.dto';
 import { PaymentResponseDto } from '../../payments/dto/payment-response.dto';
@@ -52,6 +52,17 @@ export class DashboardChartPointResponseDto {
   total: number;
 }
 
+export class AdminDashboardResponseDto {
+  @ApiProperty({ type: DashboardMetricsResponseDto })
+  metrics: DashboardMetricsResponseDto;
+
+  @ApiProperty({ type: [DashboardChartPointResponseDto] })
+  chart: DashboardChartPointResponseDto[];
+
+  @ApiProperty({ type: [PaymentResponseDto] })
+  recentSales: PaymentResponseDto[];
+}
+
 export class AdminTransactionsResponseDto {
   @ApiProperty({ type: [BookingResponseDto] })
   bookings: BookingResponseDto[];
@@ -61,29 +72,6 @@ export class AdminTransactionsResponseDto {
 
   @ApiProperty({ type: [PaymentResponseDto] })
   payments: PaymentResponseDto[];
-}
-
-export class AdminLogResponseDto {
-  @ApiProperty({ example: 1 })
-  logId: number;
-
-  @ApiProperty({ example: 1 })
-  adminId: number;
-
-  @ApiProperty({ example: 'CREATE_MOVIE' })
-  action: string;
-
-  @ApiProperty({ example: 'Movie' })
-  entity: string;
-
-  @ApiProperty({ example: '1' })
-  entityId: string;
-
-  @ApiPropertyOptional({ example: '{"title":"Interstellar"}', nullable: true })
-  details: string | null;
-
-  @ApiProperty({ example: '2026-05-23 10:00:00' })
-  createdAt: string;
 }
 
 export interface AdminTokenPair {

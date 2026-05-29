@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { drizzle } from 'drizzle-orm/mysql2';
 import { createPool } from 'mysql2/promise';
 import { DRIZZLE } from './database.constants';
-import * as relations from './relations';
 import * as schema from './schema';
 
 @Global()
@@ -26,7 +25,7 @@ import * as schema from './schema';
         });
 
         return drizzle(pool, {
-          schema: { ...schema, ...relations },
+          schema,
           mode: 'default',
         });
       },

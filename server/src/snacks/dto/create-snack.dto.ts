@@ -25,8 +25,16 @@ export class CreateSnackDto {
   @ApiProperty({ example: 45000 })
   price: number;
 
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @ApiProperty({ example: 100 })
+  stock: number;
+
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({ example: 'https://example.com/popcorn.jpg' })
-  imageUrl?: string;
+  @ApiPropertyOptional({
+    example: 'snacks/4f8f4f86-a5db-47fd-81ea-3f0a92f8e9a1.webp',
+  })
+  imageKey?: string;
 }

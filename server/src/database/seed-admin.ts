@@ -2,7 +2,11 @@ import * as argon2 from 'argon2';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/mysql2';
 import { createPool } from 'mysql2/promise';
+import { resolve } from 'node:path';
+import { config as loadEnv } from 'dotenv';
 import { admins } from './schema';
+
+loadEnv({ path: resolve(process.cwd(), '.env'), override: true });
 
 const databaseUrl =
   process.env.DATABASE_URL ??

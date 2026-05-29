@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import {
   decimal,
   index,
@@ -42,3 +43,14 @@ export const payments = mysqlTable(
     index('payment_provider_payment_id_idx').on(table.providerPaymentId),
   ],
 );
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  booking: one(bookings, {
+    fields: [payments.bookingId],
+    references: [bookings.bookingId],
+  }),
+  fnbOrder: one(fnbOrders, {
+    fields: [payments.fnbOrderId],
+    references: [fnbOrders.fnbOrderId],
+  }),
+}));

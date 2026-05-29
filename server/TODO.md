@@ -1,16 +1,18 @@
 # todo list are written in this markdown file
 
-mandatory:
-- unit testing
-- bruno api client
-- connect the xendit payment gateway
+question mark:
+- current google sign in implementation only using client id while, some implementation uses oauth callback flow, figure this out, there is a straightforward practice by using nestjs/passport
 
-later task (mostly improvements):
+review list:
+- unit testing
 - review db schema and relation
-- end2end testing
+
+mandatory:
+- connect the xendit payment gateway
 - backend docs (comprehensive readme files)
 
 maybe very later:
+- end2end testing
 - refactor: module hierarchy, mappers in each module to avoid accidental leaking of DB fields, shared constants from common module
 - git workflow for CI/CD (simulate real deployment)
 

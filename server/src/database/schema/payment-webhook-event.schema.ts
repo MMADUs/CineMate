@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import {
   index,
   int,
@@ -30,4 +31,14 @@ export const paymentWebhookEvents = mysqlTable(
       table.providerEventId,
     ),
   ],
+);
+
+export const paymentWebhookEventsRelations = relations(
+  paymentWebhookEvents,
+  ({ one }) => ({
+    payment: one(payments, {
+      fields: [paymentWebhookEvents.paymentId],
+      references: [payments.paymentId],
+    }),
+  }),
 );

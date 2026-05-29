@@ -38,8 +38,10 @@ export class CreateMovieDto {
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({ example: 'https://example.com/poster.jpg' })
-  posterUrl?: string;
+  @ApiPropertyOptional({
+    example: 'movies/4f8f4f86-a5db-47fd-81ea-3f0a92f8e9a1.webp',
+  })
+  imageKey?: string;
 
   @IsString()
   @IsOptional()

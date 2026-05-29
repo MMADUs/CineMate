@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ShowtimeResponseDto } from '../../showtimes/dto/showtime-response.dto';
 
 export class MovieResponseDto {
   @ApiProperty({ example: 1 })
@@ -19,8 +20,17 @@ export class MovieResponseDto {
   @ApiProperty({ example: 169 })
   durationMinutes: number;
 
-  @ApiProperty({ example: 'https://example.com/poster.jpg' })
-  posterUrl: string;
+  @ApiProperty({
+    example: 'movies/4f8f4f86-a5db-47fd-81ea-3f0a92f8e9a1.webp',
+  })
+  imageKey: string;
+
+  @ApiProperty({
+    example:
+      'http://localhost:3000/api/assets/images/movies/4f8f4f86-a5db-47fd-81ea-3f0a92f8e9a1.webp',
+    nullable: true,
+  })
+  imageUrl: string | null;
 
   @ApiProperty({ example: 'https://youtube.com/watch?v=example' })
   trailerUrl: string;
@@ -33,4 +43,9 @@ export class MovieResponseDto {
 
   @ApiProperty({ example: 'NOW_PLAYING' })
   status: string;
+}
+
+export class MovieDetailResponseDto extends MovieResponseDto {
+  @ApiProperty({ type: [ShowtimeResponseDto] })
+  showtimes: ShowtimeResponseDto[];
 }

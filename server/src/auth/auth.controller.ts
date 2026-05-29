@@ -26,6 +26,7 @@ import {
   LogoutResponseDto,
   RefreshResponseDto,
 } from './dto/auth-response.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -66,6 +67,23 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthUserResponseDto> {
     return this.authService.login(dto, res);
+  }
+
+  /* Google Auth Controller
+   * @desc: Sign up or sign in with Google ID token
+   * @route: /auth/google
+   * @param: GoogleAuthDto, Response
+   * @returns: Promise<AuthUserResponseDto>
+   */
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Sign up or sign in with Google' })
+  @ApiOkResponse({ type: AuthUserResponseDto })
+  google(
+    @Body() dto: GoogleAuthDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthUserResponseDto> {
+    return this.authService.google(dto, res);
   }
 
   /* Refresh Controller

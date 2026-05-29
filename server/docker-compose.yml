@@ -5,7 +5,7 @@ services:
     command: sh -c "chown -R 10001:10001 /data"
     volumes:
       - cinemate-rustfs-data:/data
-    restart: "no"
+    restart: 'no'
 
   rustfs:
     image: rustfs/rustfs:latest
@@ -15,14 +15,14 @@ services:
       rustfs-perms:
         condition: service_completed_successfully
     environment:
-      RUSTFS_ADDRESS: ":9000"
-      RUSTFS_ACCESS_KEY: rustfsadmin
-      RUSTFS_SECRET_KEY: rustfsadmin
-      RUSTFS_CONSOLE_ENABLE: "true"
-    command: ["/data"]
+      RUSTFS_ADDRESS: ':9000'
+      RUSTFS_ACCESS_KEY: admin_access
+      RUSTFS_SECRET_KEY: admin_secret
+      RUSTFS_CONSOLE_ENABLE: 'true'
+    command: ['/data']
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - '9000:9000'
+      - '9001:9001'
     volumes:
       - cinemate-rustfs-data:/data
 
@@ -33,74 +33,75 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: cinemate
-      MYSQL_USER: cinemate
-      MYSQL_PASSWORD: cinemate
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
     ports:
-      - "3306:3306"
+      - '3306:3306'
     volumes:
       - cinemate-mysql-data:/var/lib/mysql
     healthcheck:
       test:
         [
-          "CMD-SHELL",
-          "mysqladmin ping -h 127.0.0.1 -ucinemate -pcinemate --silent",
+          'CMD-SHELL',
+          'mysqladmin ping -h 127.0.0.1 -ucinemate -pcinemate --silent',
         ]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
 
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: cinemate-api
-    restart: unless-stopped
-    depends_on:
-      mysql:
-        condition: service_healthy
-      rustfs:
-        condition: service_started
-    ports:
-      - "3000:3000"
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      DATABASE_URL: mysql://cinemate:cinemate@mysql:3306/cinemate
-      DATABASE_POOL_SIZE: 10
-      DRIZZLE_MIGRATIONS_DIR: /app/drizzle
-      APP_BASE_URL: http://localhost:3000
-      OBJECT_STORAGE_ENDPOINT: http://rustfs:9000
-      OBJECT_STORAGE_REGION: us-east-1
-      OBJECT_STORAGE_ACCESS_KEY: rustfsadmin
-      OBJECT_STORAGE_SECRET_KEY: rustfsadmin
-      OBJECT_STORAGE_BUCKET: cinemate-images
-      IDEMPOTENCY_FLAG: "false"
-      IDEMPOTENCY_TTL_HOURS: 24
-      APP_LOGGING_FLAG: "false"
-      APP_LOGGING_SLOW_MS: 1000
-      JWT_ACCESS_SECRET: change-me-user-access-secret
-      JWT_REFRESH_SECRET: change-me-user-refresh-secret
-      JWT_ADMIN_ACCESS_SECRET: change-me-admin-access-secret
-      JWT_ADMIN_REFRESH_SECRET: change-me-admin-refresh-secret
-      ADMIN_USERNAME: admin
-      ADMIN_EMAIL: admin@cinemate.local
-      ADMIN_PASSWORD: Admin@123456
-      XENDIT_API_KEY: ""
-      XENDIT_CALLBACK_TOKEN: ""
-      XENDIT_INVOICE_DURATION_SECONDS: 86400
-      FRONTEND_SUCCESS_URL: http://localhost:5173/payment/success
-      FRONTEND_FAILURE_URL: http://localhost:5173/payment/failed
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "node -e \"fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: cinemate-api
+  #   restart: unless-stopped
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #     rustfs:
+  #       condition: service_started
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     NODE_ENV: production
+  #     PORT: 3000
+  #     DATABASE_URL: mysql://user:password@mysql:3306/cinemate
+  #     DATABASE_POOL_SIZE: 10
+  #     DRIZZLE_MIGRATIONS_DIR: /app/drizzle
+  #     APP_BASE_URL: http://localhost:3000
+  #     OBJECT_STORAGE_ENDPOINT: http://rustfs:9000
+  #     OBJECT_STORAGE_REGION: us-east-1
+  #     OBJECT_STORAGE_ACCESS_KEY: admin_access
+  #     OBJECT_STORAGE_SECRET_KEY: admin_secret
+  #     OBJECT_STORAGE_BUCKET: cinemate-images
+  #     IDEMPOTENCY_FLAG: "false"
+  #     IDEMPOTENCY_TTL_HOURS: 24
+  #     APP_LOGGING_FLAG: "false"
+  #     APP_LOGGING_SLOW_MS: 3000
+  #     JWT_ACCESS_SECRET: ""
+  #     JWT_REFRESH_SECRET: ""
+  #     GOOGLE_CLIENT_ID: ""
+  #     JWT_ADMIN_ACCESS_SECRET: ""
+  #     JWT_ADMIN_REFRESH_SECRET: ""
+  #     ADMIN_USERNAME: admin
+  #     ADMIN_EMAIL: admin@gmail.com
+  #     ADMIN_PASSWORD: 12345
+  #     XENDIT_API_KEY: ""
+  #     XENDIT_CALLBACK_TOKEN: ""
+  #     XENDIT_INVOICE_DURATION_SECONDS: 86400
+  #     FRONTEND_SUCCESS_URL: http://localhost:5173/payment/success
+  #     FRONTEND_FAILURE_URL: http://localhost:5173/payment/failed
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD-SHELL",
+  #         "node -e \"fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+  #       ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 20s
 
   phpmyadmin:
     image: phpmyadmin:5.2
@@ -112,11 +113,38 @@ services:
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
-      PMA_USER: cinemate
-      PMA_PASSWORD: cinemate
+      PMA_USER: user
+      PMA_PASSWORD: password
       UPLOAD_LIMIT: 64M
     ports:
-      - "8080:80"
+      - '8080:80'
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: cinemate-ngrok
+    profiles:
+      - webhook
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    command: http api:3000
+    ports:
+      - '4040:4040'
+
+  ngrok-local:
+    image: ngrok/ngrok:latest
+    container_name: cinemate-ngrok-local
+    profiles:
+      - local-webhook
+    restart: unless-stopped
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    command: http host.docker.internal:3000
+    ports:
+      - '4040:4040'
 
 volumes:
   cinemate-mysql-data:
