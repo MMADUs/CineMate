@@ -1,0 +1,11 @@
+meta {
+  name: Admin Delete Showtime
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{apiUrl}}/admin/showtimes/{{showtimeId}}
+  body: none
+  auth: none
+}

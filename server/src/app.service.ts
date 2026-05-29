@@ -1,8 +1,18 @@
 import { Injectable } from '@nestjs/common';
+import { HealthResponseDto } from './dto/health-response.dto';
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
+  /* Healthcheck Service
+   * @desc: Return API health status
+   * @param: none
+   * @returns: HealthResponseDto
+   */
+  healthcheck(): HealthResponseDto {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      service: 'CineMate API',
+    };
   }
 }
