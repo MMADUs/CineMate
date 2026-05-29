@@ -27,7 +27,7 @@ export const MoviePage: React.FC = () => {
             : Number(movie.id) > 3;  
             
         const matchesSearch = movie.title.toLowerCase().includes(searchQuery.toLowerCase());
-                              
+        
         return matchesTab && matchesSearch;
     });
 

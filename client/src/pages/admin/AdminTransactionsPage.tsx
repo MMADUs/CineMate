@@ -139,7 +139,7 @@ export const AdminTransactionsPage: React.FC = () => {
                                                     </svg>
                                                 </button>
 
-                                                {(order.status === 'Upcoming' || order.status === 'Pending') && (
+                                                {(order.status === 'Pending') && (
                                                     <button 
                                                         onClick={() => {
                                                             setSelectedOrder(order);

@@ -182,8 +182,7 @@ export const FoodBeveragePage: React.FC = () => {
                     </div>
 
                     <aside className="w-full lg:w-87.5 shrink-0 mt-8 lg:mt-0 px-2 md:px-0">
-                        {/* PERUBAHAN TINGGI CART DI SINI */}
-                        <div className="bg-white rounded-2xl p-5 md:p-6 flex flex-col h-137.5 md:h-162.5 lg:h-[calc(100vh-120px)] lg:max-h-[750px] lg:sticky lg:top-28 shadow-2xl overflow-hidden">
+                        <div className="bg-white rounded-2xl p-5 md:p-6 flex flex-col h-137.5 md:h-162.5 lg:h-[calc(100vh-120px)] lg:max-h-187.5 lg:sticky lg:top-28 shadow-2xl overflow-hidden">
                             
                             <div className="flex items-center gap-3 border-b border-gray-200 pb-3 md:pb-4 mb-3 md:mb-4 shrink-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -47,9 +47,6 @@ export const AdminProfilePage: React.FC = () => {
                         className="w-24 h-24 rounded-full border-2 border-red-500 mb-4 shadow-lg shadow-red-500/10"
                     />
                     <h3 className="text-xl font-bold">{displayFullName || 'Admin Manager'}</h3>
-                    <p className="text-xs text-red-500 font-semibold bg-red-500/10 px-2.5 py-1 rounded-full mt-1.5 uppercase tracking-wider">
-                        Super Admin
-                    </p>
                     
                     <div className="w-full border-t border-white/5 mt-6 pt-4 text-left space-y-2.5">
                         <div className="flex justify-between text-xs">

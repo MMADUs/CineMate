@@ -3,7 +3,7 @@ import { Navbar } from '../../components/layout/Navbar';
 import { Footer } from '../../components/layout/Footer';
 import { OrderCard } from '../../components/cards/OrderCard';
 import { OrderCardSkeleton } from '../../components/cards/OrderCardSkeleton';
-import { ORDER_HISTORY } from '../../data/dummydata'; // Pastikan path ini benar
+import { ORDER_HISTORY } from '../../data/dummydata'; 
 import type { OrderStatus } from '../../types/order';
 
 export const OrderHistoryPage: React.FC = () => {
