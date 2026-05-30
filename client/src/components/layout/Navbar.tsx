@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+
+import { useGetProfile } from '../../api/hooks/useProfile';
+import { useLogout } from '../../api/mutations/Auth/useLogout';
 
 export const Navbar: React.FC = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    const { data: profile } = useGetProfile();
+    const { mutate: logoutUser } = useLogout();
 
     const getNavLinkClass = (path: string) => {
         if (location.pathname === path) {
@@ -14,6 +21,24 @@ export const Navbar: React.FC = () => {
     };
 
     const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+    const getInitials = (name?: string) => {
+        if (!name) return "U"; 
+        const nameParts = name.trim().split(' ');
+        if (nameParts.length >= 2) {
+            return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+    };
+
+    const handleLogout = () => {
+        logoutUser(undefined, {
+            onSuccess: () => {
+                closeMobileMenu();
+                navigate('/login');
+            }
+        });
+    };
 
     useEffect(() => {
         const handleResize = () => {
@@ -54,8 +79,14 @@ export const Navbar: React.FC = () => {
                         <Link to="/history" className={getNavLinkClass('/history')}>Order</Link>
                     </div>
 
-                    <Link to="/profile" className="w-10 h-10 rounded-full bg-gray-500 overflow-hidden border-2 border-red-600 shrink-0 cursor-pointer block hover:opacity-80 transition-opacity">
-                        <img src="https://i.pravatar.cc/150?img=11" alt="Profile" className="w-full h-full object-cover" />
+                    <Link to="/profile" className="w-10 h-10 rounded-full bg-[#E5252A] overflow-hidden border-2 border-red-600 shrink-0 cursor-pointer flex items-center justify-center hover:opacity-80 transition-opacity">
+                        {profile?.avatarUrl ? (
+                            <img src={profile.avatarUrl} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        ) : (
+                            <span className="text-white font-bold text-sm">
+                                {getInitials(profile?.fullName)}
+                            </span>
+                        )}
                     </Link>
                 </div>
 
@@ -83,12 +114,18 @@ export const Navbar: React.FC = () => {
                 <div className="flex flex-col h-full pt-28 px-8 pb-10 overflow-y-auto">
                     
                     <Link to="/profile" onClick={closeMobileMenu} className="flex items-center gap-4 mb-10 pb-6 border-b border-white/10 hover:opacity-80 transition-opacity cursor-pointer">
-                        <div className="w-16 h-16 rounded-full bg-gray-500 overflow-hidden border-2 border-red-600 shrink-0">
-                            <img src="https://i.pravatar.cc/150?img=11" alt="Profile" className="w-full h-full object-cover" />
+                        <div className="w-16 h-16 rounded-full bg-[#E5252A] flex items-center justify-center overflow-hidden border-2 border-red-600 shrink-0">
+                            {profile?.avatarUrl ? (
+                                <img src={profile.avatarUrl} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            ) : (
+                                <span className="text-white font-bold text-xl">
+                                    {getInitials(profile?.fullName)}
+                                </span>
+                            )}
                         </div>
-                        <div>
+                        <div className="overflow-hidden">
                             <p className="text-white/50 text-sm mb-0.5">Welcome back,</p>
-                            <p className="text-white font-bold text-xl">Lintang Anggowoyuono</p>
+                            <p className="text-white font-bold text-xl truncate">{profile?.fullName || "Guest"}</p>
                         </div>
                     </Link>
 
@@ -100,7 +137,10 @@ export const Navbar: React.FC = () => {
                     </div>
 
                     <div className="mt-auto pt-10">
-                        <button className="flex items-center gap-3 text-red-500 hover:text-red-400 font-semibold transition">
+                        <button 
+                            onClick={handleLogout}
+                            className="flex items-center gap-3 text-red-500 hover:text-red-400 font-semibold transition"
+                        >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                             </svg>

@@ -12,7 +12,7 @@ export const ORDER_HISTORY: OrderItem[] = [
         time: '07:00 PM',
         seats: 'A1, A2',
         studio: '1',
-        price: 245000, // Harga sudah disesuaikan termasuk F&B
+        price: 245000, 
         status: 'Completed',
         fnbItems: [
             { name: 'Combo 1 (Popcorn + Drink)', quantity: 1 },

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -6,11 +6,11 @@ import { Button } from "../../components/ui_manual/Button";
 import { Input } from "../../components/ui_manual/Input";
 import { Divider } from "../../components/ui_manual/Divider";
 import { Link } from "../../components/ui_manual/Link";
-import { GoogleIcon } from "../../components/ui_manual/GoogleIcon";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useLogin } from "../../api/mutations/Auth/useLogin"; 
+import { GoogleLogin } from '@react-oauth/google';
+import { useGoogleAuth } from '../../api/mutations/Auth/useGoogleAuth';
 
-// Login simpan access token & refresh token dengan JWT, access token pake
-// Access token habis, nembak ke refresh token API
 const loginSchema = z.object({
   email: z
     .string()
@@ -18,23 +18,27 @@ const loginSchema = z.object({
     .email("Please enter a valid email address."),
   password: z
     .string()
-    .min(6, "Password must be at least 6 characters."),
+    .min(5, "Password must be at least 5 characters."),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export interface LoginPageProps {
   registerHref?: string;
-  onLogin?: (email: string, password: string) => void;
   onGoogleLogin?: () => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({
   registerHref = "/register",
-  onLogin,
-  onGoogleLogin,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation(); 
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const isAdminLogin = location.pathname.includes('/admin');
+
+  const { mutate: loginUser, isPending } = useLogin();
+  const { mutate: googleAuthBackend } = useGoogleAuth();
 
   const {
     register,
@@ -49,8 +53,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   });
 
   const onSubmit = (data: LoginFormValues) => {
-    onLogin?.(data.email, data.password);
-    navigate("/");
+    setApiError(null);
+
+    loginUser(
+      {
+        payload: {
+            email: data.email,
+            password: data.password,
+        },
+        isAdmin: isAdminLogin
+      },
+      {
+        onSuccess: () => {
+          navigate(isAdminLogin ? "/admin" : "/");
+        },
+        onError: (error) => {
+          const errorMsg = error.response?.data?.message || "Login failed.";
+          setApiError(errorMsg);
+        }
+      }
+    );
   };
 
   return (
@@ -60,18 +82,24 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
         <div className="w-full rounded-3xl border border-white/10 bg-[#121212]/80 backdrop-blur-md px-10 py-12 shadow-2xl">
 
-          {/* Header */}
           <div className="text-center mb-10">
+            {/* Judul bisa disesuaikan sedikit untuk Admin */}
             <h1 className="text-[2.5rem] font-bold text-white tracking-tight leading-none mb-2">
-              Login
+              {isAdminLogin ? "Admin Login" : "Login"}
             </h1>
             <p className="text-sm text-white/50">
-              Your Movie, Your Choice
+              {isAdminLogin ? "CineMate Administrative Access" : "Your Movie, Your Choice"}
             </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+            
+            {apiError && (
+                <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm px-4 py-3 rounded-lg text-center font-medium">
+                    {apiError}
+                </div>
+            )}
+
             <Input
               id="email"
               label="Email Address"
@@ -96,30 +124,56 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
             <div className="mt-2">
               <Button
-                label="Login"
+                label={isPending ? "Logging in..." : "Login"}
                 variant="primary"
                 type="submit"
+                disabled={isPending}
               />
             </div>
 
-            <div className="py-2">
-              <Divider text="Or" />
-            </div>
+            {/* 4. Sembunyikan Google Login jika ini adalah halaman Admin */}
+            {!isAdminLogin && (
+                <>
+                    <div className="py-2">
+                      <Divider text="Or" />
+                    </div>
 
-            <Button
-              label="Sign In With Google"
-              variant="google"
-              type="button" 
-              icon={<GoogleIcon />}
-              onClick={onGoogleLogin}
-            />
+                    <div className="flex justify-center w-full">
+                        <div className="w-full h-13 [&>div]:w-full! [&>div]:h-full! [&>div>div]:h-full! flex justify-center">
+                            <GoogleLogin
+                              onSuccess={(credentialResponse) => {
+                                if (credentialResponse.credential) {
+                                    googleAuthBackend(
+                                        { idToken: credentialResponse.credential },
+                                        {
+                                            onSuccess: () => navigate("/"),
+                                            onError: (err) => setApiError(err.response?.data?.message || "Google Login failed")
+                                        }
+                                    );
+                                }
+                              }}
+                              onError={() => {
+                                setApiError("Google Login was canceled or failed.");
+                              }}
+                              theme="outline" 
+                              shape="rectangular"
+                              size="large"
+                              width="100%"
+                            />
+                        </div>
+                    </div>
+                </>
+            )}
           </form>
         </div>
 
-        <p className="text-sm text-white/50 text-center mt-2">
-          Doesn't Have an Account?{" "}
-          <Link href={registerHref} label="Register Here" variant="accent" />
-        </p>
+        {/* 5. Sembunyikan Register jika ini adalah halaman Admin */}
+        {!isAdminLogin && (
+            <p className="text-sm text-white/50 text-center mt-2">
+              Doesn't Have an Account?{" "}
+              <Link href={registerHref} label="Register Here" variant="accent" />
+            </p>
+        )}
       </div>
     </div>
   );

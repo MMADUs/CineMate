@@ -1,40 +1,28 @@
 import React from 'react';
-import { useForm, useWatch } from 'react-hook-form'; 
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { AdminLayout } from '../../components/layout/AdminLayouts';
 
-// Skema Validasi Zod
-const adminProfileSchema = z.object({
-    fullName: z.string().min(3, "Name must be at least 3 characters."),
-    phone: z.string().min(10, "Please enter a valid phone number."),
-});
-
-type AdminProfileValues = z.infer<typeof adminProfileSchema>;
+import { useGetAdminProfile } from '../../api/hooks/Admin/useGetAdminProfile'; 
 
 export const AdminProfilePage: React.FC = () => {
-    // React Hook Form
-    const {
-        register,
-        handleSubmit,
-        control,
-        formState: { errors },
-    } = useForm<AdminProfileValues>({
-        resolver: zodResolver(adminProfileSchema),
-        defaultValues: {
-            fullName: 'Admin Manager',
-            phone: '+62 812 3456 7890'
-        }
-    });
+    const { data: profile, isLoading } = useGetAdminProfile();
 
-    const displayFullName = useWatch({
-        control,
-        name: 'fullName',
-    });
+    if (isLoading) {
+        return (
+            <AdminLayout title="Admin Profile">
+                <div className="flex justify-center items-center h-64">
+                    <span className="text-white/50 animate-pulse font-semibold">Loading Profile Data...</span>
+                </div>
+            </AdminLayout>
+        );
+    }
 
-    const onSubmit = (data: AdminProfileValues) => {
-        alert(`Admin profile updated successfully!\nNew Name: ${data.fullName}\nNew Phone: ${data.phone}`);
-    };
+    // 3. Gunakan trik ekstraksi Type-Safe yang sama dengan di AdminLayouts
+    const rawProfile = (profile || {}) as unknown as Record<string, unknown>;
+    const userData = (rawProfile.data || profile) as { username?: string; email?: string; adminId?: number };
+
+    const displayUsername = userData?.username || 'Admin';
+    const displayEmail = userData?.email || 'admin@cinemate.com';
+    const displayAdminId = userData?.adminId || 'N/A';
 
     return (
         <AdminLayout title="Admin Profile">
@@ -42,16 +30,21 @@ export const AdminProfilePage: React.FC = () => {
                 
                 <div className="rounded-xl border border-white/10 bg-[#111111] p-6 text-center flex flex-col items-center justify-center h-fit">
                     <img 
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(displayFullName || 'Admin')}&background=e51c23&color=fff&size=128`} 
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(displayUsername)}&background=e51c23&color=fff&size=128`} 
                         alt="Admin Avatar" 
                         className="w-24 h-24 rounded-full border-2 border-red-500 mb-4 shadow-lg shadow-red-500/10"
                     />
-                    <h3 className="text-xl font-bold">{displayFullName || 'Admin Manager'}</h3>
+                    <h3 className="text-xl font-bold">{displayUsername}</h3>
+                    <p className="text-xs text-red-500 font-semibold mt-1">Administrator</p>
                     
                     <div className="w-full border-t border-white/5 mt-6 pt-4 text-left space-y-2.5">
                         <div className="flex justify-between text-xs">
                             <span className="text-white/40">Email:</span>
-                            <span className="text-white/80 font-medium">admin@cinemate.com</span>
+                            <span className="text-white/80 font-medium">{displayEmail}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                            <span className="text-white/40">Admin ID:</span>
+                            <span className="text-white/80 font-medium">#{displayAdminId}</span>
                         </div>
                         <div className="flex justify-between text-xs">
                             <span className="text-white/40">System Status:</span>
@@ -66,54 +59,55 @@ export const AdminProfilePage: React.FC = () => {
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     
                     <div className="rounded-xl border border-white/10 bg-[#111111] p-6 shadow-sm">
-                        <h3 className="text-lg font-bold mb-4">Profile Information</h3>
-                        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="mb-6 border-b border-white/5 pb-4">
+                            <h3 className="text-lg font-bold">Profile Information</h3>
+                        </div>
+                        
+                        <div className="flex flex-col gap-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                 <div className="flex flex-col gap-1">
-                                    <label className="text-xs text-white/60 font-medium">Full Name</label>
+                                    <label className="text-xs text-white/60 font-medium">Username</label>
                                     <input 
-                                        {...register('fullName')}
                                         type="text" 
-                                        className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-red-500" 
+                                        value={displayUsername} 
+                                        disabled 
+                                        className="bg-[#1a1a1a]/50 border border-white/5 rounded-lg p-3 text-white/80 text-sm cursor-not-allowed" 
                                     />
-                                    {errors.fullName && <span className="text-xs text-red-500">{errors.fullName.message}</span>}
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                    <label className="text-xs text-white/60 font-medium">Phone Number</label>
+                                    <label className="text-xs text-white/60 font-medium">Admin ID</label>
                                     <input 
-                                        {...register('phone')}
                                         type="text" 
-                                        className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-red-500" 
+                                        value={displayAdminId} 
+                                        disabled 
+                                        className="bg-[#1a1a1a]/50 border border-white/5 rounded-lg p-3 text-white/80 text-sm cursor-not-allowed" 
                                     />
-                                    {errors.phone && <span className="text-xs text-red-500">{errors.phone.message}</span>}
                                 </div>
                             </div>
 
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs text-white/60 font-medium">Email Address</label>
+                                <label className="text-xs text-white/60 font-medium">Registered Email Address</label>
                                 <input 
                                     type="email" 
-                                    defaultValue="admin@cinemate.com" 
+                                    value={displayEmail} 
                                     disabled 
-                                    className="bg-[#1a1a1a]/50 border border-white/5 rounded-lg p-3 text-white/40 text-sm cursor-not-allowed" 
+                                    className="bg-[#1a1a1a]/50 border border-white/5 rounded-lg p-3 text-white/80 text-sm cursor-not-allowed" 
                                 />
-                                <span className="text-[10px] text-white/30">* Email address cannot be changed for security reasons.</span>
                             </div>
 
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs text-white/60 font-medium">Security Password</label>
+                                <label className="text-xs text-white/60 font-medium">Security Validation</label>
                                 <input 
                                     type="password" 
-                                    defaultValue="********" 
+                                    value="******" 
                                     disabled 
                                     className="bg-[#1a1a1a]/50 border border-white/5 rounded-lg p-3 text-white/40 text-sm cursor-not-allowed tracking-widest" 
                                 />
+                                <span className="text-[10px] text-white/30 mt-1">
+                                    * Passwords are encrypted and cannot be viewed.
+                                </span>
                             </div>
-
-                            <button type="submit" className="w-fit bg-[#e51c23] hover:bg-[#c71118] text-white text-sm font-bold py-2.5 px-6 rounded-lg transition-colors mt-2 shadow-lg shadow-red-500/10">
-                                Save Changes
-                            </button>
-                        </form>
+                        </div>
                     </div>
 
                     <div className="rounded-xl border border-white/10 bg-[#111111] p-6 shadow-sm">
@@ -124,10 +118,9 @@ export const AdminProfilePage: React.FC = () => {
                             {[
                                 'Movie Database Control (Full CRUD)',
                                 'Showtimes & Scheduling Orchestration',
-                                'Cinema Hall & Seat Grid Reset Authorization',
-                                'Food & Beverage Stock & Menu Control',
-                                'Financial Transactions & Order Auditing',
-                                'Real-time Access Logs View Rights'
+                                'Cinema Hall & Seat Grid Control',
+                                'Food & Beverage Menu Management',
+                                'Financial Transactions Auditing'
                             ].map((perm, idx) => (
                                 <div key={idx} className="flex items-center gap-2.5 bg-white/5 p-3 rounded-lg border border-white/5 text-xs text-white/80">
                                     <svg className="h-4 w-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

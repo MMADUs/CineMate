@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui_manual/Button";
 import { Input } from "../../components/ui_manual/Input";
 import { Link } from "../../components/ui_manual/Link";
+import { useRegister } from "../../api/mutations/Admin/useRegister"; // Sesuaikan path-nya
 
 const registerSchema = z
     .object({
@@ -36,15 +37,16 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export interface RegisterPageProps {
     loginHref?: string;
-    onRegister?: (fullName: string, phoneNum: string, email: string, password: string) => void;
-    onGoogleLogin?: () => void;
 }
 
 export const RegisterPage: React.FC<RegisterPageProps> = ({
     loginHref = "/login",
-    onRegister,
 }) => {
     const navigate = useNavigate();
+    const [apiError, setApiError] = useState<string | null>(null);
+
+    // Panggil custom hook TanStack Query
+    const { mutate: registerUser, isPending } = useRegister();
 
     const {
         register,
@@ -62,10 +64,29 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     });
 
     const onSubmit = (data: RegisterFormValues) => {
-        // Axios mengirim data ke /api/auth/register dan backend akan mengembalikan JWT Access & Refresh Token
-        onRegister?.(data.fullName, data.phoneNum, data.email, data.password);
-        
-        navigate("/login");
+        setApiError(null); // Reset error setiap kali submit baru
+
+        // Panggil fungsi mutate dari TanStack Query
+        registerUser(
+            {
+                fullName: data.fullName,
+                email: data.email,
+                phoneNum: data.phoneNum,
+                password: data.password,
+            },
+            {
+                onSuccess: () => {
+                    // Jika sukses, arahkan user ke halaman login
+                    alert('Registration Successful! Please login.');
+                    navigate("/login");
+                },
+                onError: (error) => {
+                    // Tampilkan pesan error dari backend jika email sudah terpakai, dll
+                    const errorMsg = error.response?.data?.message || "An unexpected error occurred. Please try again.";
+                    setApiError(errorMsg);
+                }
+            }
+        );
     };
 
     return (
@@ -83,7 +104,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
                     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
                         
-                        {/* 3. Tambahkan Input Full Name */}
+                        {/* Alert untuk menampilkan error dari Backend API */}
+                        {apiError && (
+                            <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm px-4 py-3 rounded-lg text-center font-medium">
+                                {apiError}
+                            </div>
+                        )}
+                        
                         <Input
                             id="fullName"
                             label="Full Name"
@@ -95,7 +122,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                             errorMessage={errors.fullName?.message}
                         />
 
-                        {/* 4. Tambahkan Input Phone Number */}
                         <Input
                             id="phoneNum"
                             label="Phone Number"
@@ -141,10 +167,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                         />
 
                         <div className="mt-2">
+                            {/* Tombol akan otomatis disable & berubah teks saat sedang loading menembak API */}
                             <Button
-                                label="Register"
+                                label={isPending ? "Registering..." : "Register"}
                                 variant="primary"
                                 type="submit"
+                                disabled={isPending}
                             />
                         </div>
                     </form>

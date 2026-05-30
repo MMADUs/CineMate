@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
@@ -10,10 +10,15 @@ import { OrderCard } from '../../components/cards/OrderCard';
 import { ProfileSidebar } from '../../components/layout/ProfileSidebar'; 
 import { ORDER_HISTORY } from '../../data/dummydata';
 
+import { useGetProfile } from '../../api/hooks/useProfile'; 
+import { useUpdateProfile } from '../../api/mutations/useUpdateProfile'; 
+import { useLogout } from '../../api/mutations/Auth/useLogout';
+
 const profileSchema = z.object({
-    fullName: z.string().min(3, "Nama minimal 3 karakter"),
-    email: z.string().email("Format email tidak valid"),
-    phone: z.string().min(10, "Nomor telepon minimal 10 digit"),
+    fullName: z.string().min(3, "Name must be at least 3 characters"),
+    email: z.string().min(1, "Email is required").email("Invalid email format"), // Validasi email diperjelas
+    phoneNum: z.string().min(10, "Phone number must be at least 10 digits").regex(/^[0-9+]+$/, "Only numbers and '+' allowed"),
+    password: z.string().min(6, "Password must be at least 6 characters").optional().or(z.literal('')),
 });
 
 type ProfileValues = z.infer<typeof profileSchema>;
@@ -23,12 +28,18 @@ export const ProfilePage: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const navigate = useNavigate();
 
+    const { data: profile, isLoading: isProfileLoading } = useGetProfile();
+    console.log(profile)
+    const { mutate: updateProfile, isPending: isUpdating } = useUpdateProfile();
+    const { mutate: logoutUser } = useLogout();
+
     const { register, handleSubmit, formState: { errors } } = useForm<ProfileValues>({
         resolver: zodResolver(profileSchema),
-        defaultValues: {
-            fullName: 'Lintang Anggowoyuono',
-            email: 'lintang@gmail.com',
-            phone: '+62 0123 5678 9101'
+        values: {
+            fullName: profile?.fullName || '',
+            email: profile?.email || '',
+            phoneNum: profile?.phoneNum || '',
+            password: '' 
         }
     });
 
@@ -37,15 +48,47 @@ export const ProfilePage: React.FC = () => {
     }, [activeTab]);
 
     const handleLogout = () => {
-        alert('Logging out...');
-        navigate('/login');
+        logoutUser(undefined, {
+            onSuccess: () => {
+                navigate('/login');
+            },
+            onError: (err) => {
+                console.error("Logout failed", err);
+                alert("Failed to logout. Please try again.");
+            }
+        });
     };
 
     const onSubmit = (data: ProfileValues) => {
-        console.log("Data Profil Baru:", data);
-        alert("Profil berhasil diperbarui!");
-        setIsEditing(false);
+        updateProfile(
+            {
+                fullName: data.fullName,
+                phoneNum: data.phoneNum,
+                password: data.password
+            },
+            {
+                onSuccess: () => {
+                    alert("Profil berhasil diperbarui!");
+                    setIsEditing(false); 
+                },
+                onError: (error) => {
+                    alert(error.response?.data?.message || "Gagal memperbarui profil.");
+                }
+            }
+        );
     };
+
+    const onError = (formErrors: FieldErrors<ProfileValues>) => {
+        console.error("Validasi form gagal:", formErrors);
+    };
+
+    if (isProfileLoading) {
+        return (
+            <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center">
+                <span className="text-white/50 animate-pulse">Loading Profile...</span>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#0d0d0d] text-white font-sans overflow-x-hidden flex flex-col">
@@ -57,6 +100,9 @@ export const ProfilePage: React.FC = () => {
                     activeTab={activeTab} 
                     setActiveTab={setActiveTab} 
                     onLogout={handleLogout} 
+                    fullName={profile?.fullName}
+                    email={profile?.email}
+                    avatarUrl={profile?.avatarUrl}
                 />
 
                 <section className="flex-1 bg-[#111111] border border-white/5 rounded-2xl md:rounded-3xl p-6 md:p-10 shadow-xl h-fit">
@@ -73,12 +119,12 @@ export const ProfilePage: React.FC = () => {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5 md:gap-6 max-w-2xl">
+                            <form onSubmit={handleSubmit(onSubmit, onError)} className="flex flex-col gap-5 md:gap-6 max-w-2xl">
                                 <div className="flex flex-col gap-2">
                                     <label className="text-white/90 font-semibold text-sm md:text-base">Full Name</label>
                                     <input 
                                         {...register("fullName")}
-                                        disabled={!isEditing}
+                                        readOnly={!isEditing} 
                                         className={`bg-[#1a1a1a] border rounded-xl px-5 py-3.5 text-sm md:text-base focus:outline-none transition-all ${
                                             isEditing ? "border-red-500 text-white" : "border-transparent text-white/50 cursor-default"
                                         }`}
@@ -86,34 +132,53 @@ export const ProfilePage: React.FC = () => {
                                     {errors.fullName && <p className="text-red-500 text-xs">{errors.fullName.message}</p>}
                                 </div>
 
+                                {/* BAGIAN EMAIL SUDAH DIBUKA DAN BISA DIEDIT */}
                                 <div className="flex flex-col gap-2">
                                     <label className="text-white/90 font-semibold text-sm md:text-base">Email</label>
                                     <input 
                                         {...register("email")}
-                                        disabled={!isEditing}
+                                        readOnly={!isEditing} // <-- Bisa diubah kalau sedang dalam mode Edit
                                         className={`bg-[#1a1a1a] border rounded-xl px-5 py-3.5 text-sm md:text-base focus:outline-none transition-all ${
                                             isEditing ? "border-red-500 text-white" : "border-transparent text-white/50 cursor-default"
                                         }`}
                                     />
+                                    {/* Menampilkan pesan error khusus email kalau salah format */}
                                     {errors.email && <p className="text-red-500 text-xs">{errors.email.message}</p>}
                                 </div>
 
-                                {/* Field Phone */}
                                 <div className="flex flex-col gap-2">
                                     <label className="text-white/90 font-semibold text-sm md:text-base">Phone Number</label>
                                     <input 
-                                        {...register("phone")}
-                                        disabled={!isEditing}
+                                        {...register("phoneNum")}
+                                        readOnly={!isEditing} 
                                         className={`bg-[#1a1a1a] border rounded-xl px-5 py-3.5 text-sm md:text-base focus:outline-none transition-all ${
                                             isEditing ? "border-red-500 text-white" : "border-transparent text-white/50 cursor-default"
                                         }`}
                                     />
-                                    {errors.phone && <p className="text-red-500 text-xs">{errors.phone.message}</p>}
+                                    {errors.phoneNum && <p className="text-red-500 text-xs">{errors.phoneNum.message}</p>}
                                 </div>
 
                                 {isEditing && (
+                                    <div className="flex flex-col gap-2 border-t border-white/10 mt-2 pt-4">
+                                        <label className="text-white/90 font-semibold text-sm md:text-base">New Password (Optional)</label>
+                                        <input 
+                                            {...register("password")}
+                                            type="password"
+                                            placeholder="Leave empty to keep current password"
+                                            className="bg-[#1a1a1a] border border-red-500 rounded-xl px-5 py-3.5 text-sm md:text-base text-white focus:outline-none transition-all"
+                                        />
+                                        {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
+                                    </div>
+                                )}
+
+                                {isEditing && (
                                     <div className="mt-4">
-                                        <Button label="Save Changes" type="submit" variant="primary" />
+                                        <Button 
+                                            label={isUpdating ? "Saving..." : "Save Changes"} 
+                                            type="submit" 
+                                            variant="primary" 
+                                            disabled={isUpdating}
+                                        />
                                     </div>
                                 )}
                             </form>

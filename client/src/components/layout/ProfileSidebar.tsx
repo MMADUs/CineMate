@@ -4,60 +4,90 @@ interface ProfileSidebarProps {
     activeTab: 'personal' | 'history';
     setActiveTab: (tab: 'personal' | 'history') => void;
     onLogout: () => void;
+    fullName?: string;
+    email?: string;
+    avatarUrl?: string;
 }
 
-export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ activeTab, setActiveTab, onLogout }) => {
+export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
+    activeTab,
+    setActiveTab,
+    onLogout,
+    fullName = "User", 
+    email = "user@example.com",
+    avatarUrl
+}) => {
+    
+    const getInitials = (name: string) => {
+        const nameParts = name.trim().split(' ');
+        if (nameParts.length >= 2) {
+            return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+    };
+
     return (
-        <aside className="w-full md:w-75 shrink-0 flex flex-col gap-4 md:gap-0">
-            <div className="bg-[#111111] border border-white/5 rounded-2xl md:rounded-3xl overflow-hidden flex flex-col h-full shadow-xl">
-                
-                <div className="p-6 md:p-8 flex items-center gap-4 border-b border-white/5">
-                    <img 
-                        src="https://ui-avatars.com/api/?name=Lintang+Anggowoyuono&background=e51c23&color=fff&size=128" 
-                        alt="Profile Avatar" 
-                        className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover border-2 border-white/10"
-                    />
-                    <div className="flex flex-col">
-                        <h3 className="font-bold text-base md:text-lg leading-tight">Lintang Anggowoyuono</h3>
-                        <span className="text-white/50 text-xs md:text-sm mt-0.5">lintang@gmail.com</span>
+        <aside className="w-full md:w-72 shrink-0 bg-[#111111] border border-white/5 rounded-2xl md:rounded-3xl flex flex-col overflow-hidden h-fit shadow-xl">
+            {/* Header Profile */}
+            <div className="p-6 md:p-8 flex items-center gap-4 border-b border-white/5">
+                {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-16 h-16 rounded-full object-cover border-2 border-white/10" />
+                ) : (
+                    <div className="w-16 h-16 rounded-full bg-[#E5252A] flex items-center justify-center text-white text-xl font-bold shrink-0">
+                        {getInitials(fullName)}
                     </div>
+                )}
+                <div className="flex flex-col overflow-hidden">
+                    <h3 className="text-lg font-bold text-white truncate">{fullName}</h3>
+                    <p className="text-sm text-white/50 truncate">{email}</p>
                 </div>
+            </div>
 
-                <div className="flex flex-col py-4 grow">
-                    <button 
-                        onClick={() => setActiveTab('personal')}
-                        className={`px-8 py-4 text-left font-semibold text-sm md:text-base transition-colors ${
-                            activeTab === 'personal' 
-                            ? 'bg-[#1a1a1a] text-white border-l-4 border-red-600' 
-                            : 'text-white/60 hover:bg-white/5 hover:text-white border-l-4 border-transparent'
-                        }`}
-                    >
-                        Personal Information
-                    </button>
-                    <button 
-                        onClick={() => setActiveTab('history')}
-                        className={`px-8 py-4 text-left font-semibold text-sm md:text-base transition-colors ${
-                            activeTab === 'history' 
-                            ? 'bg-[#1a1a1a] text-white border-l-4 border-red-600' 
-                            : 'text-white/60 hover:bg-white/5 hover:text-white border-l-4 border-transparent'
-                        }`}
-                    >
-                        Order History
-                    </button>
-                </div>
+            {/* Navigation Menu */}
+            <nav className="flex flex-col py-4">
+                <button 
+                    onClick={() => setActiveTab('personal')}
+                    className={`w-full text-left px-8 py-4 font-semibold transition-all flex items-center relative ${
+                        activeTab === 'personal' 
+                            ? 'bg-[#1a1a1a] text-white' 
+                            : 'text-white/50 hover:bg-white/5 hover:text-white'
+                    }`}
+                >
+                    {activeTab === 'personal' && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#E5252A]" />
+                    )}
+                    Personal Information
+                </button>
 
-                <div className="p-6 md:p-8 mt-auto border-t border-white/5">
-                    <button 
-                        onClick={onLogout}
-                        className="w-full flex items-center justify-center gap-2 bg-[#e51c23] hover:bg-[#c71118] text-white font-bold py-3.5 rounded-xl transition-all hover:shadow-[0_0_15px_rgba(229,28,35,0.4)]"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        Logout
-                    </button>
-                </div>
+                <button 
+                    onClick={() => setActiveTab('history')}
+                    className={`w-full text-left px-8 py-4 font-semibold transition-all flex items-center relative ${
+                        activeTab === 'history' 
+                            ? 'bg-[#1a1a1a] text-white' 
+                            : 'text-white/50 hover:bg-white/5 hover:text-white'
+                    }`}
+                >
+                    {activeTab === 'history' && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#E5252A]" />
+                    )}
+                    Order History
+                </button>
+            </nav>
 
+            {/* Logout Button */}
+            <div className="p-6 md:p-8 mt-auto border-t border-white/5">
+                <button 
+                    onClick={onLogout}
+                    className="w-full bg-[#E5252A] hover:bg-[#c21e22] text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                    {/* Icon Logout */}
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Logout
+                </button>
             </div>
         </aside>
     );

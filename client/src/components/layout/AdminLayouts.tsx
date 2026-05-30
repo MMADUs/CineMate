@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAdminLogout } from '../../api/mutations/Admin/useAdminLogout';
+import { Toaster } from 'react-hot-toast';
+
+import { useGetAdminProfile } from '../../api/hooks/Admin/useGetAdminProfile';
 
 interface AdminLayoutProps {
     children: React.ReactNode;
@@ -10,6 +14,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
+
+    const { mutate: logoutAdmin } = useAdminLogout();
+    
+    const { data: profile } = useGetAdminProfile();
 
     const menuItems = [
         { path: '/admin', label: 'Dashboard' },
@@ -30,13 +38,42 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => 
     };
 
     const handleLogout = () => {
-        alert('Logging out...');
-        navigate('/login');
+        logoutAdmin(undefined, {
+            onSettled: () => {
+                navigate('/admin/login');
+            }
+        });
     };
+
+    const rawProfile = (profile || {}) as unknown as Record<string, unknown>;
+    
+    const userData = (rawProfile.data || profile) as { username?: string; email?: string };
+
+    const displayName = userData?.username || 'Admin';
+    const displayEmail = userData?.email || 'Loading...';
+    
+    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=e51c23&color=fff`;
 
     return (
         <div className="min-h-screen bg-[#0d0d0d] text-white font-sans flex overflow-hidden">
             
+            <Toaster 
+                position="top-right" 
+                toastOptions={{
+                    style: {
+                        background: '#333',
+                        color: '#fff',
+                        borderRadius: '10px',
+                    },
+                    success: {
+                        iconTheme: { primary: '#10b981', secondary: '#fff' },
+                    },
+                    error: {
+                        iconTheme: { primary: '#e51c23', secondary: '#fff' },
+                    },
+                }} 
+            />
+
             {isSidebarOpen && (
                 <div 
                     className="fixed inset-0 bg-black/80 z-40 md:hidden"
@@ -95,12 +132,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => 
                         title="View Admin Profile"
                     >
                         <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold leading-none mb-1 group-hover:text-red-500 transition-colors">Admin Manager</p>
-                            <p className="text-xs text-white/50 leading-none group-hover:text-white/70 transition-colors">admin@cinemate.com</p>
+                            <p className="text-sm font-bold leading-none mb-1 group-hover:text-red-500 transition-colors capitalize">
+                                {displayName}
+                            </p>
+                            <p className="text-xs text-white/50 leading-none group-hover:text-white/70 transition-colors">
+                                {displayEmail}
+                            </p>
                         </div>
                         <img 
-                            src="https://ui-avatars.com/api/?name=Admin+Manager&background=e51c23&color=fff" 
-                            alt="Admin" 
+                            src={avatarUrl} 
+                            alt={displayName} 
                             className="w-10 h-10 rounded-full border border-white/10 group-hover:border-red-500 transition-colors"
                         />
                     </div>

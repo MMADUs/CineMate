@@ -1,4 +1,9 @@
-export interface UserProfile {
+export interface LoginPayload {
+    email: string;
+    password: string;
+}
+
+export interface LoginResponse {
     userId: string;
     fullName: string;
     email: string;
@@ -6,10 +11,4 @@ export interface UserProfile {
     authProvider: string;
     avatarUrl: string;
     createdAt: string;
-}
-
-export interface UpdateProfilePayload {
-    fullName: string;
-    phoneNum: string;
-    password?: string; 
 }

@@ -26,6 +26,9 @@ import { AdminFnbPage } from './pages/admin/AdminFnBPage';
 import { AdminStudiosPage } from './pages/admin/AdminStudiosPage'
 import { AdminProfilePage } from './pages/admin/AdminProfilePage'
 
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { AdminGuard } from './components/guards/AdminGuards';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -37,32 +40,41 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage registerHref="/register" />} />
-          <Route path="/register" element={<RegisterPage loginHref="/login" />} />
-          <Route path="/movie" element={<MoviePage />} />
-          <Route path="/fnb" element={<FoodBeveragePage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+    <GoogleOAuthProvider clientId="406090746990-5gcra701or1f4dcgg4gv8lghlhdllfi9.apps.googleusercontent.com">
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage registerHref="/register" />} />
+            <Route path="/register" element={<RegisterPage loginHref="/login" />} />
 
-          <Route path="/movie/:id" element={<MovieDetailsPage />} />
-          <Route path="/seat-selection/:movieId/:showtimeId" element={<SeatSelectionPage />} />
-          <Route path="/order/:movieId/:showtimeId/:seats" element={<PaymentPage />} />
-          <Route path="/receipt/:movieId/:showtimeId/:seats" element={<ReceiptPage />} />
-          <Route path="/history" element={<OrderHistoryPage />} />
-          <Route path="/ticket/:orderId" element={<TicketDetailsPage />} />
+            {/* User Routes */}
+            <Route path="/movie" element={<MoviePage />} />
+            <Route path="/fnb" element={<FoodBeveragePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
 
-          <Route path="/admin" element={<AdminDashboardPage />} />
-          <Route path="/admin/movies" element={<AdminMoviesPage />} />
-          <Route path="/admin/studios" element={<AdminStudiosPage />} />
-          <Route path="/admin/showtimes" element={<AdminShowtimesPage />} />
-          <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
-          <Route path="/admin/fnb" element={<AdminFnbPage />} />
-          <Route path="/admin/profile" element={<AdminProfilePage />} />
-        </Routes>
-      </BrowserRouter>
-    </QueryClientProvider>
+            <Route path="/movie/:id" element={<MovieDetailsPage />} />
+            <Route path="/seat-selection/:movieId/:showtimeId" element={<SeatSelectionPage />} />
+            <Route path="/order/:movieId/:showtimeId/:seats" element={<PaymentPage />} />
+            <Route path="/receipt/:movieId/:showtimeId/:seats" element={<ReceiptPage />} />
+            <Route path="/history" element={<OrderHistoryPage />} />
+            <Route path="/ticket/:orderId" element={<TicketDetailsPage />} />
+
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<LoginPage />} />
+            <Route element={<AdminGuard />}>
+                <Route path="/admin" element={<AdminDashboardPage />} />
+                <Route path="/admin/movies" element={<AdminMoviesPage />} />
+                <Route path="/admin/studios" element={<AdminStudiosPage />} />
+                <Route path="/admin/showtimes" element={<AdminShowtimesPage />} />
+                <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
+                <Route path="/admin/fnb" element={<AdminFnbPage />} />
+                <Route path="/admin/profile" element={<AdminProfilePage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
   </StrictMode>,
 )

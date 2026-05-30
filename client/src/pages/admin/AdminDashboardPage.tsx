@@ -1,10 +1,9 @@
 import React from 'react';
 import { AdminLayout } from '../../components/layout/AdminLayouts';
-import { ORDER_HISTORY, NOW_PLAYING } from '../../data/dummydata';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../../components/ui/chart';
+import { useAdminDashboard, type RecentSale } from '../../api/hooks/Admin/useAdminDashboard';
 
-// API Refresh tokennya berbeda dengan punya user biasa
 const chartConfig = {
   total: {
     label: "Revenue",
@@ -12,19 +11,37 @@ const chartConfig = {
   },
 };
 
-const weeklyRevenueData = [
-  { name: 'Mon', total: 4500000 },
-  { name: 'Tue', total: 3200000 },
-  { name: 'Wed', total: 5800000 },
-  { name: 'Thu', total: 4100000 },
-  { name: 'Fri', total: 8900000 },
-  { name: 'Sat', total: 12500000 },
-  { name: 'Sun', total: 11200000 },
-];
-
 export const AdminDashboardPage: React.FC = () => {
-    const recentOrders = ORDER_HISTORY.slice(0, 5);
-    const pendingOrdersCount = ORDER_HISTORY.filter(o => o.status === 'Pending').length;
+    const { data, isLoading, isError } = useAdminDashboard();
+
+    const formatIDR = (amount?: number | string) => {
+        if (!amount) return 'Rp 0';
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(amount));
+    };
+
+    if (isLoading) {
+        return (
+            <AdminLayout title="Dashboard Overview">
+                <div className="flex items-center justify-center h-64 text-white/50 animate-pulse font-semibold">
+                    Load data dashboard...
+                </div>
+            </AdminLayout>
+        );
+    }
+
+    if (isError || !data) {
+        return (
+            <AdminLayout title="Dashboard Overview">
+                <div className="flex items-center justify-center h-64 text-red-500 font-semibold border border-red-500/20 bg-red-500/10 rounded-xl">
+                    Gagal memuat data dashboard. Pastikan backend sudah menyala dan token valid.
+                </div>
+            </AdminLayout>
+        );
+    }
+
+    const metrics = data?.metrics || { totalRevenue: 0, ticketsSold: 0, pendingOrders: 0, activeMoviesCount: 0 };
+    const chart = data?.chart || [];
+    const recentSales = data?.recentSales || [];
 
     return (
         <AdminLayout title="Dashboard Overview">
@@ -39,8 +56,8 @@ export const AdminDashboardPage: React.FC = () => {
                         </svg>
                     </div>
                     <div className="p-6 pt-0">
-                        <div className="text-2xl font-bold">Rp 50.200.000</div>
-                        <p className="text-xs text-white/50 mt-1">+20.1% from last month</p>
+                        {/* Menggunakan Optional Chaining ? agar aman */}
+                        <div className="text-2xl font-bold">{formatIDR(metrics?.totalRevenue)}</div>
                     </div>
                 </div>
 
@@ -54,8 +71,7 @@ export const AdminDashboardPage: React.FC = () => {
                         </svg>
                     </div>
                     <div className="p-6 pt-0">
-                        <div className="text-2xl font-bold">+1,250</div>
-                        <p className="text-xs text-white/50 mt-1">+15% from last week</p>
+                        <div className="text-2xl font-bold">{metrics?.ticketsSold || 0}</div>
                     </div>
                 </div>
 
@@ -68,8 +84,8 @@ export const AdminDashboardPage: React.FC = () => {
                         </svg>
                     </div>
                     <div className="p-6 pt-0">
-                        <div className="text-2xl font-bold text-yellow-500">{pendingOrdersCount}</div>
-                        <p className="text-xs text-white/50 mt-1">Requires manual review</p>
+                        <div className="text-2xl font-bold text-yellow-500">{metrics?.pendingOrders || 0}</div>
+                        <p className="text-xs text-white/50 mt-1">Awaiting Payment/Review</p>
                     </div>
                 </div>
 
@@ -85,7 +101,7 @@ export const AdminDashboardPage: React.FC = () => {
                         </svg>
                     </div>
                     <div className="p-6 pt-0">
-                        <div className="text-2xl font-bold">{NOW_PLAYING.length}</div>
+                        <div className="text-2xl font-bold">{metrics?.activeMoviesCount || 0}</div>
                         <p className="text-xs text-white/50 mt-1">Movies active in cinemas</p>
                     </div>
                 </div>
@@ -95,84 +111,102 @@ export const AdminDashboardPage: React.FC = () => {
                 
                 <div className="rounded-xl border border-white/10 bg-[#111111] text-white shadow-sm lg:col-span-4">
                     <div className="flex flex-col space-y-1.5 p-6">
-                        <h3 className="font-semibold leading-none tracking-tight">Weekly Revenue</h3>
-                        <p className="text-sm text-white/50">Ticket & F&B sales overview for the last 7 days.</p>
+                        <h3 className="font-semibold leading-none tracking-tight">Revenue History</h3>
+                        <p className="text-sm text-white/50">Daily sales overview from recent transactions.</p>
                     </div>
                     <div className="p-6 pt-0">
-                        
-                        <ChartContainer config={chartConfig} className="min-h-50 w-full">
-                            <ResponsiveContainer width="100%" height={350}>
-                                <BarChart data={weeklyRevenueData} margin={{ left: -10, right: 10 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                                    <XAxis 
-                                        dataKey="name" 
-                                        stroke="#888888" 
-                                        fontSize={12} 
-                                        tickLine={false} 
-                                        axisLine={false} 
-                                        tickMargin={10}
-                                    />
-                                    <YAxis 
-                                        stroke="#888888" 
-                                        fontSize={12} 
-                                        tickLine={false} 
-                                        axisLine={false} 
-                                        tickFormatter={(value) => `Rp${value / 1000000}M`} 
-                                    />
-                                    
-                                    <ChartTooltip 
-                                        cursor={{ fill: 'rgba(255,255,255,0.03)' }} 
-                                        content={<ChartTooltipContent hideLabel />} 
-                                    />
-                                    
-                                    <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
-
+                        {chart.length > 0 ? (
+                            <ChartContainer config={chartConfig} className="min-h-50 w-full">
+                                <ResponsiveContainer width="100%" height={350}>
+                                    <BarChart data={chart} margin={{ left: 10, right: 10 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                                        <XAxis 
+                                            dataKey="name" 
+                                            stroke="#888888" 
+                                            fontSize={12} 
+                                            tickLine={false} 
+                                            axisLine={false} 
+                                            tickMargin={10}
+                                            tickFormatter={(value) => {
+                                                if (!value) return '';
+                                                const date = new Date(value);
+                                                return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                                            }}
+                                        />
+                                        <YAxis 
+                                            stroke="#888888" 
+                                            fontSize={12} 
+                                            tickLine={false} 
+                                            axisLine={false} 
+                                            tickFormatter={(value) => `Rp${value / 1000000}M`} 
+                                        />
+                                        <ChartTooltip 
+                                            cursor={{ fill: 'rgba(255,255,255,0.03)' }} 
+                                            content={<ChartTooltipContent hideLabel />} 
+                                        />
+                                        <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </ChartContainer>
+                        ) : (
+                            <div className="h-87.5 w-full flex items-center justify-center text-white/40 text-sm border border-dashed border-white/10 rounded-lg">
+                                Belum ada data grafik yang tersedia.
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-[#111111] text-white shadow-sm lg:col-span-3 flex flex-col">
-                    <div className="flex flex-col space-y-1.5 p-6">
+                <div className="rounded-xl border border-white/10 bg-[#111111] text-white shadow-sm lg:col-span-3 flex flex-col h-115">
+                    <div className="flex flex-col space-y-1.5 p-6 shrink-0 border-b border-white/5">
                         <h3 className="font-semibold leading-none tracking-tight">Recent Sales</h3>
-                        <p className="text-sm text-white/50">Latest transactions from the system.</p>
+                        <p className="text-sm text-white/50">Latest transactions from the payment gateway.</p>
                     </div>
-                    <div className="p-6 pt-0 flex-1 overflow-y-auto">
-                        <div className="space-y-8">
-                            {recentOrders.map((order) => (
-                                <div key={order.id} className="flex items-center">
-                                    <div className="relative h-12 w-10 shrink-0">
-                                        <img 
-                                            src={order.posterUrl} 
-                                            alt={order.movieTitle} 
-                                            className="h-full w-full rounded object-cover border border-white/10" 
-                                        />
+                    
+                    <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+                        <div className="space-y-6">
+                            {recentSales?.map((sale: RecentSale, index: number) => (
+                                <div key={sale?.paymentId || `sale-${index}`} className="flex items-center">
+                                    <div className="relative h-10 w-10 shrink-0 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/60">
+                                            <rect width="16" height="20" x="4" y="2" rx="2"></rect>
+                                            <path d="M8 22v-4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4"></path>
+                                            <path d="M12 11h.01"></path>
+                                            <path d="M12 7h.01"></path>
+                                        </svg>
                                     </div>
-                                    <div className="ml-4 space-y-1">
-                                        <p className="text-sm font-medium leading-none">{order.movieTitle}</p>
-                                        <p className="text-xs text-white/50">
-                                            ID: {order.id} &bull; {order.seats}
+                                    
+                                    <div className="ml-4 space-y-1 overflow-hidden">
+                                        <p className="text-sm font-medium leading-none truncate">
+                                            {sale?.bookingId || sale?.fnbOrderId || 'Custom Order'}
+                                        </p>
+                                        <p className="text-xs text-white/50 truncate">
+                                            {sale?.provider || 'Unknown'} • {sale?.paymentDate ? new Date(sale.paymentDate).toLocaleDateString() : 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="ml-auto font-bold text-sm text-right flex flex-col items-end gap-1">
-                                        +Rp {order.price.toLocaleString('id-ID')}
-                                        <span className={`text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                                            order.status === 'Completed' ? 'bg-green-500/20 text-green-500' :
-                                            order.status === 'Cancelled' ? 'bg-red-500/20 text-red-500' :
+                                    
+                                    <div className="ml-auto font-bold text-sm text-right flex flex-col items-end gap-1.5 shrink-0">
+                                        {formatIDR(sale?.amount)}
+                                        <span className={`text-[10px] px-2 py-0.5 rounded-sm uppercase tracking-wider font-semibold ${
+                                            sale?.paymentStatus === 'PAID' ? 'bg-green-500/20 text-green-500' :
+                                            (sale?.paymentStatus === 'FAILED' || sale?.paymentStatus === 'EXPIRED') ? 'bg-red-500/20 text-red-500' :
                                             'bg-yellow-500/20 text-yellow-500'
                                         }`}>
-                                            {order.status}
+                                            {sale?.paymentStatus || 'UNKNOWN'}
                                         </span>
                                     </div>
                                 </div>
-                            ))}
+                            ))}             
+                            
+                            {recentSales?.length === 0 && (
+                                <div className="text-center text-white/40 text-sm py-10">
+                                    No recent transactions found.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
             </div>
-
         </AdminLayout>
     );
 };
