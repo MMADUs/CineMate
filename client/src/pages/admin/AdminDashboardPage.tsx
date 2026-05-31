@@ -2,7 +2,7 @@ import React from 'react';
 import { AdminLayout } from '../../components/layout/AdminLayouts';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '../../components/ui/chart';
-import { useAdminDashboard, type RecentSale } from '../../api/hooks/Admin/useAdminDashboard';
+import { useAdminDashboard, type RecentSale, type DashboardResponse } from '../../api/hooks/Admin/useAdminDashboard';
 
 const chartConfig = {
   total: {
@@ -11,25 +11,59 @@ const chartConfig = {
   },
 };
 
-export const AdminDashboardPage: React.FC = () => {
-    const { data, isLoading, isError } = useAdminDashboard();
+// ==========================================
+// HELPER 100% TYPE-SAFE
+// ==========================================
+function extractSafeData<T>(rawData: unknown): T | undefined {
+    if (!rawData) return undefined;
+    if (typeof rawData === 'object' && rawData !== null) {
+        const obj = rawData as Record<string, unknown>;
+        if ('data' in obj) return obj.data as T;
+    }
+    return rawData as T;
+}
 
-    const formatIDR = (amount?: number | string) => {
-        if (!amount) return 'Rp 0';
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(amount));
-    };
+const formatIDR = (amount?: number | string) => {
+    if (!amount) return 'Rp 0';
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(amount));
+};
+
+const getStatusStyle = (status: string | undefined) => {
+    if (!status) return 'bg-white/10 text-white/50 border border-white/10';
+    const s = status.toUpperCase();
+    if (s.includes('PAID') || s.includes('SUCCESS') || s.includes('COMPLETED')) return 'bg-green-500/20 text-green-500 border border-green-500/30';
+    if (s.includes('FAIL') || s.includes('EXPIR') || s.includes('CANCEL')) return 'bg-red-500/20 text-red-500 border border-red-500/30';
+    return 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30';
+};
+
+const getDisplayId = (sale: RecentSale) => {
+    if (sale.bookingId) return `🎬 TIX-${sale.bookingId.split('-')[0].toUpperCase()}`;
+    if (sale.fnbOrderId) return `🍔 FNB-${sale.fnbOrderId.split('-')[0].toUpperCase()}`;
+    return '🛒 Walk-in Order';
+};
+
+const getPaymentMethod = (sale: RecentSale) => {
+    if (sale.paymentMethod) return sale.paymentMethod.replace(/_/g, ' ');
+    return sale.provider || 'Unknown Method';
+};
+
+// ==========================================
+// KOMPONEN UTAMA DASHBOARD
+// ==========================================
+export const AdminDashboardPage: React.FC = () => {
+    const { data: rawData, isLoading, isError } = useAdminDashboard();
 
     if (isLoading) {
         return (
             <AdminLayout title="Dashboard Overview">
                 <div className="flex items-center justify-center h-64 text-white/50 animate-pulse font-semibold">
-                    Load data dashboard...
+                    Memuat data dashboard...
                 </div>
             </AdminLayout>
         );
     }
 
-    if (isError || !data) {
+    if (isError || !rawData) {
         return (
             <AdminLayout title="Dashboard Overview">
                 <div className="flex items-center justify-center h-64 text-red-500 font-semibold border border-red-500/20 bg-red-500/10 rounded-xl">
@@ -39,9 +73,11 @@ export const AdminDashboardPage: React.FC = () => {
         );
     }
 
-    const metrics = data?.metrics || { totalRevenue: 0, ticketsSold: 0, pendingOrders: 0, activeMoviesCount: 0 };
-    const chart = data?.chart || [];
-    const recentSales = data?.recentSales || [];
+    // Ekstrak data dengan aman!
+    const actualData = extractSafeData<DashboardResponse>(rawData);
+    const metrics = actualData?.metrics || { totalRevenue: 0, ticketsSold: 0, pendingOrders: 0, activeMoviesCount: 0 };
+    const chart = actualData?.chart || [];
+    const recentSales = actualData?.recentSales || [];
 
     return (
         <AdminLayout title="Dashboard Overview">
@@ -56,8 +92,7 @@ export const AdminDashboardPage: React.FC = () => {
                         </svg>
                     </div>
                     <div className="p-6 pt-0">
-                        {/* Menggunakan Optional Chaining ? agar aman */}
-                        <div className="text-2xl font-bold">{formatIDR(metrics?.totalRevenue)}</div>
+                        <div className="text-2xl font-bold">{formatIDR(metrics.totalRevenue)}</div>
                     </div>
                 </div>
 
@@ -71,7 +106,7 @@ export const AdminDashboardPage: React.FC = () => {
                         </svg>
                     </div>
                     <div className="p-6 pt-0">
-                        <div className="text-2xl font-bold">{metrics?.ticketsSold || 0}</div>
+                        <div className="text-2xl font-bold">{metrics.ticketsSold.toLocaleString('id-ID')}</div>
                     </div>
                 </div>
 
@@ -84,7 +119,7 @@ export const AdminDashboardPage: React.FC = () => {
                         </svg>
                     </div>
                     <div className="p-6 pt-0">
-                        <div className="text-2xl font-bold text-yellow-500">{metrics?.pendingOrders || 0}</div>
+                        <div className="text-2xl font-bold text-yellow-500">{metrics.pendingOrders.toLocaleString('id-ID')}</div>
                         <p className="text-xs text-white/50 mt-1">Awaiting Payment/Review</p>
                     </div>
                 </div>
@@ -101,7 +136,7 @@ export const AdminDashboardPage: React.FC = () => {
                         </svg>
                     </div>
                     <div className="p-6 pt-0">
-                        <div className="text-2xl font-bold">{metrics?.activeMoviesCount || 0}</div>
+                        <div className="text-2xl font-bold">{metrics.activeMoviesCount.toLocaleString('id-ID')}</div>
                         <p className="text-xs text-white/50 mt-1">Movies active in cinemas</p>
                     </div>
                 </div>
@@ -130,7 +165,7 @@ export const AdminDashboardPage: React.FC = () => {
                                             tickFormatter={(value) => {
                                                 if (!value) return '';
                                                 const date = new Date(value);
-                                                return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                                                return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
                                             }}
                                         />
                                         <YAxis 
@@ -138,7 +173,12 @@ export const AdminDashboardPage: React.FC = () => {
                                             fontSize={12} 
                                             tickLine={false} 
                                             axisLine={false} 
-                                            tickFormatter={(value) => `Rp${value / 1000000}M`} 
+                                            width={60}
+                                            tickFormatter={(value) => {
+                                                if (value >= 1000000) return `Rp${(value / 1000000).toFixed(1)}M`;
+                                                if (value >= 1000) return `Rp${(value / 1000).toFixed(0)}K`;
+                                                return `Rp${value}`;
+                                            }} 
                                         />
                                         <ChartTooltip 
                                             cursor={{ fill: 'rgba(255,255,255,0.03)' }} 
@@ -164,10 +204,11 @@ export const AdminDashboardPage: React.FC = () => {
                     
                     <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
                         <div className="space-y-6">
-                            {recentSales?.map((sale: RecentSale, index: number) => (
-                                <div key={sale?.paymentId || `sale-${index}`} className="flex items-center">
-                                    <div className="relative h-10 w-10 shrink-0 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/60">
+                            {recentSales.map((sale: RecentSale, index: number) => (
+                                <div key={sale?.paymentId || `sale-${index}`} className="flex items-center group">
+                                    
+                                    <div className="relative h-10 w-10 shrink-0 bg-[#1a1a1a] rounded-full flex items-center justify-center border border-white/10 group-hover:border-red-500/50 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/80">
                                             <rect width="16" height="20" x="4" y="2" rx="2"></rect>
                                             <path d="M8 22v-4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4"></path>
                                             <path d="M12 11h.01"></path>
@@ -175,29 +216,26 @@ export const AdminDashboardPage: React.FC = () => {
                                         </svg>
                                     </div>
                                     
-                                    <div className="ml-4 space-y-1 overflow-hidden">
-                                        <p className="text-sm font-medium leading-none truncate">
-                                            {sale?.bookingId || sale?.fnbOrderId || 'Custom Order'}
+                                    <div className="ml-4 space-y-1 overflow-hidden flex-1">
+                                        <p className="text-sm font-bold leading-none truncate tracking-wider">
+                                            {getDisplayId(sale)}
                                         </p>
-                                        <p className="text-xs text-white/50 truncate">
-                                            {sale?.provider || 'Unknown'} • {sale?.paymentDate ? new Date(sale.paymentDate).toLocaleDateString() : 'N/A'}
+                                        <p className="text-[10px] md:text-xs text-white/50 truncate font-semibold uppercase">
+                                            {getPaymentMethod(sale)} • {sale?.paymentDate ? new Date(sale.paymentDate).toLocaleDateString('en-GB') : 'N/A'}
                                         </p>
                                     </div>
                                     
                                     <div className="ml-auto font-bold text-sm text-right flex flex-col items-end gap-1.5 shrink-0">
-                                        {formatIDR(sale?.amount)}
-                                        <span className={`text-[10px] px-2 py-0.5 rounded-sm uppercase tracking-wider font-semibold ${
-                                            sale?.paymentStatus === 'PAID' ? 'bg-green-500/20 text-green-500' :
-                                            (sale?.paymentStatus === 'FAILED' || sale?.paymentStatus === 'EXPIRED') ? 'bg-red-500/20 text-red-500' :
-                                            'bg-yellow-500/20 text-yellow-500'
-                                        }`}>
+                                        <span className="text-white/90">{formatIDR(sale?.amount)}</span>
+                                        <span className={`text-[9px] md:text-[10px] px-2 py-0.5 rounded uppercase tracking-widest ${getStatusStyle(sale?.paymentStatus)}`}>
                                             {sale?.paymentStatus || 'UNKNOWN'}
                                         </span>
                                     </div>
+
                                 </div>
                             ))}             
                             
-                            {recentSales?.length === 0 && (
+                            {recentSales.length === 0 && (
                                 <div className="text-center text-white/40 text-sm py-10">
                                     No recent transactions found.
                                 </div>

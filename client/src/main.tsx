@@ -13,10 +13,11 @@ import { FoodBeveragePage } from './pages/user/FoodBeveragePage'
 import { MovieDetailsPage } from './pages/user/MovieDetailsPage'
 import { SeatSelectionPage } from './pages/user/SeatSelectionPage'
 import { PaymentPage } from './pages/user/PaymentPage'
-import { ReceiptPage } from './pages/user/ReceiptPage'
+// import { ReceiptPage } from './pages/user/ReceiptPage'
 import { OrderHistoryPage } from './pages/user/HistoryOrderPage'
 import { TicketDetailsPage } from './pages/user/TicketDetailsPage'
 import { ProfilePage } from './pages/user/ProfilePage'
+import { PaymentResultPage } from './pages/user/PaymentResultPage'
 
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 import { AdminMoviesPage } from './pages/admin/AdminMoviesPage'
@@ -57,9 +58,12 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/movie/:id" element={<MovieDetailsPage />} />
             <Route path="/seat-selection/:movieId/:showtimeId" element={<SeatSelectionPage />} />
             <Route path="/order/:movieId/:showtimeId/:seats" element={<PaymentPage />} />
-            <Route path="/receipt/:movieId/:showtimeId/:seats" element={<ReceiptPage />} />
+            {/* <Route path="/receipt/:movieId/:showtimeId/:seats" element={<ReceiptPage />} /> */}
             <Route path="/history" element={<OrderHistoryPage />} />
             <Route path="/ticket/:orderId" element={<TicketDetailsPage />} />
+
+            <Route path="/payment/success" element={<PaymentResultPage />} />
+            <Route path="/payment/failed" element={<PaymentResultPage />} />
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<LoginPage />} />

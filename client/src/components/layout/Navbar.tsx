@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { useGetProfile } from '../../api/hooks/useProfile';
+import { useGetProfile } from '../../api/hooks/User/useProfile';
 import { useLogout } from '../../api/mutations/Auth/useLogout';
 
 export const Navbar: React.FC = () => {

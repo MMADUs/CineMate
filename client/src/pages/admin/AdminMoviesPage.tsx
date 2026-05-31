@@ -30,6 +30,30 @@ const formatYouTubeUrl = (url: string): string => {
     return url;
 };
 
+const determineMovieStatus = (startDateStr: string, endDateStr: string): string => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(startDateStr);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(endDateStr);
+    endDate.setHours(23, 59, 59, 999); 
+
+    if (today < startDate) {
+        return "UPCOMING";
+    } else {
+        return "NOW_PLAYING";
+    }
+
+    // if (today < startDate) {
+    //     return "UPCOMING";
+    // } else if (today > endDate) {
+    //     return "FINISHED"; 
+    // } else {
+    //     return "NOW_PLAYING";
+    // }
+};
 
 const movieSchema = z.object({
     title: z.string().min(1, "Movie title is required."),
@@ -40,6 +64,13 @@ const movieSchema = z.object({
     trailerUrl: z.string().url("Must be a valid URL (e.g., https://youtube.com/...)"),
     startDate: z.string().min(1, "Start date is required."),
     endDate: z.string().min(1, "End date is required."),
+}).refine((data) => {
+    const start = new Date(data.startDate);
+    const end = new Date(data.endDate);
+    return end >= start;
+}, {
+    message: "End date cannot be earlier than Start date.",
+    path: ["endDate"], 
 });
 
 type MovieFormValues = z.infer<typeof movieSchema>;
@@ -134,6 +165,8 @@ export const AdminMoviesPage: React.FC = () => {
 
             const formattedTrailerUrl = formatYouTubeUrl(data.trailerUrl);
 
+            const dynamicStatus = determineMovieStatus(data.startDate, data.endDate);
+            
             await createMovieAsync({
                 title: data.title,
                 description: data.description,
@@ -142,7 +175,7 @@ export const AdminMoviesPage: React.FC = () => {
                 durationMinutes: parseInt(data.duration), 
                 releaseDate: data.startDate,
                 endDate: data.endDate,
-                status: "NOW_PLAYING", 
+                status: dynamicStatus, 
                 imageKey: finalImageKey, 
                 trailerUrl: formattedTrailerUrl 
             });
@@ -199,6 +232,8 @@ export const AdminMoviesPage: React.FC = () => {
 
             const formattedTrailerUrl = formatYouTubeUrl(data.trailerUrl);
 
+            const dynamicStatus = determineMovieStatus(data.startDate, data.endDate);
+
             await updateMovieAsync({
                 id: selectedMovie.movieId,
                 payload: {
@@ -209,7 +244,7 @@ export const AdminMoviesPage: React.FC = () => {
                     durationMinutes: parseInt(data.duration),
                     releaseDate: data.startDate,
                     endDate: data.endDate,
-                    status: selectedMovie.status, 
+                    status: dynamicStatus, 
                     imageKey: finalImageKey,
                     trailerUrl: formattedTrailerUrl 
                 }

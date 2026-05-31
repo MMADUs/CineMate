@@ -1,25 +1,77 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Navbar } from '../../components/layout/Navbar';
 import { Footer } from '../../components/layout/Footer';
 import { Breadcrumbs } from '../../components/layout/Breadcrumbs';
-import { MOVIE_DATABASE, SHOWTIMES } from '../../data/dummydata'
 
-const ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-const COLS = Array.from({ length: 20 }, (_, i) => i + 1);
-const OCCUPIED_SEATS = ['A5', 'A6', 'C12', 'C13', 'F8', 'F9', 'F10', 'H18', 'H19'];
+import { useGetPublicMovieDetails, type PublicMovieDetails } from '../../api/hooks/User/useGetPublicMovieDetails';
+import { useGetPublicShowtimes, type PublicShowtime } from '../../api/hooks/User/useGetPublicShowtimes';
+import { useGetShowtimeSeats, type ShowtimeSeatsResponse } from '../../api/hooks/User/useGetShowtimeSeats';
 
 export const SeatSelectionPage: React.FC = () => {
     const { movieId, showtimeId } = useParams<{ movieId: string, showtimeId: string }>();
     const navigate = useNavigate();
     const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
 
-    const movie = MOVIE_DATABASE.find(m => m.id === movieId) || MOVIE_DATABASE[2]; 
-    const showtime = SHOWTIMES.find(s => s.id.toString() === showtimeId) || SHOWTIMES[1];
+    const { data: rawMovieData, isLoading: isMovieLoading } = useGetPublicMovieDetails(movieId);
+    const { data: rawShowtimesData, isLoading: isShowtimesLoading } = useGetPublicShowtimes(movieId);
+    const { data: rawSeatsData, isLoading: isSeatsLoading, isError: isSeatsError } = useGetShowtimeSeats(showtimeId);
 
     useEffect(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        const scrollTimer = setTimeout(() => {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        }, 10);
+        return () => clearTimeout(scrollTimer);
     }, []);
+
+    const movie = useMemo(() => {
+        if (!rawMovieData) return null;
+        if ('data' in rawMovieData && typeof rawMovieData === 'object') {
+            const wrapped = (rawMovieData as unknown as { data: PublicMovieDetails }).data;
+            if (wrapped && typeof wrapped === 'object') return wrapped;
+        }
+        return rawMovieData as PublicMovieDetails;
+    }, [rawMovieData]);
+
+    const currentShowtime = useMemo(() => {
+        if (!rawShowtimesData || !showtimeId) return null;
+        let safeShowtimes: PublicShowtime[] = [];
+        if (Array.isArray(rawShowtimesData)) {
+            safeShowtimes = rawShowtimesData;
+        } else if (typeof rawShowtimesData === 'object' && 'data' in rawShowtimesData) {
+            const wrapped = (rawShowtimesData as unknown as { data: PublicShowtime[] }).data;
+            if (Array.isArray(wrapped)) safeShowtimes = wrapped;
+        }
+        return safeShowtimes.find(s => s.showtimeId.toString() === showtimeId) || null;
+    }, [rawShowtimesData, showtimeId]);
+
+    const seatsData = useMemo(() => {
+        if (!rawSeatsData) return null;
+        if ('hall' in rawSeatsData && 'seats' in rawSeatsData) {
+            return rawSeatsData as ShowtimeSeatsResponse;
+        } else if ('data' in rawSeatsData && typeof rawSeatsData === 'object') {
+            const wrapped = (rawSeatsData as unknown as { data: ShowtimeSeatsResponse }).data;
+            if (wrapped && 'hall' in wrapped && 'seats' in wrapped) return wrapped;
+        }
+        return null;
+    }, [rawSeatsData]);
+    
+    const ROWS = useMemo(() => {
+        if (!seatsData || !seatsData.hall || !seatsData.hall.totalRows) return [];
+        return Array.from({ length: seatsData.hall.totalRows }, (_, i) => String.fromCharCode(65 + i));
+    }, [seatsData]);
+
+    const COLS = useMemo(() => {
+        if (!seatsData || !seatsData.hall || !seatsData.hall.seatsPerRow) return [];
+        return Array.from({ length: seatsData.hall.seatsPerRow }, (_, i) => i + 1);
+    }, [seatsData]);
+
+    const OCCUPIED_SEATS = useMemo(() => {
+        if (!seatsData || !seatsData.seats) return [];
+        return seatsData.seats
+            .filter(seat => seat.isOccupied)
+            .map(seat => `${seat.rowLetter}${seat.seatNumber}`);
+    }, [seatsData]);
 
     const handleSeatClick = (seatId: string) => {
         if (OCCUPIED_SEATS.includes(seatId)) return;
@@ -29,6 +81,29 @@ export const SeatSelectionPage: React.FC = () => {
             setSelectedSeats([...selectedSeats, seatId].sort()); 
         }
     };
+
+    const formattedDate = currentShowtime 
+        ? new Date(currentShowtime.showDate).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) 
+        : '';
+    const formattedTime = currentShowtime?.showTime.substring(0, 5) || '';
+
+    const isLoading = isMovieLoading || isShowtimesLoading || isSeatsLoading;
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-[#0d0d0d] text-white flex flex-col items-center justify-center">
+                <span className="animate-pulse text-xl font-semibold text-white/50">Loading Studio Seats...</span>
+            </div>
+        );
+    }
+
+    if (isSeatsError || !seatsData) {
+        return (
+            <div className="min-h-screen bg-[#0d0d0d] text-white flex flex-col items-center justify-center">
+                <span className="text-xl font-semibold text-red-500">Gagal memuat denah kursi. Silakan coba lagi.</span>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#0d0d0d] text-white font-sans overflow-x-hidden flex flex-col">
@@ -40,28 +115,42 @@ export const SeatSelectionPage: React.FC = () => {
                     items={[
                         { label: 'Home', path: '/' },
                         { label: 'Film', path: '/movie' },
-                        { label: movie.title, path: `/movie/${movie.id}` }, 
+                        { label: movie?.title || 'Loading...', path: `/movie/${movieId}` }, 
                         { label: 'Select Seats' } 
                     ]} 
                 />
 
-                <div className="mb-8">
-                    <h1 className="text-3xl md:text-4xl font-bold mb-2">Select Seats</h1>
-                    <p className="text-white/60 font-medium text-sm md:text-base">07/04/2026 : {showtime.time}</p>
+                <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-bold mb-2">Select Seats</h1>
+                        <p className="text-white/60 font-medium text-sm md:text-base">
+                            {formattedDate} : {formattedTime} WIB
+                        </p>
+                    </div>
                 </div>
 
                 <div className="bg-[#1a1a1a] border border-white/5 md:bg-[#1a1a1a] rounded-2xl p-4 md:p-8 lg:p-12 flex flex-col items-center w-full shadow-2xl">
                     
-                    <h2 className="text-2xl md:text-3xl font-bold mb-8 md:mb-12">{showtime.studio}</h2>
+                    <div className="text-center mb-8 md:mb-12">
+                        <h3 className="text-base md:text-lg font-medium text-white/60 mb-1">
+                            {seatsData.hall.cinemaName}
+                        </h3>
+                        <h2 className="text-2xl md:text-3xl font-bold">
+                            {seatsData.hall.studioName}
+                        </h2>
+                    </div>
 
-                    <div className="w-full overflow-x-auto pb-8 [&::-webkit-scrollbar]:hidden cursor-grab active:cursor-grabbing">
-                        <div className="min-w-200 flex flex-col items-center mx-auto">
+                    <div className="w-full overflow-x-auto pb-8 [&::-webkit-scrollbar]:hidden cursor-grab active:cursor-grabbing flex justify-center">
+                        <div className="min-w-max flex flex-col items-center mx-auto px-4">
                             
                             <div className="flex items-center w-full mb-3">
-                                <div className="w-6 md:w-8"></div> 
-                                <div className="flex-1 grid grid-cols-20 gap-1.5 md:gap-2">
+                                <div className="w-6 md:w-8 shrink-0 mr-2 md:mr-4"></div> 
+                                <div 
+                                    className="flex-1 grid gap-1.5 md:gap-2"
+                                    style={{ gridTemplateColumns: `repeat(${seatsData.hall.seatsPerRow}, max-content)` }}
+                                >
                                     {COLS.map(col => (
-                                        <div key={col} className="text-center text-white/50 text-xs md:text-sm font-bold">
+                                        <div key={col} className="w-6 md:w-8 text-center text-white/50 text-xs md:text-sm font-bold">
                                             {col}
                                         </div>
                                     ))}
@@ -71,17 +160,20 @@ export const SeatSelectionPage: React.FC = () => {
                             <div className="flex flex-col gap-2 w-full">
                                 {ROWS.map(row => (
                                     <div key={row} className="flex items-center w-full">
-                                        <div className="w-6 md:w-8 text-white/50 text-xs md:text-sm font-bold text-left">
+                                        <div className="w-6 md:w-8 shrink-0 text-white/50 text-xs md:text-sm font-bold text-left mr-2 md:mr-4">
                                             {row}
                                         </div>
                                         
-                                        <div className="flex-1 grid grid-cols-20 gap-1.5 md:gap-2">
+                                        <div 
+                                            className="flex-1 grid gap-1.5 md:gap-2"
+                                            style={{ gridTemplateColumns: `repeat(${seatsData.hall.seatsPerRow}, max-content)` }}
+                                        >
                                             {COLS.map(col => {
                                                 const seatId = `${row}${col}`;
                                                 const isOccupied = OCCUPIED_SEATS.includes(seatId);
                                                 const isSelected = selectedSeats.includes(seatId);
 
-                                                let seatClass = "h-6 md:h-8 rounded-[4px] md:rounded-md transition-colors duration-200 ";
+                                                let seatClass = "w-6 h-6 md:w-8 md:h-8 rounded-[4px] md:rounded-md transition-colors duration-200 ";
                                                 
                                                 if (isOccupied) {
                                                     seatClass += "bg-white/40 cursor-not-allowed opacity-60"; 
@@ -105,13 +197,17 @@ export const SeatSelectionPage: React.FC = () => {
                                 ))}
                             </div>
 
-                            <div className="w-[95%] h-6 md:h-8 bg-linear-to-b from-white/80 to-white/30 rounded-t-xl md:rounded-t-2xl mt-16 flex items-center justify-center shadow-[0_-10px_20px_rgba(255,255,255,0.05)]">
-                                <span className="text-black font-bold text-xs md:text-sm tracking-widest uppercase">Screen</span>
+                            <div className="flex items-center w-full mt-12 md:mt-16">
+                                <div className="w-6 md:w-8 shrink-0 mr-2 md:mr-4"></div> 
+                                <div className="flex-1 h-6 md:h-8 bg-linear-to-b from-white/80 to-white/30 rounded-t-xl md:rounded-t-2xl flex items-center justify-center shadow-[0_-10px_20px_rgba(255,255,255,0.05)]">
+                                    <span className="text-black font-bold text-xs md:text-sm tracking-widest uppercase">Screen</span>
+                                </div>
                             </div>
+
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-6 md:gap-10 mt-10 md:mt-12 text-xs md:text-sm text-white/70">
+                    <div className="flex flex-wrap justify-center items-center gap-6 md:gap-10 mt-10 md:mt-12 text-xs md:text-sm text-white/70">
                         <div className="flex items-center gap-2 md:gap-3">
                             <div className="w-4 h-4 md:w-5 md:h-5 rounded bg-[#2a2a2a]"></div>
                             <span>Available</span>

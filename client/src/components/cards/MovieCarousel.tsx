@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { MovieCard } from './MovieCard';
+
 interface MovieCardProps {
     id?: number | string;
     title: string;
@@ -10,7 +11,17 @@ interface MovieCardProps {
     trailerUrl?: string;
 }
 
-export const MovieCarousel = ({ title, movies, itemsPerView = 3 }: { title: string, movies: MovieCardProps[], itemsPerView?: number }) => {
+export const MovieCarousel = ({ 
+    title, 
+    movies, 
+    itemsPerView = 3, 
+    targetTab 
+}: { 
+    title: string, 
+    movies: MovieCardProps[], 
+    itemsPerView?: number,
+    targetTab?: 'nowPlaying' | 'upcoming' 
+}) => {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const scroll = (direction: 'left' | 'right') => {
@@ -27,7 +38,11 @@ export const MovieCarousel = ({ title, movies, itemsPerView = 3 }: { title: stri
         <section>
             <div className="flex justify-between items-center mb-6 md:mb-8 relative z-20">
                 <h2 className="text-xl md:text-2xl font-bold">{title}</h2>
-                    <Link to="/movie" className="text-white hover:text-white/70 transition font-semibold text-xs md:text-sm">
+                    <Link 
+                        to="/movie" 
+                        state={targetTab ? { targetTab } : undefined}
+                        className="text-white hover:text-white/70 transition font-semibold text-xs md:text-sm"
+                    >
                         See All &gt;
                     </Link>
             </div>

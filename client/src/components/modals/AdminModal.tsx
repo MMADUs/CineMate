@@ -13,7 +13,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, title, 
     return (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
             <div 
-                className="bg-[#111111] border border-white/10 rounded-2xl w-full max-w-lg shadow-[0_0_40px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90vh]"
+                className="bg-[#111111] border border-white/10 rounded-2xl w-full max-w-4xl shadow-[0_0_40px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90vh]"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between p-6 border-b border-white/5">

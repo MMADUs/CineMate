@@ -1,65 +1,88 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Navbar } from '../../components/layout/Navbar';
 import { Footer } from '../../components/layout/Footer';
 import { Button } from '../../components/ui_manual/Button';
 import { FoodCard } from '../../components/cards/FoodCard';
 import { FoodCardSkeleton } from '../../components/cards/FoodCardSkeleton'; 
-import type { FnbItem } from '../../types/fnb'; 
 
-const POPCORN_ITEMS: FnbItem[] = [
-    { id: '101', name: 'Salty Popcorn (M)', category: 'Snack', price: 35000, stock: 100, imgUrl: '/Popcorn.png' },
-    { id: '102', name: 'Caramel Popcorn (L)', category: 'Snack', price: 50000, stock: 100, imgUrl: '/Popcorn.png' },
-    { id: '103', name: 'Cheese Popcorn (M)', category: 'Snack', price: 40000, stock: 100, imgUrl: '/Popcorn.png' },
-    { id: '104', name: 'Mix Popcorn (L)', category: 'Snack', price: 55000, stock: 100, imgUrl: '/Popcorn.png' },
-];
-
-const DRINK_ITEMS: FnbItem[] = [
-    { id: '201', name: 'Coca-Cola (L)', category: 'Drink', price: 20000, stock: 100, imgUrl: '/milkshake.png' },
-    { id: '202', name: 'Lemon Tea (M)', category: 'Drink', price: 25000, stock: 100, imgUrl: '/milkshake.png' },
-    { id: '203', name: 'Mineral Water', category: 'Drink', price: 10000, stock: 100, imgUrl: '/milkshake.png' },
-    { id: '204', name: 'Chocolate Milkshake', category: 'Drink', price: 35000, stock: 100, imgUrl: '/milkshake.png' },
-];
-
-const PROMO_ITEMS: FnbItem[] = [
-    { id: '301', name: 'Combo 1 (Popcorn + Drink)', category: 'Combo', price: 55000, stock: 50, imgUrl: '/promo-combo.png' },
-    { id: '302', name: 'Combo Couple (2x Mix)', category: 'Combo', price: 95000, stock: 50, imgUrl: '/promo-combo.png' },
-];
+// Import Hooks
+import { useGetPublicFnB, type FnbItem } from '../../api/hooks/User/useGetPublicFnB';
+import { useCheckoutFnB } from '../../api/mutations/useCheckoutFnB';
+import { useGetUserMovieOrders, type MovieOrderResponse } from '../../api/hooks/User/useGetUserMovieOrders'; // <-- IMPORT BARU
+import { isAxiosError } from 'axios'; 
 
 interface CartItem extends FnbItem {
     quantity: number;
 }
 
+type DeepCheckoutResponse = {
+    payment?: { invoiceUrl?: string };
+    order?: { payment?: { invoiceUrl?: string } };
+    data?: {
+        payment?: { invoiceUrl?: string };
+        order?: { payment?: { invoiceUrl?: string } };
+        invoiceUrl?: string;
+    };
+    invoiceUrl?: string;
+};
+
 export const FoodBeveragePage: React.FC = () => {
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState<string>('');
     
+    // Fetch Data
+    const { data: rawFnBData, isLoading, isError } = useGetPublicFnB(activeFilter);
+    const { data: rawMovieOrders } = useGetUserMovieOrders(); // <-- FETCH RIWAYAT TIKET UNTUK VALIDASI
+    const { mutateAsync: checkoutFnB, isPending: isCheckingOut } = useCheckoutFnB();
+
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isForMovie, setIsForMovie] = useState<boolean>(false);
-    const [bookingId, setBookingId] = useState<string>('');
+    const [bookingIdInput, setBookingIdInput] = useState<string>(''); // <-- UBAH JADI INPUT BOOKING ID
 
     useEffect(() => {
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-        
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1500);
+    }, []);
 
-        return () => clearTimeout(timer);
-    }, [activeFilter]);
+    const fnbItems = useMemo(() => {
+        if (!rawFnBData) return [];
+        if (Array.isArray(rawFnBData)) return rawFnBData;
+        if (typeof rawFnBData === 'object' && 'data' in rawFnBData) {
+            const wrapped = (rawFnBData as unknown as { data: FnbItem[] }).data;
+            if (Array.isArray(wrapped)) return wrapped;
+        }
+        return [];
+    }, [rawFnBData]);
+
+    const movieOrders = useMemo(() => {
+        if (!rawMovieOrders) return [];
+        if (Array.isArray(rawMovieOrders)) return rawMovieOrders;
+        if (typeof rawMovieOrders === 'object' && 'data' in rawMovieOrders) {
+            const wrapped = (rawMovieOrders as unknown as { data: MovieOrderResponse[] }).data;
+            if (Array.isArray(wrapped)) return wrapped;
+        }
+        return [];
+    }, [rawMovieOrders]);
+
+    const searchedItems = useMemo(() => {
+        if (!searchQuery.trim()) return fnbItems;
+        return fnbItems.filter(item => 
+            item.snackName.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [fnbItems, searchQuery]);
 
     const handleAddToCart = (item: FnbItem) => {
         setCart(prev => {
-            const existing = prev.find(i => i.id === item.id);
+            const existing = prev.find(i => i.snackId === item.snackId);
             if (existing) {
-                return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
+                return prev.map(i => i.snackId === item.snackId ? { ...i, quantity: i.quantity + 1 } : i);
             }
             return [...prev, { ...item, quantity: 1 }];
         });
     };
 
-    const handleUpdateQuantity = (id: string, delta: number) => {
+    const handleUpdateQuantity = (snackId: number, delta: number) => {
         setCart(prev => prev.map(item => {
-            if (item.id === id) {
+            if (item.snackId === snackId) {
                 return { ...item, quantity: item.quantity + delta };
             }
             return item;
@@ -68,7 +91,6 @@ export const FoodBeveragePage: React.FC = () => {
 
     const handleFilterClick = (filterName: string) => {
         setActiveFilter(prev => prev === filterName ? null : filterName);
-        setIsLoading(true); 
     };
 
     const getFilterClass = (filterName: string) => {
@@ -83,7 +105,76 @@ export const FoodBeveragePage: React.FC = () => {
         ));
     };
 
-    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalAmount = cart.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
+
+    const handleCheckout = async () => {
+        if (cart.length === 0) return;
+
+        let parsedShowtimeId: number | undefined = undefined;
+        
+        // KEAJAIBAN AUTO-TRANSLATE BOOKING ID KE SHOWTIME ID
+        if (isForMovie) {
+            const inputId = bookingIdInput.trim().toUpperCase();
+            if (!inputId) {
+                alert("Mohon masukkan Booking ID tiket Anda.");
+                return;
+            }
+
+            const matchedOrder = movieOrders.find(order => 
+                order.bookingId.toUpperCase() === inputId || 
+                order.bookingId.split('-')[0].toUpperCase() === inputId
+            );
+
+            if (!matchedOrder) {
+                alert("Booking ID tidak ditemukan. Pastikan Anda memasukkan Booking ID yang valid dari riwayat pesanan Anda.");
+                return;
+            }
+
+            parsedShowtimeId = matchedOrder.showtimeId;
+        }
+
+        const payload = {
+            showtimeId: parsedShowtimeId,
+            items: cart.map(item => ({
+                snackId: item.snackId,
+                quantity: item.quantity
+            }))
+        };
+
+        try {
+            const response = await checkoutFnB(payload);
+            
+            const rawRes = response as DeepCheckoutResponse;
+            const invoiceUrl = 
+                rawRes?.payment?.invoiceUrl || 
+                rawRes?.order?.payment?.invoiceUrl || 
+                rawRes?.data?.payment?.invoiceUrl || 
+                rawRes?.data?.order?.payment?.invoiceUrl ||
+                rawRes?.invoiceUrl ||
+                rawRes?.data?.invoiceUrl;
+
+            if (invoiceUrl) {
+                window.location.href = invoiceUrl;
+            } else {
+                console.log("Full response object dari Backend:", rawRes);
+                alert("Gagal mendapatkan link pembayaran dari server. JSON Response tidak sesuai.");
+            }
+        } catch (error: unknown) {
+            console.error("FnB Checkout Failed:", error);
+            
+            if (isAxiosError(error)) {
+                if (error.response && error.response.data) {
+                    alert("Pesan dari Backend Temanmu:\n\n" + JSON.stringify(error.response.data, null, 2));
+                } else {
+                    alert("Error jaringan/server: " + error.message);
+                }
+            } else if (error instanceof Error) {
+                alert("Error lokal: " + error.message);
+            } else {
+                alert("Terjadi error yang tidak diketahui.");
+            }
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#0d0d0d] text-white font-sans overflow-x-hidden flex flex-col">
@@ -110,9 +201,9 @@ export const FoodBeveragePage: React.FC = () => {
                             
                             <div className="flex flex-col sm:flex-row flex-1 items-start sm:items-center justify-end gap-4 w-full md:w-auto">
                                 <div className="flex items-center gap-2 overflow-x-auto md:overflow-visible [&::-webkit-scrollbar]:hidden w-full sm:w-auto pb-2 sm:pb-0 px-1 -mx-1 sm:px-0 sm:mx-0">
-                                    <span onClick={() => handleFilterClick('Promo')} className={getFilterClass('Promo')}>Promo</span>
-                                    <span onClick={() => handleFilterClick('Popcorn')} className={getFilterClass('Popcorn')}>Popcorn</span>
-                                    <span onClick={() => handleFilterClick('Drinks')} className={getFilterClass('Drinks')}>Drinks</span>
+                                    <span onClick={() => handleFilterClick('Combo')} className={getFilterClass('Combo')}>Combo</span>
+                                    <span onClick={() => handleFilterClick('Snack')} className={getFilterClass('Snack')}>Snack</span>
+                                    <span onClick={() => handleFilterClick('Drink')} className={getFilterClass('Drink')}>Drink</span>
                                 </div>
                                 
                                 <div className="relative w-full sm:max-w-50">
@@ -122,65 +213,43 @@ export const FoodBeveragePage: React.FC = () => {
                                     <input 
                                         type="text" 
                                         placeholder="Search Food" 
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
                                         className="w-full bg-[#1a1a1a] text-white text-xs md:text-sm placeholder-white/50 rounded-full py-2.5 md:py-2 pl-9 pr-4 border border-white/10 focus:outline-none focus:border-red-600 transition-colors"
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        {(!activeFilter || activeFilter === 'Popcorn') && (
+                        {isError ? (
+                             <div className="text-center py-10 text-red-500 font-bold border border-white/5 rounded-2xl bg-[#111]">
+                                Gagal memuat daftar menu. Silakan coba lagi.
+                             </div>
+                        ) : (
                             <section className="px-2 md:px-0">
-                                {!activeFilter && <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-5 text-white/80">Popcorn</h3>}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
-                                    {isLoading ? renderSkeletons(4) : POPCORN_ITEMS.map((item) => (
-                                        <FoodCard 
-                                            key={item.id} 
-                                            name={item.name}
-                                            price={`Rp ${item.price.toLocaleString('id-ID')}`} 
-                                            imgUrl={item.imgUrl}
-                                            onAdd={() => handleAddToCart(item)} 
-                                        />
-                                    ))}
-                                </div>
-                            </section>
-                        )}
-
-                        {(!activeFilter || activeFilter === 'Drinks') && (
-                            <section className="px-2 md:px-0">
-                                {!activeFilter && <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-5 text-white/80">Drinks</h3>}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
-                                    {isLoading ? renderSkeletons(4) : DRINK_ITEMS.map((item) => (
-                                        <FoodCard 
-                                            key={item.id} 
-                                            name={item.name}
-                                            price={`Rp ${item.price.toLocaleString('id-ID')}`}
-                                            imgUrl={item.imgUrl}
-                                            onAdd={() => handleAddToCart(item)} 
-                                        />
-                                    ))}
-                                </div>
-                            </section>
-                        )}
-
-                        {(!activeFilter || activeFilter === 'Promo') && (
-                            <section className="px-2 md:px-0">
-                                {!activeFilter && <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-5 text-white/80">Promo</h3>}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
-                                    {isLoading ? renderSkeletons(2) : PROMO_ITEMS.map((item) => (
-                                        <FoodCard 
-                                            key={item.id} 
-                                            name={item.name}
-                                            price={`Rp ${item.price.toLocaleString('id-ID')}`}
-                                            imgUrl={item.imgUrl}
-                                            onAdd={() => handleAddToCart(item)} 
-                                        />
-                                    ))}
+                                    {isLoading ? renderSkeletons(4) : searchedItems.length === 0 ? (
+                                        <div className="col-span-1 sm:col-span-2 text-center py-10 text-white/50 italic">
+                                            {searchQuery ? `Tidak ada menu yang cocok dengan "${searchQuery}"` : "Menu tidak ditemukan."}
+                                        </div>
+                                    ) : (
+                                        searchedItems.map((item) => (
+                                            <FoodCard 
+                                                key={item.snackId} 
+                                                name={item.snackName}
+                                                price={`Rp ${Number(item.price).toLocaleString('id-ID')}`} 
+                                                imgUrl={item.imageUrl}
+                                                onAdd={() => handleAddToCart(item)} 
+                                            />
+                                        ))
+                                    )}
                                 </div>
                             </section>
                         )}
 
                     </div>
 
+                    {/* BAGIAN KANAN: KERANJANG BELANJA (CART) */}
                     <aside className="w-full lg:w-87.5 shrink-0 mt-8 lg:mt-0 px-2 md:px-0">
                         <div className="bg-white rounded-2xl p-5 md:p-6 flex flex-col h-137.5 md:h-162.5 lg:h-[calc(100vh-120px)] lg:max-h-187.5 lg:sticky lg:top-28 shadow-2xl overflow-hidden">
                             
@@ -206,15 +275,15 @@ export const FoodBeveragePage: React.FC = () => {
                                     
                                     <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden flex flex-col gap-3 mb-4">
                                         {cart.map((item) => (
-                                            <div key={item.id} className="flex justify-between items-center bg-gray-50 rounded-xl p-3 border border-gray-200 shadow-sm">
+                                            <div key={item.snackId} className="flex justify-between items-center bg-gray-50 rounded-xl p-3 border border-gray-200 shadow-sm">
                                                 <div className="flex flex-col items-start flex-1 pr-2">
-                                                    <span className="text-black font-bold text-sm leading-tight line-clamp-2 mb-1">{item.name}</span>
-                                                    <span className="text-[#e51c23] font-bold text-xs">Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
+                                                    <span className="text-black font-bold text-sm leading-tight line-clamp-2 mb-1">{item.snackName}</span>
+                                                    <span className="text-[#e51c23] font-bold text-xs">Rp {(Number(item.price) * item.quantity).toLocaleString('id-ID')}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 bg-gray-200 rounded-full px-2 py-1 shrink-0">
-                                                    <button onClick={() => handleUpdateQuantity(item.id, -1)} className="w-6 h-6 flex items-center justify-center bg-white rounded-full text-black font-bold shadow-sm">-</button>
+                                                    <button onClick={() => handleUpdateQuantity(item.snackId, -1)} className="w-6 h-6 flex items-center justify-center bg-white rounded-full text-black font-bold shadow-sm">-</button>
                                                     <span className="text-black font-bold text-sm w-4 text-center">{item.quantity}</span>
-                                                    <button onClick={() => handleUpdateQuantity(item.id, 1)} className="w-6 h-6 flex items-center justify-center bg-[#e51c23] rounded-full text-white font-bold shadow-sm">+</button>
+                                                    <button onClick={() => handleUpdateQuantity(item.snackId, 1)} className="w-6 h-6 flex items-center justify-center bg-[#e51c23] rounded-full text-white font-bold shadow-sm">+</button>
                                                 </div>
                                             </div>
                                         ))}
@@ -237,10 +306,10 @@ export const FoodBeveragePage: React.FC = () => {
                                         {isForMovie && (
                                             <input 
                                                 type="text" 
-                                                placeholder="Masukkan Booking ID / Nomor Tiket" 
-                                                value={bookingId}
-                                                onChange={(e) => setBookingId(e.target.value)}
-                                                className="w-full mt-2 bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs text-black focus:outline-none focus:border-red-500 transition-colors"
+                                                placeholder="Masukkan Booking ID (contoh: F0180BA8)" 
+                                                value={bookingIdInput}
+                                                onChange={(e) => setBookingIdInput(e.target.value)}
+                                                className="w-full mt-2 bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs text-black focus:outline-none focus:border-red-500 transition-colors uppercase"
                                             />
                                         )}
                                     </div>
@@ -251,10 +320,11 @@ export const FoodBeveragePage: React.FC = () => {
                                             <span className="text-red-600 font-black text-lg">Rp {totalAmount.toLocaleString('id-ID')}</span>
                                         </div>
                                         <Button 
-                                            label="Checkout Sekarang"
+                                            label={isCheckingOut ? "Memproses..." : "Checkout Sekarang"}
                                             variant="primary"
                                             shape="rounded"
-                                            onClick={() => alert(`Proceeding to F&B Checkout...\nTotal: Rp${totalAmount}\nFor Movie: ${isForMovie ? `Yes (ID: ${bookingId})` : 'No'}`)}
+                                            onClick={handleCheckout}
+                                            disabled={isCheckingOut}
                                         />
                                     </div>
                                 </div>
