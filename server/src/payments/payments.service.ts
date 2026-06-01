@@ -128,14 +128,17 @@ export class PaymentsService {
 
   /* Handle Xendit Notification Service
    * @desc: Verify Xendit callback token and update payment/order status
-   * @param: callbackToken, XenditInvoiceWebhookDto
+   * @param: callbackToken, payload, webhookId
    * @returns: PaymentWebhookResponseDto
    */
   async handleXenditNotification(
     callbackToken: string | undefined,
-    dto: XenditInvoiceWebhookDto,
+    payload: Record<string, unknown>,
+    webhookId?: string,
   ): Promise<PaymentWebhookResponseDto> {
     this.verifyCallbackToken(callbackToken);
+
+    const dto = this.parseXenditInvoiceWebhook(payload);
 
     const [payment] = await this.db
       .select()
@@ -144,7 +147,8 @@ export class PaymentsService {
 
     if (!payment) throw new NotFoundException('Payment not found');
 
-    const providerEventId = `${dto.id}:${dto.status}:${dto.paid_at ?? ''}`;
+    const providerEventId =
+      webhookId ?? `${dto.id}:${dto.status}:${dto.paid_at ?? ''}`;
 
     const [existingEvent] = await this.db
       .select()
@@ -171,15 +175,18 @@ export class PaymentsService {
         provider: 'XENDIT',
         providerEventId,
         eventType: dto.status,
-        payload: JSON.stringify(dto),
+        payload: JSON.stringify(payload),
       });
 
       await tx
         .update(payments)
         .set({
-          providerPaymentId: dto.id,
+          providerPaymentId: dto.payment_id ?? dto.id,
           paymentMethod:
-            dto.payment_channel ?? dto.payment_method ?? payment.paymentMethod,
+            dto.ewallet_type ??
+            dto.payment_channel ??
+            dto.payment_method ??
+            payment.paymentMethod,
           paymentStatus: nextStatus,
           paidAt: dto.paid_at ?? payment.paidAt,
           failureReason: dto.failure_reason ?? payment.failureReason,
@@ -234,6 +241,139 @@ export class PaymentsService {
     });
 
     return { received: true, paymentStatus: nextStatus };
+  }
+
+  /* Parse Xendit Invoice Webhook Helper
+   * @desc: Extract the invoice fields the app needs from Xendit's variable payload
+   * @param: payload
+   * @returns: XenditInvoiceWebhookDto
+   */
+  private parseXenditInvoiceWebhook(
+    payload: Record<string, unknown>,
+  ): XenditInvoiceWebhookDto {
+    const id = this.readRequiredString(payload, 'id');
+    const externalId = this.readRequiredString(payload, 'external_id');
+    const status = this.readRequiredString(payload, 'status');
+    const amount = this.readRequiredNumber(payload, 'amount');
+
+    return {
+      id,
+      external_id: externalId,
+      status,
+      amount,
+      paid_amount: this.readOptionalNumber(payload, 'paid_amount'),
+      paid_at: this.readOptionalString(payload, 'paid_at'),
+      payment_method: this.readOptionalString(payload, 'payment_method'),
+      payment_channel: this.readOptionalString(payload, 'payment_channel'),
+      failure_reason: this.readOptionalString(payload, 'failure_reason'),
+      user_id: this.readOptionalString(payload, 'user_id'),
+      merchant_name: this.readOptionalString(payload, 'merchant_name'),
+      description: this.readOptionalString(payload, 'description'),
+      is_high: this.readOptionalBoolean(payload, 'is_high'),
+      success_redirect_url: this.readOptionalString(
+        payload,
+        'success_redirect_url',
+      ),
+      failure_redirect_url: this.readOptionalString(
+        payload,
+        'failure_redirect_url',
+      ),
+      created: this.readOptionalString(payload, 'created'),
+      updated: this.readOptionalString(payload, 'updated'),
+      currency: this.readOptionalString(payload, 'currency'),
+      bank_code: this.readOptionalString(payload, 'bank_code'),
+      payment_destination: this.readOptionalString(
+        payload,
+        'payment_destination',
+      ),
+      payer_email: this.readOptionalString(payload, 'payer_email'),
+      adjusted_received_amount: this.readOptionalNumber(
+        payload,
+        'adjusted_received_amount',
+      ),
+      fees_paid_amount: this.readOptionalNumber(payload, 'fees_paid_amount'),
+      payment_id: this.readOptionalString(payload, 'payment_id'),
+      payment_method_id: this.readOptionalString(payload, 'payment_method_id'),
+      ewallet_type: this.readOptionalString(payload, 'ewallet_type'),
+    };
+  }
+
+  /* Read Required String Helper
+   * @desc: Read a required string field from a provider payload
+   * @param: payload, key
+   * @returns: string
+   */
+  private readRequiredString(
+    payload: Record<string, unknown>,
+    key: string,
+  ): string {
+    const value = payload[key];
+
+    if (typeof value !== 'string' || !value) {
+      throw new BadRequestException(`Invalid Xendit webhook field: ${key}`);
+    }
+
+    return value;
+  }
+
+  /* Read Optional String Helper
+   * @desc: Read an optional string field from a provider payload
+   * @param: payload, key
+   * @returns: string | undefined
+   */
+  private readOptionalString(
+    payload: Record<string, unknown>,
+    key: string,
+  ): string | undefined {
+    const value = payload[key];
+
+    return typeof value === 'string' ? value : undefined;
+  }
+
+  /* Read Required Number Helper
+   * @desc: Read a required number field from a provider payload
+   * @param: payload, key
+   * @returns: number
+   */
+  private readRequiredNumber(
+    payload: Record<string, unknown>,
+    key: string,
+  ): number {
+    const value = payload[key];
+
+    if (typeof value !== 'number') {
+      throw new BadRequestException(`Invalid Xendit webhook field: ${key}`);
+    }
+
+    return value;
+  }
+
+  /* Read Optional Number Helper
+   * @desc: Read an optional number field from a provider payload
+   * @param: payload, key
+   * @returns: number | undefined
+   */
+  private readOptionalNumber(
+    payload: Record<string, unknown>,
+    key: string,
+  ): number | undefined {
+    const value = payload[key];
+
+    return typeof value === 'number' ? value : undefined;
+  }
+
+  /* Read Optional Boolean Helper
+   * @desc: Read an optional boolean field from a provider payload
+   * @param: payload, key
+   * @returns: boolean | undefined
+   */
+  private readOptionalBoolean(
+    payload: Record<string, unknown>,
+    key: string,
+  ): boolean | undefined {
+    const value = payload[key];
+
+    return typeof value === 'boolean' ? value : undefined;
   }
 
   /* Resolve Checkout Target Helper

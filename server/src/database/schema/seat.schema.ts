@@ -6,33 +6,33 @@ import {
   uniqueIndex,
   varchar,
 } from 'drizzle-orm/mysql-core';
-import { cinemaHalls } from './cinema-hall.schema';
+import { studios } from './studio.schema';
 import { bookingSeats } from './booking-seat.schema';
 
 export const seats = mysqlTable(
   'Seat',
   {
     seatId: int('SeatID').primaryKey().autoincrement(),
-    hallId: int('HallID')
+    studioId: int('StudioID')
       .notNull()
-      .references(() => cinemaHalls.hallId, { onDelete: 'cascade' }),
+      .references(() => studios.studioId, { onDelete: 'cascade' }),
     rowLetter: varchar('rowLetter', { length: 1 }).notNull(),
     seatNumber: int('SeatNumber').notNull(),
   },
   (table) => [
-    uniqueIndex('seat_hall_row_number_unique').on(
-      table.hallId,
+    uniqueIndex('seat_studio_row_number_unique').on(
+      table.studioId,
       table.rowLetter,
       table.seatNumber,
     ),
-    index('seat_hall_id_idx').on(table.hallId),
+    index('seat_studio_id_idx').on(table.studioId),
   ],
 );
 
 export const seatsRelations = relations(seats, ({ one, many }) => ({
-  hall: one(cinemaHalls, {
-    fields: [seats.hallId],
-    references: [cinemaHalls.hallId],
+  studio: one(studios, {
+    fields: [seats.studioId],
+    references: [studios.studioId],
   }),
   bookingSeats: many(bookingSeats),
 }));

@@ -2,14 +2,13 @@ import { relations } from 'drizzle-orm';
 import {
   decimal,
   index,
-  int,
   mysqlTable,
   timestamp,
   varchar,
 } from 'drizzle-orm/mysql-core';
+import { bookings } from './booking.schema';
 import { fnbOrderItems } from './fnb-order-item.schema';
 import { payments } from './payment.schema';
-import { showtimes } from './showtime.schema';
 import { users } from './user.schema';
 
 export const fnbOrders = mysqlTable(
@@ -19,9 +18,12 @@ export const fnbOrders = mysqlTable(
     userId: varchar('UserID', { length: 36 })
       .notNull()
       .references(() => users.userId, { onDelete: 'cascade' }),
-    showtimeId: int('ShowtimeID').references(() => showtimes.showtimeId, {
-      onDelete: 'set null',
-    }),
+    bookingId: varchar('BookingID', { length: 36 }).references(
+      () => bookings.bookingId,
+      {
+        onDelete: 'set null',
+      },
+    ),
     orderDate: timestamp('orderDate', { mode: 'string' })
       .notNull()
       .defaultNow(),
@@ -33,15 +35,15 @@ export const fnbOrders = mysqlTable(
   },
   (table) => [
     index('fnb_order_user_id_idx').on(table.userId),
-    index('fnb_order_showtime_id_idx').on(table.showtimeId),
+    index('fnb_order_booking_id_idx').on(table.bookingId),
   ],
 );
 
 export const fnbOrdersRelations = relations(fnbOrders, ({ one, many }) => ({
   user: one(users, { fields: [fnbOrders.userId], references: [users.userId] }),
-  showtime: one(showtimes, {
-    fields: [fnbOrders.showtimeId],
-    references: [showtimes.showtimeId],
+  booking: one(bookings, {
+    fields: [fnbOrders.bookingId],
+    references: [bookings.bookingId],
   }),
   items: many(fnbOrderItems),
   payment: one(payments),

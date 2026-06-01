@@ -1,11 +1,11 @@
 meta {
-  name: Update Hall
+  name: Update Cinema
   type: http
   seq: 3
 }
 
 put {
-  url: {{apiUrl}}/admin/halls/{{hallId}}
+  url: {{apiUrl}}/admin/cinemas/{{cinemaId}}
   body: json
   auth: none
 }
@@ -17,8 +17,6 @@ headers {
 body:json {
   {
     "cinemaName": "CGV Grand Indonesia",
-    "studioName": "Studio 1",
-    "totalRows": 8,
-    "seatsPerRow": 12
+    "location": "Jakarta"
   }
 }

@@ -25,12 +25,31 @@ describe('Movies feature', () => {
   const showtime = {
     showtimeId: 1,
     movieId: 1,
-    hallId: 1,
+    studioId: 1,
     showDate: '2026-05-23',
     showTime: '19:30',
     price: '50000',
   };
-  const movieDetail = { ...movie, showtimes: [showtime] };
+  const cinema = {
+    cinemaId: 1,
+    cinemaName: 'CineMate',
+    location: 'Jakarta',
+  };
+  const studio = {
+    studioId: 1,
+    cinemaId: 1,
+    studioName: 'Studio 1',
+    totalRows: 8,
+    seatsPerRow: 12,
+  };
+  const showtimeDetail = {
+    ...showtime,
+    studio: {
+      ...studio,
+      cinema,
+    },
+  };
+  const movieDetail = { ...movie, showtimes: [showtimeDetail] };
 
   it('controller delegates public and admin movie operations', async () => {
     const moviesService = {
@@ -61,13 +80,13 @@ describe('Movies feature', () => {
       select: jest
         .fn()
         .mockReturnValueOnce(selectWhere([movie]))
-        .mockReturnValueOnce(selectWhere([showtime]))
+        .mockReturnValueOnce(selectWhere([{ showtime, studio, cinema }]))
         .mockReturnValueOnce(selectWhere([movie]))
-        .mockReturnValueOnce(selectWhere([showtime]))
+        .mockReturnValueOnce(selectWhere([{ showtime, studio, cinema }]))
         .mockReturnValueOnce(selectWhere([movie]))
-        .mockReturnValueOnce(selectWhere([showtime]))
+        .mockReturnValueOnce(selectWhere([{ showtime, studio, cinema }]))
         .mockReturnValueOnce(selectWhere([movie]))
-        .mockReturnValueOnce(selectWhere([showtime])),
+        .mockReturnValueOnce(selectWhere([{ showtime, studio, cinema }])),
       insert: jest.fn().mockReturnValue(insertReturning({ movieId: 1 })),
       update: jest.fn().mockReturnValue(mutation()),
       delete: jest.fn().mockReturnValue(mutation()),

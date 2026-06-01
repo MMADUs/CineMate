@@ -1,0 +1,24 @@
+meta {
+  name: Update Studio
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{apiUrl}}/admin/studios/{{studioId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "cinemaId": {{cinemaId}},
+    "studioName": "Studio 1",
+    "totalRows": 8,
+    "seatsPerRow": 12
+  }
+}

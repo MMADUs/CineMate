@@ -5,6 +5,7 @@ import {
   IsArray,
   IsInt,
   IsOptional,
+  IsUUID,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -23,16 +24,15 @@ class FnbOrderItemDto {
 }
 
 export class CreateFnbOrderDto {
-  @Type(() => Number)
-  @IsInt()
+  @IsUUID()
   @IsOptional()
   @ApiProperty({
     required: false,
-    example: 1,
+    example: '550e8400-e29b-41d4-a716-446655440000',
     description:
-      'Optional showtime ID when the snack purchase is connected to a movie watch.',
+      'Optional booking ID when the snack purchase is connected to a movie booking.',
   })
-  showtimeId?: number;
+  bookingId?: string;
 
   @IsArray()
   @ArrayMinSize(1)

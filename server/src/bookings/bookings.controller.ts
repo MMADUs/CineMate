@@ -17,6 +17,7 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Idempotent } from '../common/decorators/idempotent.decorator';
+import { AdminJwtGuard } from '../common/guards/admin-jwt.guard';
 import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { BookingsService } from './bookings.service';
@@ -24,10 +25,10 @@ import {
   BookingCheckoutResponseDto,
   BookingDetailResponseDto,
   BookingResponseDto,
+  AdminBookingResponseDto,
 } from './dto/booking-response.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
-@UseGuards(JwtAccessGuard)
 @ApiTags('Bookings')
 @Controller()
 export class BookingsController {
@@ -39,6 +40,7 @@ export class BookingsController {
    * @param: AuthUser, CreateBookingDto
    * @returns: Promise<BookingCheckoutResponseDto>
    */
+  @UseGuards(JwtAccessGuard)
   @Post('bookings/checkout')
   @HttpCode(HttpStatus.CREATED)
   @Idempotent()
@@ -63,6 +65,7 @@ export class BookingsController {
    * @param: AuthUser
    * @returns: Promise<BookingResponseDto[]>
    */
+  @UseGuards(JwtAccessGuard)
   @Get('users/orders')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get authenticated user booking history' })
@@ -77,6 +80,7 @@ export class BookingsController {
    * @param: AuthUser, bookingId
    * @returns: Promise<BookingDetailResponseDto>
    */
+  @UseGuards(JwtAccessGuard)
   @Get('users/orders/:bookingId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get authenticated user booking detail' })
@@ -86,5 +90,19 @@ export class BookingsController {
     @Param('bookingId') bookingId: string,
   ): Promise<BookingDetailResponseDto> {
     return this.bookingsService.findUserBooking(user.userId, bookingId);
+  }
+
+  /* Admin Find All Bookings Controller
+   * @desc: List all bookings with user, payment, showtime, movie, and seats
+   * @route: /admin/bookings
+   * @returns: Promise<AdminBookingResponseDto[]>
+   */
+  @UseGuards(AdminJwtGuard)
+  @Get('admin/bookings')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List all bookings for admin' })
+  @ApiOkResponse({ type: [AdminBookingResponseDto] })
+  adminFindAll(): Promise<AdminBookingResponseDto[]> {
+    return this.bookingsService.findAllForAdmin();
   }
 }

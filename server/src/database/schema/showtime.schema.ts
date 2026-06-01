@@ -6,7 +6,7 @@ import {
   mysqlTable,
   varchar,
 } from 'drizzle-orm/mysql-core';
-import { cinemaHalls } from './cinema-hall.schema';
+import { studios } from './studio.schema';
 import { bookings } from './booking.schema';
 import { movies } from './movie.schema';
 
@@ -17,16 +17,16 @@ export const showtimes = mysqlTable(
     movieId: int('MovieID')
       .notNull()
       .references(() => movies.movieId, { onDelete: 'cascade' }),
-    hallId: int('HallID')
+    studioId: int('StudioID')
       .notNull()
-      .references(() => cinemaHalls.hallId, { onDelete: 'cascade' }),
+      .references(() => studios.studioId, { onDelete: 'cascade' }),
     showDate: varchar('showDate', { length: 10 }).notNull(),
     showTime: varchar('showTime', { length: 5 }).notNull(),
     price: decimal('price', { precision: 12, scale: 2 }).notNull(),
   },
   (table) => [
     index('showtime_movie_id_idx').on(table.movieId),
-    index('showtime_hall_id_idx').on(table.hallId),
+    index('showtime_studio_id_idx').on(table.studioId),
   ],
 );
 
@@ -35,9 +35,9 @@ export const showtimesRelations = relations(showtimes, ({ one, many }) => ({
     fields: [showtimes.movieId],
     references: [movies.movieId],
   }),
-  hall: one(cinemaHalls, {
-    fields: [showtimes.hallId],
-    references: [cinemaHalls.hallId],
+  studio: one(studios, {
+    fields: [showtimes.studioId],
+    references: [studios.studioId],
   }),
   bookings: many(bookings),
 }));

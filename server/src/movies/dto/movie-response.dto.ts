@@ -1,5 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ShowtimeResponseDto } from '../../showtimes/dto/showtime-response.dto';
+import { CinemaResponseDto } from '../../cinemas/dto/cinema-response.dto';
+import { StudioResponseDto } from '../../studios/dto/studio-response.dto';
+
+export class MovieShowtimeStudioResponseDto extends StudioResponseDto {
+  @ApiProperty({ type: CinemaResponseDto })
+  cinema: CinemaResponseDto;
+}
+
+export class MovieShowtimeResponseDto extends ShowtimeResponseDto {
+  @ApiProperty({ type: MovieShowtimeStudioResponseDto })
+  studio: MovieShowtimeStudioResponseDto;
+}
 
 export class MovieResponseDto {
   @ApiProperty({ example: 1 })
@@ -46,6 +58,6 @@ export class MovieResponseDto {
 }
 
 export class MovieDetailResponseDto extends MovieResponseDto {
-  @ApiProperty({ type: [ShowtimeResponseDto] })
-  showtimes: ShowtimeResponseDto[];
+  @ApiProperty({ type: [MovieShowtimeResponseDto] })
+  showtimes: MovieShowtimeResponseDto[];
 }
