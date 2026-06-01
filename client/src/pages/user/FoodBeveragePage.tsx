@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import { Navbar } from '../../components/layout/Navbar';
 import { Footer } from '../../components/layout/Footer';
 import { Button } from '../../components/ui_manual/Button';
@@ -108,15 +109,17 @@ export const FoodBeveragePage: React.FC = () => {
     const totalAmount = cart.reduce((sum, item) => sum + (Number(item.price) * item.quantity), 0);
 
     const handleCheckout = async () => {
-        if (cart.length === 0) return;
+        if (cart.length === 0) {
+            toast.error("Your cart is empty! Please add some items before checking out.");
+            return;
+        }
 
         let parsedShowtimeId: number | undefined = undefined;
         
-        // KEAJAIBAN AUTO-TRANSLATE BOOKING ID KE SHOWTIME ID
         if (isForMovie) {
             const inputId = bookingIdInput.trim().toUpperCase();
             if (!inputId) {
-                alert("Mohon masukkan Booking ID tiket Anda.");
+                toast.error("Please enter a Booking ID to link your order with a movie ticket.");
                 return;
             }
 
@@ -126,7 +129,7 @@ export const FoodBeveragePage: React.FC = () => {
             );
 
             if (!matchedOrder) {
-                alert("Booking ID tidak ditemukan. Pastikan Anda memasukkan Booking ID yang valid dari riwayat pesanan Anda.");
+                toast.error("Booking ID not found in your order history. Please check and try again.");
                 return;
             }
 
@@ -156,22 +159,21 @@ export const FoodBeveragePage: React.FC = () => {
             if (invoiceUrl) {
                 window.location.href = invoiceUrl;
             } else {
-                console.log("Full response object dari Backend:", rawRes);
-                alert("Gagal mendapatkan link pembayaran dari server. JSON Response tidak sesuai.");
+                toast.error("Checkout successful, but no invoice URL was returned. Please check your order history for details.");
             }
         } catch (error: unknown) {
             console.error("FnB Checkout Failed:", error);
             
             if (isAxiosError(error)) {
                 if (error.response && error.response.data) {
-                    alert("Pesan dari Backend Temanmu:\n\n" + JSON.stringify(error.response.data, null, 2));
+                    toast.error("Message from Backend:\n\n" + JSON.stringify(error.response.data, null, 2));
                 } else {
-                    alert("Error jaringan/server: " + error.message);
+                    toast.error("Network/server error: " + error.message);
                 }
             } else if (error instanceof Error) {
-                alert("Error lokal: " + error.message);
+                toast.error("Local error: " + error.message);
             } else {
-                alert("Terjadi error yang tidak diketahui.");
+                toast.error("An unknown error occurred.");
             }
         }
     };

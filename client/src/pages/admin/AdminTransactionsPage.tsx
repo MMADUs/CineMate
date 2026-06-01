@@ -1,19 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AdminLayout } from '../../components/layout/AdminLayouts';
 import { AdminModal } from '../../components/modals/AdminModal';
 import { Pagination } from '../../components/ui_manual/Pagination'; 
 
-// Import Hooks API Admin & General
+// Import Hooks API Admin & General SAJA 
 import { useGetAdminTransactions, type AdminTransactionsResponse } from '../../api/hooks/Admin/useGetAdminTransactions';
 import { useGetAdminMovies, type AdminMovie } from '../../api/hooks/Admin/useGetAdminMovies';
 import { useGetAdminShowtimes, type AdminShowtimeResponse } from '../../api/hooks/Admin/useGetShowtimes';
 import { useGetAdminHalls, type CinemaHallResponse } from '../../api/hooks/Admin/useGetHalls';
 import { useGetAdminSnacks, type AdminSnackResponse } from '../../api/hooks/Admin/useGetAdminSnacks';
-
-// Import Hooks API Detail (Untuk menambal bolongnya data dari Backend)
-import { useGetShowtimeSeats, type ShowtimeSeatsResponse } from '../../api/hooks/User/useGetShowtimeSeats';
-import { useGetMovieOrderDetail, type MovieOrderDetailResponse } from '../../api/hooks/User/useGetMovieOrderDetail';
-import { useGetFnBOrderDetail, type FnBOrderDetailResponse } from '../../api/hooks/User/useGetFnBOrderDetail';
 
 const ITEMS_PER_PAGE = 5; 
 
@@ -28,7 +23,6 @@ interface UnifiedTransaction {
     date: string;
     time: string;
     showtimeId?: number; 
-    seatIds?: number[];  
     items?: { snackId: number; quantity: number; subTotalPrice?: string }[];
     studio: string;
     cinemaName: string; 
@@ -37,6 +31,7 @@ interface UnifiedTransaction {
     posterUrl: string;
     paymentMethod: string;
     rawDate: number;
+    customerId: string; // Menggunakan ID karena nama belum tersedia
 }
 
 function extractSafeData<T>(rawData: unknown): T | undefined {
@@ -75,64 +70,18 @@ const TransactionTableRow: React.FC<{
     onView: (order: UnifiedTransaction & { resolvedSeats: string }) => void;
 }> = ({ order, onView }) => {
     
-    const { data: rawMovieDetail } = useGetMovieOrderDetail(order.type === 'Movie' ? order.id : undefined);
-    const { data: rawFnBDetail } = useGetFnBOrderDetail(order.type === 'FnB' ? order.id : undefined);
-
-    const showtimeIdStr = order.type === 'Movie' && order.showtimeId ? order.showtimeId.toString() : undefined;
-    const { data: rawSeatsData } = useGetShowtimeSeats(showtimeIdStr);
-
-    const seatNameMap = useMemo(() => {
-        const map = new Map<number, string>();
-        if (!rawSeatsData) return map;
-        const actualSeats = extractSafeData<ShowtimeSeatsResponse>(rawSeatsData)?.seats || [];
-        actualSeats.forEach(seat => map.set(seat.seatId, `${seat.rowLetter}${seat.seatNumber}`));
-        return map;
-    }, [rawSeatsData]);
-
-    const resolvedItems = useMemo(() => {
-        if (order.type === 'FnB') {
-            const fnbDetail = extractSafeData<FnBOrderDetailResponse>(rawFnBDetail);
-            if (fnbDetail?.items && fnbDetail.items.length > 0) {
-                return fnbDetail.items;
-            }
-        }
-        return order.items || [];
-    }, [order.type, order.items, rawFnBDetail]);
-
-    const bookedSeats = useMemo(() => {
-        if (order.type === 'Movie') {
-            const movieDetail = extractSafeData<MovieOrderDetailResponse>(rawMovieDetail);
-            return movieDetail?.seats || order.seatIds?.map(id => ({ seatId: id })) || [];
-        }
-        return [];
-    }, [order.type, order.seatIds, rawMovieDetail]);
-
     const displayValueInTable = useMemo(() => {
         if (order.type === 'FnB') {
-            const totalQty = resolvedItems.reduce((acc, curr) => acc + (curr?.quantity || 0), 0);
-            if (totalQty === 0) return 'Loading...';
-            return `${totalQty} Items`;
+            const totalQty = (order.items || []).reduce((acc, curr) => acc + (curr?.quantity || 0), 0);
+            return totalQty > 0 ? `${totalQty} Items` : '0 Items';
         }
 
         if (order.type === 'Movie') {
-            if (bookedSeats.length > 0) {
-                return `${bookedSeats.length} Seat${bookedSeats.length > 1 ? 's' : ''}`;
-            }
-            return 'Loading...';
+            return 'Data Not Included';
         }
 
         return '-';
-    }, [order.type, resolvedItems, bookedSeats]);
-
-    const detailedSeatsForModal = useMemo(() => {
-        if (order.type === 'Movie') {
-            if (bookedSeats.length > 0) {
-                return bookedSeats.map(s => seatNameMap.get(s.seatId) || `Seat ${s.seatId}`).join(', ');
-            }
-            return 'Loading...';
-        }
-        return displayValueInTable; 
-    }, [order.type, bookedSeats, seatNameMap, displayValueInTable]);
+    }, [order]);
 
     return (
         <tr className="hover:bg-white/2 transition-colors group border-b border-white/5 last:border-0">
@@ -141,6 +90,9 @@ const TransactionTableRow: React.FC<{
                 {order.type === 'FnB' && (
                     <span className="ml-2 bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-[10px] font-bold">F&B</span>
                 )}
+                <div className="mt-1 text-[10px] text-white/40 uppercase tracking-wider font-semibold">
+                    USER ID: <span className="text-white/70 font-mono tracking-widest">{order.customerId.split('-')[0]}...</span>
+                </div>
             </td>
 
             <td className="py-4 px-6">
@@ -151,7 +103,7 @@ const TransactionTableRow: React.FC<{
             </td>
 
             <td className="py-4 px-6">
-                <span className={`bg-[#1a1a1a] border border-white/10 px-3 py-1 rounded text-sm font-semibold truncate max-w-37.5 inline-block align-bottom ${displayValueInTable === 'Loading...' ? 'text-white/30 animate-pulse' : 'text-white'}`} title={displayValueInTable}>
+                <span className={`bg-[#1a1a1a] border border-white/10 px-3 py-1 rounded text-sm font-semibold truncate max-w-37.5 inline-block align-bottom ${displayValueInTable === 'Data Not Included' ? 'text-yellow-500/50' : 'text-white'}`} title={displayValueInTable}>
                     {displayValueInTable}
                 </span>
                 <span className="text-white/50 text-xs ml-2">({order.studio})</span>
@@ -170,7 +122,7 @@ const TransactionTableRow: React.FC<{
             <td className="py-4 px-6 text-right">
                 <div className="flex items-center justify-end gap-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
-                        onClick={() => onView({ ...order, resolvedSeats: detailedSeatsForModal, items: resolvedItems })}
+                        onClick={() => onView({ ...order, resolvedSeats: displayValueInTable, items: order.items || [] })}
                         className="bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white p-2 rounded transition-colors" title="View Details"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -199,6 +151,45 @@ export const AdminTransactionsPage: React.FC = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+
+    // ==========================================
+    // INVESTIGASI CONSOLE LOG UNTUK BACKEND 🕵️‍♂️
+    // ==========================================
+    useEffect(() => {
+        if (rawTransactions) {
+            console.log("%c=== DATA ===", "color: #10b981; font-weight: bold; font-size: 14px;");
+            
+            const data = extractSafeData<AdminTransactionsResponse>(rawTransactions);
+            
+            console.log("📦 RAW DATA:", data);
+
+            // Cek Booking (Film)
+            if (data?.bookings && data.bookings.length > 0) {
+                console.log("%c🎬 CONTOH BOOKING FILM:", "color: #3b82f6; font-weight: bold;", data.bookings[0]);
+                if (!('seats' in data.bookings[0])) {
+                    console.error("❌ ERROR: Array 'seats' TIDAK ADA di dalam booking!");
+                } else {
+                    console.log("✅ SUCCESS: Array 'seats' ditemukan!");
+                }
+            } else {
+                console.log("🎬 CONTOH BOOKING: Belum ada transaksi tiket di database.");
+            }
+
+            // Cek F&B
+            if (data?.fnbOrders && data.fnbOrders.length > 0) {
+                console.log("%cCONTOH F&B ORDER:", "color: #f59e0b; font-weight: bold;", data.fnbOrders[0]);
+                if (!('items' in data.fnbOrders[0])) {
+                    console.error("❌ ERROR: Array 'items' TIDAK ADA di dalam fnbOrders!");
+                } else {
+                    console.log("✅ SUCCESS: Array 'items' ditemukan!");
+                }
+            } else {
+                console.log("🍔 CONTOH F&B ORDER: Belum ada transaksi makanan di database.");
+            }
+
+            console.log("%c=================================", "color: #10b981; font-weight: bold; font-size: 14px;");
+        }
+    }, [rawTransactions]);
 
     const moviesMap = useMemo(() => {
         const map = new Map<number, AdminMovie>();
@@ -238,52 +229,74 @@ export const AdminTransactionsPage: React.FC = () => {
 
         const mappedBookings: UnifiedTransaction[] = bookings.map(b => {
             const bId = b?.bookingId || '-';
-            const showtimeObj = b?.showtime || showtimesMap.get(b?.showtimeId);
+
+            const swaggerB = b as unknown as { 
+                showtime?: { 
+                    showtimeId?: number;
+                    movieId?: number;
+                    hallId?: number; 
+                    showTime?: string; 
+                    movie?: { title: string; imageUrl: string; }
+                };
+                payment?: { amount: string; paymentStatus: string; paymentMethod: string; };
+            };
+
+            const showtimeObj = swaggerB?.showtime || b?.showtime || showtimesMap.get(b?.showtimeId);
             const movieObj = showtimeObj?.movie || moviesMap.get(showtimeObj?.movieId || 0);
             const hallObj = hallsMap.get(showtimeObj?.hallId || 0);
-            const paymentObj = b?.payment || paymentsArray.find(p => p.bookingId === bId);
+            const paymentObj = swaggerB?.payment || b?.payment || paymentsArray.find(p => p.bookingId === bId);
 
-            type BookingWithSeats = typeof b & { seats?: { seatId: number }[] };
-            const bWithSeats = b as BookingWithSeats;
+            const rawDateStr = b?.bookingDate || '';
+            const safeDateStr = rawDateStr.replace(' ', 'T'); 
 
             return {
                 id: bId,
                 displayId: bId !== '-' ? bId.split('-')[0].toUpperCase() : '-',
                 type: 'Movie',
                 title: movieObj?.title || 'Unknown Movie',
-                date: b?.bookingDate ? new Date(b.bookingDate).toLocaleDateString('en-GB') : '-',
+                date: safeDateStr ? new Date(safeDateStr).toLocaleDateString('en-GB') : '-',
                 time: showtimeObj?.showTime ? showtimeObj.showTime.substring(0, 5) + ' WIB' : '-',
-                showtimeId: showtimeObj?.showtimeId,
-                seatIds: bWithSeats?.seats?.map(s => s.seatId) || [],
+                showtimeId: showtimeObj?.showtimeId || b?.showtimeId,
                 studio: hallObj?.studioName || `Studio ${showtimeObj?.hallId || '-'}`,
                 cinemaName: hallObj?.cinemaName || 'Unknown Cinema',
                 price: Number(b?.totalAmount || paymentObj?.amount || 0),
                 status: getNormalizedStatus(b?.orderStatus || paymentObj?.paymentStatus),
                 posterUrl: movieObj?.imageUrl || '/placeholder.png',
                 paymentMethod: paymentObj?.paymentMethod || 'Unknown',
-                rawDate: b?.bookingDate ? new Date(b.bookingDate).getTime() : 0
+                rawDate: safeDateStr ? new Date(safeDateStr).getTime() : 0,
+                customerId: b?.userId || 'Unknown ID' // Mapping ID User langsung
             };
         });
 
         const mappedFnbs: UnifiedTransaction[] = fnbs.map(f => {
             const fId = f?.fnbOrderId || '-';
-            const paymentObj = f?.payment || paymentsArray.find(p => p.fnbOrderId === fId);
+            
+            const swaggerF = f as unknown as { 
+                items?: { snackId: number; quantity: number; subTotalPrice: string }[];
+                payment?: { amount: string; paymentStatus: string; paymentMethod: string; };
+            };
+
+            const paymentObj = swaggerF?.payment || f?.payment || paymentsArray.find(p => p.fnbOrderId === fId);
+            
+            const rawDateStr = f?.orderDate || '';
+            const safeDateStr = rawDateStr.replace(' ', 'T');
 
             return {
                 id: fId,
                 displayId: fId !== '-' ? fId.split('-')[0].toUpperCase() : '-',
                 type: 'FnB',
                 title: 'Food & Beverage',
-                date: f?.orderDate ? new Date(f.orderDate).toLocaleDateString('en-GB') : '-',
+                date: safeDateStr ? new Date(safeDateStr).toLocaleDateString('en-GB') : '-',
                 time: '-',
-                items: f?.items || [],
+                items: swaggerF?.items || f?.items || [],
                 studio: f?.showtimeId ? 'Deliver to Seat' : 'Pick-up at Counter',
                 cinemaName: 'CineMate F&B',
                 price: Number(f?.totalAmount || paymentObj?.amount || 0),
                 status: getNormalizedStatus(f?.orderStatus || paymentObj?.paymentStatus),
                 posterUrl: '/cinefood.jpg', 
                 paymentMethod: paymentObj?.paymentMethod || 'Unknown',
-                rawDate: f?.orderDate ? new Date(f.orderDate).getTime() : 0
+                rawDate: safeDateStr ? new Date(safeDateStr).getTime() : 0,
+                customerId: f?.userId || 'Unknown ID' // Mapping ID User langsung
             };
         });
 
@@ -293,7 +306,8 @@ export const AdminTransactionsPage: React.FC = () => {
     const { paginatedOrders, totalPages } = useMemo(() => {
         const filtered = allTransactions.filter(order => 
             order.displayId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            order.title.toLowerCase().includes(searchTerm.toLowerCase())
+            order.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            order.customerId.toLowerCase().includes(searchTerm.toLowerCase()) // Bisa search langsung pakai ID-nya
         );
 
         const total = Math.ceil(filtered.length / ITEMS_PER_PAGE);
@@ -320,13 +334,13 @@ export const AdminTransactionsPage: React.FC = () => {
                     </svg>
                     <input 
                         type="text" 
-                        placeholder="Search Booking ID or Movie..." 
+                        placeholder="Search ID, Movie, or User ID..." 
                         value={searchTerm}
                         onChange={(e) => {
                             setSearchTerm(e.target.value);
                             setCurrentPage(1);
                         }}
-                        className="bg-transparent border-none text-sm text-white focus:outline-none w-full sm:w-56"
+                        className="bg-transparent border-none text-sm text-white focus:outline-none w-full sm:w-72"
                     />
                 </div>
             </div>
@@ -336,7 +350,7 @@ export const AdminTransactionsPage: React.FC = () => {
                     <table className="w-full text-left border-collapse min-w-225">
                         <thead>
                             <tr className="bg-white/5 border-b border-white/5 text-white/70 text-sm">
-                                <th className="py-4 px-6 font-semibold">Booking ID</th>
+                                <th className="py-4 px-6 font-semibold">Booking ID & User</th>
                                 <th className="py-4 px-6 font-semibold">Item & Date</th>
                                 <th className="py-4 px-6 font-semibold">Details</th>
                                 <th className="py-4 px-6 font-semibold">Amount</th>
@@ -395,11 +409,15 @@ export const AdminTransactionsPage: React.FC = () => {
                         
                         <div className="flex gap-4 items-center bg-[#1a1a1a] p-4 rounded-xl border border-white/10">
                             <img src={selectedOrder.posterUrl} alt="Item" className="w-16 h-24 object-cover rounded shadow-md" />
-                            <div>
+                            <div className="flex-1">
                                 <h4 className="font-bold text-xl uppercase">{selectedOrder.title}</h4>
                                 <span className={`inline-block mt-2 px-2 py-0.5 text-[10px] uppercase font-bold rounded-full ${getStatusStyle(selectedOrder.status)}`}>
                                     STATUS: {selectedOrder.status}
                                 </span>
+                                <div className="mt-3 text-sm text-white/70 bg-black/20 p-2 rounded border border-white/5 inline-block">
+                                    <span className="text-white/40 uppercase text-[10px] font-bold block mb-0.5">Purchased By (USER ID)</span>
+                                    <span className="font-mono text-xs">{selectedOrder.customerId}</span>
+                                </div>
                             </div>
                         </div>
 
@@ -416,7 +434,7 @@ export const AdminTransactionsPage: React.FC = () => {
                                     </div>
                                     <div className="bg-[#111111] border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-1 shadow-md">
                                         <span className="text-white/50 text-[10px] md:text-xs font-bold tracking-wider uppercase">SEATS</span>
-                                        <span className="font-bold text-sm md:text-base text-red-500 text-center truncate max-w-full px-2" title={selectedOrder.resolvedSeats}>
+                                        <span className={`font-bold text-sm md:text-base text-center truncate max-w-full px-2 ${selectedOrder.resolvedSeats === 'Data Not Included' ? 'text-yellow-500/50' : 'text-red-500'}`} title={selectedOrder.resolvedSeats}>
                                             {selectedOrder.resolvedSeats}
                                         </span>
                                     </div>
@@ -461,7 +479,7 @@ export const AdminTransactionsPage: React.FC = () => {
                                         PURCHASED ITEMS
                                     </h3>
                                     <div className="flex flex-col gap-3 border-b border-white/10 pb-4 mb-4">
-                                        {selectedOrder.items?.length === 0 && <span className="text-white/50 italic text-sm">No items detailed by server.</span>}
+                                        {(!selectedOrder.items || selectedOrder.items.length === 0) && <span className="text-yellow-500/50 italic text-sm">Items data not provided by the server.</span>}
                                         {selectedOrder.items?.map((item, idx) => {
                                             const snackInfo = snacksMap.get(item.snackId) || { name: `Snack ID ${item.snackId}`, price: '0' };
                                             return (

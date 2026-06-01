@@ -294,16 +294,21 @@ export const TicketDetailsPage: React.FC = () => {
                                     <span className="font-bold text-sm md:text-base text-white">{new Date(fnbData.orderDate).toLocaleDateString('en-GB')}</span>
                                 </div>
                                 <div className="flex flex-col gap-1 col-span-2 md:col-span-1 items-start md:items-start mt-2 md:mt-0">
-                                    <span className="text-white/50 text-[10px] md:text-xs font-bold tracking-wider">BOOKING ID</span>
-                                    {fnbData.showtimeId ? (
-                                        <span className="font-bold text-sm md:text-base text-white">
-                                            {relatedTicketId ? <span className="text-[#e51c23]">{relatedTicketId}</span> : ''}
-                                        </span>
-                                    ) : (
-                                        <span className="font-bold text-sm md:text-base text-white">
-                                            Pick-up at Counter
-                                        </span>
-                                    )}
+                                    <span className="text-white/50 text-[10px] md:text-xs font-bold tracking-wider">
+                                        {fnbData.showtimeId ? "BOOKING ID" : "PICK-UP METHOD"}
+                                    </span>
+                                    
+                                    <span className="font-bold text-sm md:text-base text-white">
+                                        {fnbData.showtimeId ? (
+                                            relatedTicketId ? (
+                                                <span className="text-[#e51c23]">{relatedTicketId}</span>
+                                            ) : (
+                                                "Waiting for ID..."
+                                            )
+                                        ) : (
+                                            <span className="text-blue-400">Pick-up at Counter</span>
+                                        )}
+                                    </span>
                                 </div>
                             </div>
 
@@ -332,6 +337,12 @@ export const TicketDetailsPage: React.FC = () => {
                                         </div>
                                     ))}
                                 </div>
+                                <div className="flex flex-col gap-2 border-b border-white/10 pb-4 mb-4">
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-white/50">Tax (10%)</span>
+                                        <span className="font-bold text-white/90">Rp {Number(fnbData.taxAmount).toLocaleString('id-ID')}</span>
+                                    </div>
+                                </div>
                                 <div className="flex justify-between items-center">
                                     <span className="font-bold text-white">GRAND TOTAL</span>
                                     <span className="font-bold text-xl text-red-500">Rp {Number(fnbData.totalAmount).toLocaleString('id-ID')}</span>
@@ -343,7 +354,6 @@ export const TicketDetailsPage: React.FC = () => {
                                 <ol className="list-decimal pl-5 space-y-2 text-sm md:text-base text-white/80">
                                     <li>Visit the F&B Counter at your cinema</li>
                                     <li>Show the QR Code above to the staff</li>
-                                    <li>If you selected "Deliver to Movie", our staff will deliver it to your seat (Studio ID: {fnbData.showtimeId || 'N/A'})</li>
                                 </ol>
                             </div>
 
