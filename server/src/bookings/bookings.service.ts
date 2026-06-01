@@ -18,6 +18,9 @@ import {
   payments,
   seats,
   showtimes,
+  studios,
+  cinemas,
+  users,
 } from '../database/schema';
 import { PaymentsService } from '../payments/payments.service';
 import { StorageService } from '../storage/storage.service';
@@ -26,6 +29,7 @@ import {
   BookingDetailResponseDto,
   BookingResponseDto,
   CreatedBookingResponseDto,
+  AdminBookingResponseDto,
 } from './dto/booking-response.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
@@ -98,13 +102,13 @@ export class BookingsService {
         .from(seats)
         .where(inArray(seats.seatId, dto.seatIds));
 
-      // check if selected seats belong to showtime hall
+      // check if selected seats belong to showtime studio
       if (
         selectedSeats.length !== dto.seatIds.length ||
-        selectedSeats.some((seat) => seat.hallId !== showtime.hallId)
+        selectedSeats.some((seat) => seat.studioId !== showtime.studioId)
       ) {
         throw new BadRequestException(
-          'One or more seats do not belong to this showtime hall',
+          'One or more seats do not belong to this showtime studio',
         );
       }
 
@@ -170,14 +174,68 @@ export class BookingsService {
         payment: payments,
         showtime: showtimes,
         movie: movies,
+        studio: studios,
+        cinema: cinemas,
       })
       .from(bookings)
       .innerJoin(showtimes, eq(bookings.showtimeId, showtimes.showtimeId))
       .innerJoin(movies, eq(showtimes.movieId, movies.movieId))
+      .innerJoin(studios, eq(showtimes.studioId, studios.studioId))
+      .innerJoin(cinemas, eq(studios.cinemaId, cinemas.cinemaId))
       .leftJoin(payments, eq(bookings.bookingId, payments.bookingId))
       .where(eq(bookings.userId, userId));
 
-    return rows.map((row) => this.toBookingResponse(row));
+    if (!rows.length) return [];
+
+    const bookedSeats = await this.findSeatsForBookings(
+      rows.map((row) => row.booking.bookingId),
+    );
+
+    return rows.map((row) => ({
+      ...this.toBookingResponse(row),
+      seats: bookedSeats.filter(
+        (seat) => seat.bookingId === row.booking.bookingId,
+      ),
+    }));
+  }
+
+  /* Find All Bookings For Admin
+   * @desc: Find all bookings with user, payment, showtime, movie, and seats
+   * @param: none
+   * @returns: AdminBookingResponseDto[]
+   */
+  async findAllForAdmin(): Promise<AdminBookingResponseDto[]> {
+    const rows = await this.db
+      .select({
+        booking: bookings,
+        payment: payments,
+        showtime: showtimes,
+        movie: movies,
+        studio: studios,
+        cinema: cinemas,
+        user: users,
+      })
+      .from(bookings)
+      .innerJoin(users, eq(bookings.userId, users.userId))
+      .innerJoin(showtimes, eq(bookings.showtimeId, showtimes.showtimeId))
+      .innerJoin(movies, eq(showtimes.movieId, movies.movieId))
+      .innerJoin(studios, eq(showtimes.studioId, studios.studioId))
+      .innerJoin(cinemas, eq(studios.cinemaId, cinemas.cinemaId))
+      .leftJoin(payments, eq(bookings.bookingId, payments.bookingId));
+
+    if (!rows.length) return [];
+
+    const bookedSeats = await this.findSeatsForBookings(
+      rows.map((row) => row.booking.bookingId),
+    );
+
+    return rows.map((row) => ({
+      ...this.toBookingResponse(row),
+      seats: bookedSeats.filter(
+        (seat) => seat.bookingId === row.booking.bookingId,
+      ),
+      user: this.toUserResponse(row.user),
+    }));
   }
 
   /* Find User Booking
@@ -195,10 +253,14 @@ export class BookingsService {
         payment: payments,
         showtime: showtimes,
         movie: movies,
+        studio: studios,
+        cinema: cinemas,
       })
       .from(bookings)
       .innerJoin(showtimes, eq(bookings.showtimeId, showtimes.showtimeId))
       .innerJoin(movies, eq(showtimes.movieId, movies.movieId))
+      .innerJoin(studios, eq(showtimes.studioId, studios.studioId))
+      .innerJoin(cinemas, eq(studios.cinemaId, cinemas.cinemaId))
       .leftJoin(payments, eq(bookings.bookingId, payments.bookingId))
       .where(eq(bookings.bookingId, bookingId));
 
@@ -211,11 +273,38 @@ export class BookingsService {
 
     // get booked seats
     const bookedSeats = await this.db
-      .select()
+      .select({
+        bookingSeat: bookingSeats,
+        seat: seats,
+      })
       .from(bookingSeats)
+      .innerJoin(seats, eq(bookingSeats.seatId, seats.seatId))
       .where(eq(bookingSeats.bookingId, bookingId));
 
-    return { ...this.toBookingResponse(row), seats: bookedSeats };
+    return {
+      ...this.toBookingResponse(row),
+      seats: bookedSeats.map((seat) => this.toBookingSeatResponse(seat)),
+    };
+  }
+
+  /* Find Seats For Bookings Helper
+   * @desc: Get booked seats for multiple booking IDs
+   * @param: bookingIds
+   * @returns: BookingSeatResponseDto[]
+   */
+  private async findSeatsForBookings(bookingIds: string[]) {
+    if (!bookingIds.length) return [];
+
+    const rows = await this.db
+      .select({
+        bookingSeat: bookingSeats,
+        seat: seats,
+      })
+      .from(bookingSeats)
+      .innerJoin(seats, eq(bookingSeats.seatId, seats.seatId))
+      .where(inArray(bookingSeats.bookingId, bookingIds));
+
+    return rows.map((row) => this.toBookingSeatResponse(row));
   }
 
   /* To Booking Response Helper
@@ -228,6 +317,8 @@ export class BookingsService {
     payment: typeof payments.$inferSelect | null;
     showtime: typeof showtimes.$inferSelect;
     movie: typeof movies.$inferSelect;
+    studio: typeof studios.$inferSelect;
+    cinema: typeof cinemas.$inferSelect;
   }): BookingResponseDto {
     return {
       ...row.booking,
@@ -238,7 +329,36 @@ export class BookingsService {
           ...row.movie,
           imageUrl: this.storageService.buildImageUrl(row.movie.imageKey),
         },
+        studio: {
+          ...row.studio,
+          cinema: row.cinema,
+        },
       },
+    };
+  }
+
+  private toBookingSeatResponse(row: {
+    bookingSeat: typeof bookingSeats.$inferSelect;
+    seat: typeof seats.$inferSelect;
+  }) {
+    return {
+      bookingId: row.bookingSeat.bookingId,
+      seatId: row.seat.seatId,
+      studioId: row.seat.studioId,
+      rowLetter: row.seat.rowLetter,
+      seatNumber: row.seat.seatNumber,
+    };
+  }
+
+  private toUserResponse(user: typeof users.$inferSelect) {
+    return {
+      userId: user.userId,
+      fullName: user.fullName,
+      email: user.email,
+      phoneNum: user.phoneNum,
+      authProvider: user.authProvider,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
     };
   }
 }

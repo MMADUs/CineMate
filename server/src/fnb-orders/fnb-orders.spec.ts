@@ -9,7 +9,7 @@ describe('F&B orders feature', () => {
   const order = {
     fnbOrderId: 'fnb-id',
     userId,
-    showtimeId: null,
+    bookingId: null,
     orderDate: '2026-05-28 00:00:00',
     taxAmount: '9900',
     totalAmount: '99900',
@@ -36,11 +36,15 @@ describe('F&B orders feature', () => {
   it('controller delegates F&B order creation', async () => {
     const service = {
       checkout: jest.fn().mockResolvedValue({
-        order: { ...order, items: [], payment },
+        order: { ...order, items: [], payment, booking: null },
         payment,
       }),
-      findUserOrders: jest.fn().mockResolvedValue([{ ...order, items: [] }]),
-      findUserOrder: jest.fn().mockResolvedValue({ ...order, items: [] }),
+      findUserOrders: jest
+        .fn()
+        .mockResolvedValue([{ ...order, items: [], booking: null }]),
+      findUserOrder: jest
+        .fn()
+        .mockResolvedValue({ ...order, items: [], booking: null }),
     };
     const controller = new FnbOrdersController(
       service as unknown as FnbOrdersService,
@@ -52,15 +56,15 @@ describe('F&B orders feature', () => {
         { items: [{ snackId: 1, quantity: 2 }] },
       ),
     ).resolves.toEqual({
-      order: { ...order, items: [], payment },
+      order: { ...order, items: [], payment, booking: null },
       payment,
     });
     await expect(
       controller.findMine({ userId, email: 'user@mail.test' }),
-    ).resolves.toEqual([{ ...order, items: [] }]);
+    ).resolves.toEqual([{ ...order, items: [], booking: null }]);
     await expect(
       controller.findOne({ userId, email: 'user@mail.test' }, 'fnb-id'),
-    ).resolves.toEqual({ ...order, items: [] });
+    ).resolves.toEqual({ ...order, items: [], booking: null });
   });
 
   it('service creates orders with server-side totals and decrements stock', async () => {
@@ -94,16 +98,28 @@ describe('F&B orders feature', () => {
         ),
         select: jest
           .fn()
-          .mockReturnValueOnce(selectWhere([order]))
+          .mockReturnValueOnce(
+            selectWhere([
+              {
+                order,
+                payment,
+                booking: null,
+                showtime: null,
+                movie: null,
+                studio: null,
+                cinema: null,
+              },
+            ]),
+          )
           .mockReturnValueOnce(
             selectWhere([
               { snackId: 1, quantity: 1, subTotalPrice: '45000' },
               { snackId: 2, quantity: 1, subTotalPrice: '45000' },
             ]),
-          )
-          .mockReturnValueOnce(selectWhere([payment])),
+          ),
       } as never,
       { create: jest.fn().mockResolvedValue(payment) } as never,
+      { buildImageUrl: jest.fn() } as never,
     );
 
     await expect(
@@ -121,6 +137,7 @@ describe('F&B orders feature', () => {
           { snackId: 2, quantity: 1, subTotalPrice: '45000' },
         ],
         payment,
+        booking: null,
       },
       payment,
     });
@@ -168,40 +185,73 @@ describe('F&B orders feature', () => {
     const db = {
       select: jest
         .fn()
-        .mockReturnValueOnce(selectWhere([order]))
+        .mockReturnValueOnce(
+          selectWhere([
+            {
+              order,
+              payment,
+              booking: null,
+              showtime: null,
+              movie: null,
+              studio: null,
+              cinema: null,
+            },
+          ]),
+        )
         .mockReturnValueOnce(selectWhere(items))
-        .mockReturnValueOnce(selectWhere([payment]))
-        .mockReturnValueOnce(selectWhere([order]))
-        .mockReturnValueOnce(selectWhere(items))
-        .mockReturnValueOnce(selectWhere([payment])),
+        .mockReturnValueOnce(
+          selectWhere([
+            {
+              order,
+              payment,
+              booking: null,
+              showtime: null,
+              movie: null,
+              studio: null,
+              cinema: null,
+            },
+          ]),
+        )
+        .mockReturnValueOnce(selectWhere(items)),
     };
     const service = new FnbOrdersService(
       db as never,
       {
         create: jest.fn(),
       } as never,
+      { buildImageUrl: jest.fn() } as never,
     );
 
     await expect(service.findUserOrders(userId)).resolves.toEqual([
-      { ...order, items, payment },
+      { ...order, items, payment, booking: null },
     ]);
     await expect(service.findUserOrder(userId, 'fnb-id')).resolves.toEqual({
       ...order,
       items,
       payment,
+      booking: null,
     });
   });
 
   it('service rejects F&B order detail from another user', async () => {
     const service = new FnbOrdersService(
       {
-        select: jest
-          .fn()
-          .mockReturnValueOnce(
-            selectWhere([{ ...order, userId: otherUserId }]),
-          ),
+        select: jest.fn().mockReturnValueOnce(
+          selectWhere([
+            {
+              order: { ...order, userId: otherUserId },
+              payment: null,
+              booking: null,
+              showtime: null,
+              movie: null,
+              studio: null,
+              cinema: null,
+            },
+          ]),
+        ),
       } as never,
       { create: jest.fn() } as never,
+      { buildImageUrl: jest.fn() } as never,
     );
 
     await expect(service.findUserOrder(userId, 'fnb-id')).rejects.toThrow(

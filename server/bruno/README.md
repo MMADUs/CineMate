@@ -6,7 +6,7 @@ Use the `Local` environment, then run:
 
 1. `Health/Healthcheck`
 2. `Admin/Auth Login` to set admin cookies
-3. admin create requests for movie, hall, showtime, and snack data
+3. admin create requests for movie, cinema, studio, showtime, and snack data
 4. `Auth/Register`, `Auth/Login`, or `Auth/Google` to set user cookies
 5. `Bookings/Checkout Booking` or `FNB Orders/Checkout FNB Order`
 

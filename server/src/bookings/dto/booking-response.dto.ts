@@ -1,11 +1,39 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { CinemaResponseDto } from '../../cinemas/dto/cinema-response.dto';
 import { MovieResponseDto } from '../../movies/dto/movie-response.dto';
 import { PaymentResponseDto } from '../../payments/dto/payment-response.dto';
 import { ShowtimeResponseDto } from '../../showtimes/dto/showtime-response.dto';
+import { StudioResponseDto } from '../../studios/dto/studio-response.dto';
+import { UserProfileResponseDto } from '../../users/dto/user-response.dto';
+
+export class BookingStudioResponseDto extends StudioResponseDto {
+  @ApiProperty({ type: CinemaResponseDto })
+  cinema: CinemaResponseDto;
+}
 
 export class BookingShowtimeResponseDto extends ShowtimeResponseDto {
   @ApiProperty({ type: MovieResponseDto })
   movie: MovieResponseDto;
+
+  @ApiProperty({ type: BookingStudioResponseDto })
+  studio: BookingStudioResponseDto;
+}
+
+export class BookingSeatResponseDto {
+  @ApiProperty({ example: 'booking-uuid' })
+  bookingId: string;
+
+  @ApiProperty({ example: 1 })
+  seatId: number;
+
+  @ApiProperty({ example: 1 })
+  studioId: number;
+
+  @ApiProperty({ example: 'A' })
+  rowLetter: string;
+
+  @ApiProperty({ example: 1 })
+  seatNumber: number;
 }
 
 export class BookingResponseDto {
@@ -35,6 +63,9 @@ export class BookingResponseDto {
 
   @ApiPropertyOptional({ type: BookingShowtimeResponseDto })
   showtime?: BookingShowtimeResponseDto;
+
+  @ApiPropertyOptional({ type: [BookingSeatResponseDto] })
+  seats?: BookingSeatResponseDto[];
 }
 
 export class CreatedBookingResponseDto extends BookingResponseDto {
@@ -42,17 +73,9 @@ export class CreatedBookingResponseDto extends BookingResponseDto {
   seatIds: number[];
 }
 
-export class BookingSeatResponseDto {
-  @ApiProperty({ example: 'booking-uuid' })
-  bookingId: string;
-
-  @ApiProperty({ example: 1 })
-  seatId: number;
-}
-
 export class BookingDetailResponseDto extends BookingResponseDto {
   @ApiProperty({ type: [BookingSeatResponseDto] })
-  seats: BookingSeatResponseDto[];
+  declare seats: BookingSeatResponseDto[];
 }
 
 export class BookingCheckoutResponseDto {
@@ -61,4 +84,9 @@ export class BookingCheckoutResponseDto {
 
   @ApiProperty({ type: PaymentResponseDto })
   payment: PaymentResponseDto;
+}
+
+export class AdminBookingResponseDto extends BookingDetailResponseDto {
+  @ApiProperty({ type: UserProfileResponseDto })
+  user: UserProfileResponseDto;
 }

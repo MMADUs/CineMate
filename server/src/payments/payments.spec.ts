@@ -35,12 +35,24 @@ describe('Payments feature', () => {
     );
 
     await expect(
-      controller.handleNotification('callback-token', {
+      controller.handleNotification('callback-token', 'webhook-id', {
+        rawBody: Buffer.from('{}'),
+        body: {
+          id: 'invoice-id',
+          external_id: 'pay-id',
+          status: 'PAID',
+        },
+      } as never),
+    ).resolves.toEqual({ received: true, paymentStatus: 'Completed' });
+    expect(service.handleXenditNotification).toHaveBeenCalledWith(
+      'callback-token',
+      {
         id: 'invoice-id',
         external_id: 'pay-id',
         status: 'PAID',
-      }),
-    ).resolves.toEqual({ received: true, paymentStatus: 'Completed' });
+      },
+      'webhook-id',
+    );
   });
 
   it('service returns existing invoice without calling Xendit again', async () => {
@@ -104,6 +116,7 @@ describe('Payments feature', () => {
         id: 'invoice-id',
         external_id: 'pay-id',
         status: 'PAID',
+        amount: 55500,
       }),
     ).resolves.toEqual({ received: true, paymentStatus: 'Completed' });
     expect(db.transaction).not.toHaveBeenCalled();

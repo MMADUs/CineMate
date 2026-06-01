@@ -1,11 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class HallResponseDto {
+export class StudioResponseDto {
   @ApiProperty({ example: 1 })
-  hallId: number;
+  studioId: number;
 
-  @ApiProperty({ example: 'CGV Grand Indonesia' })
-  cinemaName: string;
+  @ApiProperty({ example: 1 })
+  cinemaId: number;
 
   @ApiProperty({ example: 'Studio 1' })
   studioName: string;
@@ -18,7 +18,7 @@ export class HallResponseDto {
 }
 
 export interface GeneratedSeatValue {
-  hallId: number;
+  studioId: number;
   rowLetter: string;
   seatNumber: number;
 }

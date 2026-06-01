@@ -47,16 +47,30 @@ describe('Bookings feature', () => {
   const showtime = {
     showtimeId: 1,
     movieId: movie.movieId,
-    hallId: 1,
+    studioId: 1,
     showDate: '2026-05-28',
     showTime: '19:30',
     price: '50000',
+  };
+  const cinema = {
+    cinemaId: 1,
+    cinemaName: 'CineMate',
+    location: 'Jakarta',
+  };
+  const studio = {
+    studioId: 1,
+    cinemaId: 1,
+    studioName: 'Studio 1',
+    totalRows: 8,
+    seatsPerRow: 12,
   };
   const bookingJoin = {
     booking,
     payment,
     showtime,
     movie,
+    studio,
+    cinema,
   };
   const movieImageUrl =
     'http://localhost:3000/api/assets/images/movies/135c66f9-c917-43b9-a869-a5f5dc08efcc.jpg';
@@ -93,12 +107,12 @@ describe('Bookings feature', () => {
       select: jest
         .fn()
         .mockReturnValueOnce(
-          selectWhere([{ showtimeId: 1, hallId: 1, price: '50000' }]),
+          selectWhere([{ showtimeId: 1, studioId: 1, price: '50000' }]),
         )
         .mockReturnValueOnce(
           selectWhere([
-            { seatId: 10, hallId: 1 },
-            { seatId: 11, hallId: 1 },
+            { seatId: 10, studioId: 1 },
+            { seatId: 11, studioId: 1 },
           ]),
         )
         .mockReturnValueOnce(selectWhere([{ seatId: 10 }])),
@@ -121,18 +135,37 @@ describe('Bookings feature', () => {
   });
 
   it('service returns bookings with payment, showtime, and movie data', async () => {
-    const where = jest.fn().mockResolvedValue([bookingJoin]);
-    const leftJoin = jest.fn().mockReturnValue({ where });
-    const secondInnerJoin = jest.fn().mockReturnValue({ leftJoin });
-    const firstInnerJoin = jest.fn().mockReturnValue({
-      innerJoin: secondInnerJoin,
-    });
+    const bookingSeatsResult = [
+      {
+        bookingId: 'booking-id',
+        seatId: 10,
+        studioId: 1,
+        rowLetter: 'A',
+        seatNumber: 1,
+      },
+      {
+        bookingId: 'booking-id',
+        seatId: 11,
+        studioId: 1,
+        rowLetter: 'A',
+        seatNumber: 2,
+      },
+    ];
+    const bookingSeatRows = [
+      {
+        bookingSeat: { bookingId: 'booking-id', seatId: 10 },
+        seat: { seatId: 10, studioId: 1, rowLetter: 'A', seatNumber: 1 },
+      },
+      {
+        bookingSeat: { bookingId: 'booking-id', seatId: 11 },
+        seat: { seatId: 11, studioId: 1, rowLetter: 'A', seatNumber: 2 },
+      },
+    ];
     const db = {
-      select: jest.fn().mockReturnValue({
-        from: jest.fn().mockReturnValue({
-          innerJoin: firstInnerJoin,
-        }),
-      }),
+      select: jest
+        .fn()
+        .mockReturnValueOnce(selectWhere([bookingJoin]))
+        .mockReturnValueOnce(selectWhere(bookingSeatRows)),
     };
     const service = new BookingsService(
       db as never,
@@ -152,7 +185,12 @@ describe('Bookings feature', () => {
             ...movie,
             imageUrl: movieImageUrl,
           },
+          studio: {
+            ...studio,
+            cinema,
+          },
         },
+        seats: bookingSeatsResult,
       },
     ]);
   });

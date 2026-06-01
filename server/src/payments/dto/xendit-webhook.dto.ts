@@ -46,35 +46,65 @@ export class XenditInvoiceWebhookDto {
   @IsString()
   failure_reason?: string;
 
-  @ApiPropertyOptional({ example: '5781d19b2e2385880609791c' })
+  @ApiPropertyOptional({ example: '6a1935e7361fddbd9033d8a7' })
   @IsOptional()
   @IsString()
   user_id?: string;
 
-  @ApiPropertyOptional({ example: true })
+  @ApiPropertyOptional({ example: 'Nizwa Apps' })
+  @IsOptional()
+  @IsString()
+  merchant_name?: string;
+
+  @ApiPropertyOptional({ example: 'CineMate booking booking-uuid' })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ example: false })
   @IsOptional()
   @IsBoolean()
   is_high?: boolean;
 
-  @ApiPropertyOptional({ example: 'Xendit' })
+  @ApiPropertyOptional({ example: 'http://localhost:5173/payment/success' })
   @IsOptional()
   @IsString()
-  merchant_name?: string;
+  success_redirect_url?: string;
+
+  @ApiPropertyOptional({ example: 'http://localhost:5173/payment/failed' })
+  @IsOptional()
+  @IsString()
+  failure_redirect_url?: string;
+
+  @ApiPropertyOptional({ example: '2026-05-31T06:27:51.444Z' })
+  @IsOptional()
+  @IsString()
+  created?: string;
+
+  @ApiPropertyOptional({ example: '2026-05-31T06:28:21.476Z' })
+  @IsOptional()
+  @IsString()
+  updated?: string;
+
+  @ApiPropertyOptional({ example: 'IDR' })
+  @IsOptional()
+  @IsString()
+  currency?: string;
 
   @ApiPropertyOptional({ example: 'PERMATA' })
   @IsOptional()
   @IsString()
   bank_code?: string;
 
+  @ApiPropertyOptional({ example: '888888888888' })
+  @IsOptional()
+  @IsString()
+  payment_destination?: string;
+
   @ApiPropertyOptional({ example: 'wildan@xendit.co' })
   @IsOptional()
   @IsString()
   payer_email?: string;
-
-  @ApiPropertyOptional({ example: 'CineMate booking booking-uuid' })
-  @IsOptional()
-  @IsString()
-  description?: string;
 
   @ApiPropertyOptional({ example: 47500 })
   @IsOptional()
@@ -86,23 +116,18 @@ export class XenditInvoiceWebhookDto {
   @IsNumber()
   fees_paid_amount?: number;
 
-  @ApiPropertyOptional({ example: '2026-05-23T10:05:00.000Z' })
+  @ApiPropertyOptional({ example: 'ewc_e2d86ef5-62ec-47c3-87f5-707dbbc9e966' })
   @IsOptional()
   @IsString()
-  updated?: string;
+  payment_id?: string;
 
-  @ApiPropertyOptional({ example: '2026-05-23T10:00:00.000Z' })
+  @ApiPropertyOptional({ example: 'pm-6e722d45-285e-4c12-b749-083438e45b4d' })
   @IsOptional()
   @IsString()
-  created?: string;
+  payment_method_id?: string;
 
-  @ApiPropertyOptional({ example: 'IDR' })
+  @ApiPropertyOptional({ example: 'GOPAY' })
   @IsOptional()
   @IsString()
-  currency?: string;
-
-  @ApiPropertyOptional({ example: '888888888888' })
-  @IsOptional()
-  @IsString()
-  payment_destination?: string;
+  ewallet_type?: string;
 }

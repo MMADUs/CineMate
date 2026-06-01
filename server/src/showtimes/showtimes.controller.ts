@@ -48,7 +48,7 @@ export class ShowtimesController {
   }
 
   /* Get Showtime Seats Controller
-   * @desc: Get hall layout and seat availability
+   * @desc: Get studio layout and seat availability
    * @route: /showtimes/:showtimeId/seats
    * @param: showtimeId
    * @returns: Promise<ShowtimeSeatsResponseDto>

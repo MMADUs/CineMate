@@ -11,7 +11,7 @@ export class CreateShowtimeDto {
   @Type(() => Number)
   @IsInt()
   @ApiProperty({ example: 1 })
-  hallId: number;
+  studioId: number;
 
   @IsString()
   @IsNotEmpty()

@@ -1,7 +1,8 @@
-import { Body, Controller, Headers, Post, Req } from '@nestjs/common';
+import { Controller, Headers, Post, Req } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
 import {
+  ApiBody,
   ApiHeader,
   ApiOkResponse,
   ApiOperation,
@@ -32,17 +33,21 @@ export class PaymentsController {
     required: true,
     description: 'Xendit callback verification token from dashboard settings.',
   })
+  @ApiBody({ type: XenditInvoiceWebhookDto })
   @ApiOkResponse({ type: PaymentWebhookResponseDto })
   handleNotification(
     @Headers('x-callback-token') callbackToken: string | undefined,
     @Headers('webhook-id') webhookId: string | undefined,
     @Req() req: RawBodyRequest<Request>,
-    @Body() dto: XenditInvoiceWebhookDto,
   ): Promise<PaymentWebhookResponseDto> {
     console.log('Xendit webhook-id:', webhookId);
     console.log('Xendit raw body:', req.rawBody?.toString('utf8'));
     console.log('Xendit parsed body:', req.body);
 
-    return this.paymentsService.handleXenditNotification(callbackToken, dto);
+    return this.paymentsService.handleXenditNotification(
+      callbackToken,
+      req.body as Record<string, unknown>,
+      webhookId,
+    );
   }
 }

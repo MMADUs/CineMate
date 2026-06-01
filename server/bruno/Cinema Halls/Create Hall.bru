@@ -1,11 +1,11 @@
 meta {
-  name: Create Hall
+  name: Create Cinema
   type: http
   seq: 2
 }
 
 post {
-  url: {{apiUrl}}/admin/halls
+  url: {{apiUrl}}/admin/cinemas
   body: json
   auth: none
 }
@@ -17,8 +17,6 @@ headers {
 body:json {
   {
     "cinemaName": "CGV Grand Indonesia",
-    "studioName": "Studio 1",
-    "totalRows": 8,
-    "seatsPerRow": 12
+    "location": "Jakarta"
   }
 }

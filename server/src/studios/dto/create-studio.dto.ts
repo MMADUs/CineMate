@@ -2,11 +2,12 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsString, Max, Min } from 'class-validator';
 
-export class CreateHallDto {
-  @IsString()
-  @IsNotEmpty()
-  @ApiProperty({ example: 'CGV Grand Indonesia' })
-  cinemaName: string;
+export class CreateStudioDto {
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @ApiProperty({ example: 1 })
+  cinemaId: number;
 
   @IsString()
   @IsNotEmpty()

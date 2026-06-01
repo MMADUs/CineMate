@@ -12,3 +12,4 @@ API: http://localhost:3000/api
 Swagger: http://localhost:3000/api/docs
 phpMyAdmin: http://localhost:8080
 RustFS dashboard: http://localhost:9001
+Ngrok: http://localhost:4040
