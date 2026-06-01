@@ -3,7 +3,7 @@ import { and, eq, like } from 'drizzle-orm';
 import { MySql2Database } from 'drizzle-orm/mysql2';
 import { DRIZZLE } from '../database/database.constants';
 import * as schema from '../database/schema';
-import { movies, showtimes } from '../database/schema';
+import { cinemas, movies, showtimes, studios } from '../database/schema';
 import { StorageService } from '../storage/storage.service';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import {
@@ -59,13 +59,25 @@ export class MoviesService {
     if (!movie) throw new NotFoundException('Movie not found');
 
     const movieShowtimes = await this.db
-      .select()
+      .select({
+        showtime: showtimes,
+        studio: studios,
+        cinema: cinemas,
+      })
       .from(showtimes)
+      .innerJoin(studios, eq(showtimes.studioId, studios.studioId))
+      .innerJoin(cinemas, eq(studios.cinemaId, cinemas.cinemaId))
       .where(eq(showtimes.movieId, movieId));
 
     return {
       ...this.toResponse(movie),
-      showtimes: movieShowtimes,
+      showtimes: movieShowtimes.map((row) => ({
+        ...row.showtime,
+        studio: {
+          ...row.studio,
+          cinema: row.cinema,
+        },
+      })),
     };
   }
 

@@ -1,0 +1,24 @@
+meta {
+  name: Create Studio
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{apiUrl}}/admin/studios
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "cinemaId": {{cinemaId}},
+    "studioName": "Studio 1",
+    "totalRows": 8,
+    "seatsPerRow": 12
+  }
+}

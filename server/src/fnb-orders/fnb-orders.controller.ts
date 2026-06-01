@@ -17,18 +17,19 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Idempotent } from '../common/decorators/idempotent.decorator';
+import { AdminJwtGuard } from '../common/guards/admin-jwt.guard';
 import { JwtAccessGuard } from '../common/guards/jwt-access.guard';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
 import { CreateFnbOrderDto } from './dto/create-fnb-order.dto';
 import {
+  AdminFnbOrderResponseDto,
   FnbOrderCheckoutResponseDto,
   FnbOrderResponseDto,
 } from './dto/fnb-order-response.dto';
 import { FnbOrdersService } from './fnb-orders.service';
 
-@UseGuards(JwtAccessGuard)
 @ApiTags('F&B Orders')
-@Controller('fnb-orders')
+@Controller()
 export class FnbOrdersController {
   constructor(private readonly fnbOrdersService: FnbOrdersService) {}
 
@@ -38,7 +39,8 @@ export class FnbOrdersController {
    * @param: AuthUser, CreateFnbOrderDto
    * @returns: Promise<FnbOrderCheckoutResponseDto>
    */
-  @Post('checkout')
+  @UseGuards(JwtAccessGuard)
+  @Post('fnb-orders/checkout')
   @HttpCode(HttpStatus.CREATED)
   @Idempotent()
   @ApiOperation({ summary: 'Checkout F&B order' })
@@ -62,7 +64,8 @@ export class FnbOrdersController {
    * @param: AuthUser
    * @returns: Promise<FnbOrderResponseDto[]>
    */
-  @Get()
+  @UseGuards(JwtAccessGuard)
+  @Get('fnb-orders')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "List authenticated user's F&B orders" })
   @ApiOkResponse({ type: [FnbOrderResponseDto] })
@@ -76,7 +79,8 @@ export class FnbOrdersController {
    * @param: AuthUser, fnbOrderId
    * @returns: Promise<FnbOrderResponseDto>
    */
-  @Get(':fnbOrderId')
+  @UseGuards(JwtAccessGuard)
+  @Get('fnb-orders/:fnbOrderId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Get authenticated user's F&B order detail" })
   @ApiOkResponse({ type: FnbOrderResponseDto })
@@ -85,5 +89,19 @@ export class FnbOrdersController {
     @Param('fnbOrderId') fnbOrderId: string,
   ): Promise<FnbOrderResponseDto> {
     return this.fnbOrdersService.findUserOrder(user.userId, fnbOrderId);
+  }
+
+  /* Admin Find All FNB Orders Controller
+   * @desc: List all F&B orders with user, items, and payment
+   * @route: /admin/fnb-orders
+   * @returns: Promise<AdminFnbOrderResponseDto[]>
+   */
+  @UseGuards(AdminJwtGuard)
+  @Get('admin/fnb-orders')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'List all F&B orders for admin' })
+  @ApiOkResponse({ type: [AdminFnbOrderResponseDto] })
+  adminFindAll(): Promise<AdminFnbOrderResponseDto[]> {
+    return this.fnbOrdersService.findAllForAdmin();
   }
 }

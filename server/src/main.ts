@@ -19,14 +19,20 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Security middleware
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: {
+        policy: 'cross-origin',
+      },
+    }),
+  );
 
   // Cookie parser
   app.use(cookieParser());
 
   // Enable CORS
   app.enableCors({
-    origin: true,
+    origin: 'http://localhost:5173',
     credentials: true,
   });
 

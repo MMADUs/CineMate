@@ -15,12 +15,21 @@ import {
   fnbOrderItems,
   fnbOrders,
   payments,
-  showtimes,
   snacks,
+  users,
+  bookings,
+  showtimes,
+  movies,
+  studios,
+  cinemas,
+  bookingSeats,
+  seats,
 } from '../database/schema';
 import { PaymentsService } from '../payments/payments.service';
+import { StorageService } from '../storage/storage.service';
 import { CreateFnbOrderDto } from './dto/create-fnb-order.dto';
 import {
+  AdminFnbOrderResponseDto,
   FnbOrderCheckoutResponseDto,
   FnbOrderResponseDto,
 } from './dto/fnb-order-response.dto';
@@ -31,6 +40,7 @@ export class FnbOrdersService {
     @Inject(DRIZZLE)
     private readonly db: MySql2Database<typeof schema>,
     private readonly paymentsService: PaymentsService,
+    private readonly storageService: StorageService,
   ) {}
 
   /* Checkout FNB Order Service
@@ -74,14 +84,17 @@ export class FnbOrdersService {
   ): Promise<FnbOrderResponseDto> {
     // start db transaction
     return await this.db.transaction(async (tx) => {
-      // verify optional showtime reference
-      if (dto.showtimeId) {
-        const [showtime] = await tx
+      // verify optional booking reference
+      if (dto.bookingId) {
+        const [booking] = await tx
           .select()
-          .from(showtimes)
-          .where(eq(showtimes.showtimeId, dto.showtimeId));
+          .from(bookings)
+          .where(eq(bookings.bookingId, dto.bookingId));
 
-        if (!showtime) throw new NotFoundException('Showtime not found');
+        if (!booking) throw new NotFoundException('Booking not found');
+
+        if (booking.userId !== userId)
+          throw new ForbiddenException('Booking does not belong to this user');
       }
 
       // aggregate repeated snack items before stock and total calculation
@@ -137,7 +150,7 @@ export class FnbOrdersService {
       await tx.insert(fnbOrders).values({
         fnbOrderId,
         userId,
-        showtimeId: dto.showtimeId ?? null,
+        bookingId: dto.bookingId ?? null,
         orderStatus: 'PendingPayment',
         ...totals,
       });
@@ -183,12 +196,26 @@ export class FnbOrdersService {
    * @returns: FnbOrderResponseDto[]
    */
   async findUserOrders(userId: string): Promise<FnbOrderResponseDto[]> {
-    const orders = await this.db
-      .select()
+    const rows = await this.db
+      .select({
+        order: fnbOrders,
+        payment: payments,
+        booking: bookings,
+        showtime: showtimes,
+        movie: movies,
+        studio: studios,
+        cinema: cinemas,
+      })
       .from(fnbOrders)
+      .leftJoin(payments, eq(fnbOrders.fnbOrderId, payments.fnbOrderId))
+      .leftJoin(bookings, eq(fnbOrders.bookingId, bookings.bookingId))
+      .leftJoin(showtimes, eq(bookings.showtimeId, showtimes.showtimeId))
+      .leftJoin(movies, eq(showtimes.movieId, movies.movieId))
+      .leftJoin(studios, eq(showtimes.studioId, studios.studioId))
+      .leftJoin(cinemas, eq(studios.cinemaId, cinemas.cinemaId))
       .where(eq(fnbOrders.userId, userId));
 
-    if (!orders.length) return [];
+    if (!rows.length) return [];
 
     const items = await this.db
       .select()
@@ -196,27 +223,76 @@ export class FnbOrdersService {
       .where(
         inArray(
           fnbOrderItems.fnbOrderId,
-          orders.map((order) => order.fnbOrderId),
+          rows.map((row) => row.order.fnbOrderId),
         ),
       );
 
-    const orderPayments = await this.db
+    const bookingSeats = await this.findSeatsForBookings(
+      rows
+        .map((row) => row.booking?.bookingId)
+        .filter((bookingId): bookingId is string => Boolean(bookingId)),
+    );
+
+    return rows.map((row) =>
+      this.toFnbOrderResponse(
+        row,
+        items.filter((item) => item.fnbOrderId === row.order.fnbOrderId),
+        bookingSeats,
+      ),
+    );
+  }
+
+  /* Find All FNB Orders For Admin
+   * @desc: Find all F&B orders with user, items, and payment
+   * @param: none
+   * @returns: AdminFnbOrderResponseDto[]
+   */
+  async findAllForAdmin(): Promise<AdminFnbOrderResponseDto[]> {
+    const rows = await this.db
+      .select({
+        order: fnbOrders,
+        payment: payments,
+        booking: bookings,
+        showtime: showtimes,
+        movie: movies,
+        studio: studios,
+        cinema: cinemas,
+        user: users,
+      })
+      .from(fnbOrders)
+      .innerJoin(users, eq(fnbOrders.userId, users.userId))
+      .leftJoin(payments, eq(fnbOrders.fnbOrderId, payments.fnbOrderId))
+      .leftJoin(bookings, eq(fnbOrders.bookingId, bookings.bookingId))
+      .leftJoin(showtimes, eq(bookings.showtimeId, showtimes.showtimeId))
+      .leftJoin(movies, eq(showtimes.movieId, movies.movieId))
+      .leftJoin(studios, eq(showtimes.studioId, studios.studioId))
+      .leftJoin(cinemas, eq(studios.cinemaId, cinemas.cinemaId));
+
+    if (!rows.length) return [];
+
+    const items = await this.db
       .select()
-      .from(payments)
+      .from(fnbOrderItems)
       .where(
         inArray(
-          payments.fnbOrderId,
-          orders.map((order) => order.fnbOrderId),
+          fnbOrderItems.fnbOrderId,
+          rows.map((row) => row.order.fnbOrderId),
         ),
       );
 
-    return orders.map((order) => ({
-      ...order,
-      items: items.filter((item) => item.fnbOrderId === order.fnbOrderId),
-      payment:
-        orderPayments.find(
-          (payment) => payment.fnbOrderId === order.fnbOrderId,
-        ) ?? null,
+    const bookingSeats = await this.findSeatsForBookings(
+      rows
+        .map((row) => row.booking?.bookingId)
+        .filter((bookingId): bookingId is string => Boolean(bookingId)),
+    );
+
+    return rows.map((row) => ({
+      ...this.toFnbOrderResponse(
+        row,
+        items.filter((item) => item.fnbOrderId === row.order.fnbOrderId),
+        bookingSeats,
+      ),
+      user: this.toUserResponse(row.user),
     }));
   }
 
@@ -229,14 +305,28 @@ export class FnbOrdersService {
     userId: string,
     fnbOrderId: string,
   ): Promise<FnbOrderResponseDto> {
-    const [order] = await this.db
-      .select()
+    const [row] = await this.db
+      .select({
+        order: fnbOrders,
+        payment: payments,
+        booking: bookings,
+        showtime: showtimes,
+        movie: movies,
+        studio: studios,
+        cinema: cinemas,
+      })
       .from(fnbOrders)
+      .leftJoin(payments, eq(fnbOrders.fnbOrderId, payments.fnbOrderId))
+      .leftJoin(bookings, eq(fnbOrders.bookingId, bookings.bookingId))
+      .leftJoin(showtimes, eq(bookings.showtimeId, showtimes.showtimeId))
+      .leftJoin(movies, eq(showtimes.movieId, movies.movieId))
+      .leftJoin(studios, eq(showtimes.studioId, studios.studioId))
+      .leftJoin(cinemas, eq(studios.cinemaId, cinemas.cinemaId))
       .where(eq(fnbOrders.fnbOrderId, fnbOrderId));
 
-    if (!order) throw new NotFoundException('F&B order not found');
-    
-    if (order.userId !== userId)
+    if (!row) throw new NotFoundException('F&B order not found');
+
+    if (row.order.userId !== userId)
       throw new ForbiddenException('F&B order does not belong to this user');
 
     const items = await this.db
@@ -244,12 +334,11 @@ export class FnbOrdersService {
       .from(fnbOrderItems)
       .where(eq(fnbOrderItems.fnbOrderId, fnbOrderId));
 
-    const [payment] = await this.db
-      .select()
-      .from(payments)
-      .where(eq(payments.fnbOrderId, fnbOrderId));
+    const bookedSeats = row.booking
+      ? await this.findSeatsForBookings([row.booking.bookingId])
+      : [];
 
-    return { ...order, items, payment: payment ?? null };
+    return this.toFnbOrderResponse(row, items, bookedSeats);
   }
 
   /* Expire Order And Restore Stock Helper
@@ -303,5 +392,104 @@ export class FnbOrdersService {
       return mutationResult.rowsAffected;
 
     return undefined;
+  }
+
+  /* Find Seats For Bookings Helper
+   * @desc: Get booked seat details for multiple booking IDs
+   * @param: bookingIds
+   * @returns: booking seat response values
+   */
+  private async findSeatsForBookings(bookingIds: string[]) {
+    if (!bookingIds.length) return [];
+
+    const rows = await this.db
+      .select({
+        bookingSeat: bookingSeats,
+        seat: seats,
+      })
+      .from(bookingSeats)
+      .innerJoin(seats, eq(bookingSeats.seatId, seats.seatId))
+      .where(inArray(bookingSeats.bookingId, bookingIds));
+
+    return rows.map((row) => this.toBookingSeatResponse(row));
+  }
+
+  /* To FNB Order Response Helper
+   * @desc: Map F&B joins into response with optional booking context
+   * @param: joined row, items, booked seats
+   * @returns: FnbOrderResponseDto
+   */
+  private toFnbOrderResponse(
+    row: {
+      order: typeof fnbOrders.$inferSelect;
+      payment: typeof payments.$inferSelect | null;
+      booking: typeof bookings.$inferSelect | null;
+      showtime: typeof showtimes.$inferSelect | null;
+      movie: typeof movies.$inferSelect | null;
+      studio: typeof studios.$inferSelect | null;
+      cinema: typeof cinemas.$inferSelect | null;
+    },
+    items: (typeof fnbOrderItems.$inferSelect)[],
+    bookedSeats: {
+      bookingId: string;
+      seatId: number;
+      studioId: number;
+      rowLetter: string;
+      seatNumber: number;
+    }[],
+  ): FnbOrderResponseDto {
+    return {
+      ...row.order,
+      payment: row.payment,
+      items,
+      booking:
+        row.booking && row.showtime && row.movie && row.studio && row.cinema
+          ? {
+              ...row.booking,
+              payment: null,
+              seats: bookedSeats.filter(
+                (seat) => seat.bookingId === row.booking!.bookingId,
+              ),
+              showtime: {
+                ...row.showtime,
+                movie: {
+                  ...row.movie,
+                  imageUrl: this.storageService.buildImageUrl(
+                    row.movie.imageKey,
+                  ),
+                },
+                studio: {
+                  ...row.studio,
+                  cinema: row.cinema,
+                },
+              },
+            }
+          : null,
+    };
+  }
+
+  private toBookingSeatResponse(row: {
+    bookingSeat: typeof bookingSeats.$inferSelect;
+    seat: typeof seats.$inferSelect;
+  }) {
+    return {
+      bookingId: row.bookingSeat.bookingId,
+      seatId: row.seat.seatId,
+      studioId: row.seat.studioId,
+      rowLetter: row.seat.rowLetter,
+      seatNumber: row.seat.seatNumber,
+    };
+  }
+
+  private toUserResponse(user: typeof users.$inferSelect) {
+    return {
+      userId: user.userId,
+      fullName: user.fullName,
+      email: user.email,
+      phoneNum: user.phoneNum,
+      authProvider: user.authProvider,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+    };
   }
 }

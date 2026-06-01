@@ -50,6 +50,20 @@
       "when": 1780049531790,
       "tag": "0006_premium_grim_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1780070000000,
+      "tag": "0007_split_cinemas_and_studios",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1780075000000,
+      "tag": "0008_fnb_orders_attach_booking",
+      "breakpoints": true
     }
   ]
 }

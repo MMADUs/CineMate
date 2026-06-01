@@ -6,9 +6,9 @@ import * as schema from '../database/schema';
 import {
   bookingSeats,
   bookings,
-  cinemaHalls,
   seats,
   showtimes,
+  studios,
 } from '../database/schema';
 import { CreateShowtimeDto } from './dto/create-showtime.dto';
 import { QueryShowtimeDto } from './dto/query-showtime.dto';
@@ -94,7 +94,7 @@ export class ShowtimesService {
   }
 
   /* Get Seats Service
-   * @desc: Get hall layout and seat availability for a showtime
+   * @desc: Get studio layout and seat availability for a showtime
    * @param: showtimeId
    * @returns: ShowtimeSeatsResponseDto
    */
@@ -102,20 +102,20 @@ export class ShowtimesService {
     // get showtime
     const showtime = await this.findOne(showtimeId);
 
-    // get cinema hall
-    const [hall] = await this.db
+    // get studio
+    const [studio] = await this.db
       .select()
-      .from(cinemaHalls)
-      .where(eq(cinemaHalls.hallId, showtime.hallId));
+      .from(studios)
+      .where(eq(studios.studioId, showtime.studioId));
 
-    // check if cinema hall doesn't exist
-    if (!hall) throw new NotFoundException('Cinema hall not found');
+    // check if studio doesn't exist
+    if (!studio) throw new NotFoundException('Studio not found');
 
     // get seats
-    const hallSeats = await this.db
+    const studioSeats = await this.db
       .select()
       .from(seats)
-      .where(eq(seats.hallId, showtime.hallId));
+      .where(eq(seats.studioId, showtime.studioId));
 
     // get occupied seats
     const occupied = await this.db
@@ -134,8 +134,8 @@ export class ShowtimesService {
 
     // map seats with availability
     return {
-      hall,
-      seats: hallSeats.map((seat) => ({
+      studio,
+      seats: studioSeats.map((seat) => ({
         ...seat,
         isOccupied: occupiedIds.has(seat.seatId),
       })),

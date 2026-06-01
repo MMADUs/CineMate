@@ -17,6 +17,11 @@ maybe very later:
 - refactor: module hierarchy, mappers in each module to avoid accidental leaking of DB fields, shared constants from common module
 - git workflow for CI/CD (simulate real deployment)
 
+notes:
+- movie by id: show showtime, showtime will show cinema name, and studio name, everything is serve by sql join
+- get all booking controller and get booking by id controller: show movie, showtime, cinema name, studio name, booked seat, payment, everything is serve by sql join
+- get all fnb-orders controller and get fnb-orders by id controller: show all ordered items, payment, booking id (this is optional right in the context of fnb order, but i want it to be returned with together with its showtime including movie and booked seat, this way we can have a complete picture of what the customer ordered)
+
 module hirerachy idea:
 ```
 src/

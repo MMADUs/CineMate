@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { HallResponseDto } from '../../cinema-halls/dto/hall-response.dto';
+import { StudioResponseDto } from '../../studios/dto/studio-response.dto';
 
 export class ShowtimeResponseDto {
   @ApiProperty({ example: 1 })
@@ -9,7 +9,7 @@ export class ShowtimeResponseDto {
   movieId: number;
 
   @ApiProperty({ example: 1 })
-  hallId: number;
+  studioId: number;
 
   @ApiProperty({ example: '2026-05-23' })
   showDate: string;
@@ -26,7 +26,7 @@ export class ShowtimeSeatResponseDto {
   seatId: number;
 
   @ApiProperty({ example: 1 })
-  hallId: number;
+  studioId: number;
 
   @ApiProperty({ example: 'A' })
   rowLetter: string;
@@ -39,8 +39,8 @@ export class ShowtimeSeatResponseDto {
 }
 
 export class ShowtimeSeatsResponseDto {
-  @ApiProperty({ type: HallResponseDto })
-  hall: HallResponseDto;
+  @ApiProperty({ type: StudioResponseDto })
+  studio: StudioResponseDto;
 
   @ApiProperty({ type: [ShowtimeSeatResponseDto] })
   seats: ShowtimeSeatResponseDto[];
