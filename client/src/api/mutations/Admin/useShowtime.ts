@@ -1,11 +1,10 @@
-// src/api/mutations/useShowtime.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../axios';
 import type { AdminShowtimeResponse } from '../../hooks/Admin/useGetShowtimes';
 
 export interface CreateShowtimePayload {
     movieId: number;
-    hallId: number;
+    studioId: number; 
     showDate: string;
     showTime: string;
     price: number;

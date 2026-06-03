@@ -186,12 +186,12 @@ export const AdminMoviesPage: React.FC = () => {
             reset();
             
         } catch (error) {
-            console.error("Gagal menambahkan film:", error);
+            console.error("Error:", error);
             if (error instanceof AxiosError) {                
                 const errorMsg = error.response?.data?.message;
                 const formattedMsg = Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg;
                 
-                toast.error(`Gagal menyimpan: ${formattedMsg || "Terjadi kesalahan."}`);
+                toast.error(`Error: ${formattedMsg || "An error occurred."}`);
             } else if (error instanceof Error) {
                 toast.error(error.message);
             }
@@ -217,7 +217,7 @@ export const AdminMoviesPage: React.FC = () => {
                     (typeof dataObj.key === 'string' ? dataObj.key : '');
 
                 if (!newImageKey) {
-                    toast.error("Gagal mendapatkan key dari gambar baru. Edit dibatalkan.");
+                    toast.error("Error getting key from new image. Edit cancelled.");
                     return;
                 }
                 
@@ -225,7 +225,7 @@ export const AdminMoviesPage: React.FC = () => {
 
                 if (selectedMovie.imageKey) {
                     deleteImageAsync(selectedMovie.imageKey).catch(e => 
-                        console.warn("Gagal menghapus gambar lama dari server:", e)
+                        console.warn("Error deleting old image from server:", e)
                     );
                 }
             }
@@ -257,11 +257,11 @@ export const AdminMoviesPage: React.FC = () => {
             reset();
 
         } catch (error) {
-            console.error("Gagal mengupdate film:", error);
+            console.error("Error:", error);
             if (error instanceof AxiosError) {
                 const errorMsg = error.response?.data?.message;
                 const formattedMsg = Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg;
-                toast.error(`Gagal menyimpan perubahan: ${formattedMsg || "Cek console untuk detail error."}`);
+                toast.error(`Error: ${formattedMsg || "An error occurred."}`);
             } else if (error instanceof Error) {
                 toast.error(error.message);
             }
@@ -274,7 +274,7 @@ export const AdminMoviesPage: React.FC = () => {
         try {
             if (selectedMovie.imageKey) {
                 deleteImageAsync(selectedMovie.imageKey).catch(e => 
-                    console.warn("Gambar lama tidak ditemukan di RustFS atau gagal dihapus:", e)
+                    console.warn("Error deleting old image from server:", e)
                 );
             }
 
@@ -285,11 +285,11 @@ export const AdminMoviesPage: React.FC = () => {
             setSelectedMovie(null);
 
         } catch (error) {
-            console.error("Gagal menghapus film:", error);
+            console.error("Error:", error);
             if (error instanceof AxiosError) {
                 const errorMsg = error.response?.data?.message;
                 const formattedMsg = Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg;
-                toast.error(`Gagal menghapus data: ${formattedMsg || "Cek console untuk detail error."}`);
+                toast.error(`Error: ${formattedMsg || "An error occurred."}`);
             } else if (error instanceof Error) {
                 toast.error(error.message);
             }
@@ -342,7 +342,7 @@ export const AdminMoviesPage: React.FC = () => {
 
             {isError && (
                 <div className="flex items-center justify-center py-20 text-red-500 font-medium bg-red-500/10 rounded-xl border border-red-500/20">
-                    Gagal memuat data dari server.
+                    Failed to load movies from the server.
                 </div>
             )}
 

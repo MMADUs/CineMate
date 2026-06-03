@@ -7,18 +7,42 @@ export interface FnBCheckoutItem {
 }
 
 export interface FnBCheckoutPayload {
-    showtimeId?: number | null; 
+    bookingId?: string | null; 
     items: FnBCheckoutItem[];
 }
 
 export interface FnBCheckoutResponse {
+    invoiceUrl?: string;
     order?: {
+        fnbOrderId?: string;
         payment?: {
             invoiceUrl?: string;
-        }
+        };
+        booking?: {
+            payment?: {
+                invoiceUrl?: string;
+            };
+        };
     };
     payment?: {
         invoiceUrl?: string;
+    };
+    data?: {
+        invoiceUrl?: string;
+        order?: {
+            fnbOrderId?: string;
+            payment?: {
+                invoiceUrl?: string;
+            };
+            booking?: {
+                payment?: {
+                    invoiceUrl?: string;
+                };
+            };
+        };
+        payment?: {
+            invoiceUrl?: string;
+        };
     };
 }
 

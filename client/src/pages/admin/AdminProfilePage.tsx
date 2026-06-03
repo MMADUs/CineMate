@@ -16,7 +16,6 @@ export const AdminProfilePage: React.FC = () => {
         );
     }
 
-    // 3. Gunakan trik ekstraksi Type-Safe yang sama dengan di AdminLayouts
     const rawProfile = (profile || {}) as unknown as Record<string, unknown>;
     const userData = (rawProfile.data || profile) as { username?: string; email?: string; adminId?: number };
 

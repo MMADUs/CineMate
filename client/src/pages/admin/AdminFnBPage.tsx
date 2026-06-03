@@ -66,7 +66,6 @@ export const AdminFnbPage: React.FC = () => {
         }
     }, [isAddModalOpen, isEditModalOpen, selectedFnb, reset]);
 
-    // 3. Ekstraksi data secara Type-Safe
     const { paginatedFnb, totalPages } = useMemo(() => {
         let safeSnacks: AdminSnackResponse[] = [];
         
@@ -97,7 +96,6 @@ export const AdminFnbPage: React.FC = () => {
         }
 
         try {
-            // 1. Upload Gambar ke folder 'snacks'
             const uploadResult = await uploadImageAsync(imageFile);
             
             const resultObj = (uploadResult || {}) as unknown as Record<string, unknown>;
@@ -110,13 +108,12 @@ export const AdminFnbPage: React.FC = () => {
                 (typeof dataObj.key === 'string' ? dataObj.key : '');
 
             if (!finalImageKey) {
-                toast.error("Upload diproses, tapi key gambar tidak ditemukan dari backend.");
+                toast.error("The upload was processed, but the image key was not found from the backend. The item could not be added.");
                 return; 
             }
 
-            // 2. Simpan Data Snack ke Database
             await createSnackAsync({
-                snackName: data.name, // Mapping dari form ke payload
+                snackName: data.name, 
                 category: data.category,
                 price: data.price,
                 stock: data.stock,
@@ -126,14 +123,14 @@ export const AdminFnbPage: React.FC = () => {
             toast.success(`Item "${data.name}" added successfully!`);
             setIsAddModalOpen(false);
             setImageFile(null); 
-            reset(); // Bersihkan form
+            reset(); 
             
         } catch (error) {
-            console.error("Gagal menambahkan item F&B:", error);
+            console.error("Failed to add item F&B:", error);
             if (error instanceof AxiosError) {
                 const errorMsg = error.response?.data?.message;
                 const formattedMsg = Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg;
-                toast.error(`Gagal menyimpan: ${formattedMsg || "Terjadi kesalahan."}`);
+                toast.error(`Failed to save: ${formattedMsg || "An error occurred."}`);
             } else if (error instanceof Error) {
                 toast.error(error.message);
             }
@@ -146,9 +143,7 @@ export const AdminFnbPage: React.FC = () => {
         try {
             let finalImageKey = selectedFnb.imageKey;
 
-            // JIKA ADMIN MENG-UPLOAD GAMBAR BARU
             if (imageFile) {
-                // 1. Upload gambar baru
                 const uploadResult = await uploadImageAsync(imageFile);
                 
                 const resultObj = (uploadResult || {}) as unknown as Record<string, unknown>;
@@ -161,21 +156,19 @@ export const AdminFnbPage: React.FC = () => {
                     (typeof dataObj.key === 'string' ? dataObj.key : '');
 
                 if (!newImageKey) {
-                    toast.error("Gagal mendapatkan key dari gambar baru. Edit dibatalkan.");
+                    toast.error("Failed to get key from the new image. Edit cancelled.");
                     return;
                 }
                 
                 finalImageKey = newImageKey;
 
-                // 2. Hapus gambar lama dari server (fire-and-forget)
                 if (selectedFnb.imageKey) {
                     deleteImageAsync(selectedFnb.imageKey).catch(e => 
-                        console.warn("Gagal menghapus gambar lama dari server:", e)
+                        console.warn("Failed to delete the old image from the server:", e)
                     );
                 }
             }
 
-            // 3. Update Data di Database
             await updateSnackAsync({
                 id: selectedFnb.snackId,
                 payload: {
@@ -194,11 +187,11 @@ export const AdminFnbPage: React.FC = () => {
             reset();
 
         } catch (error) {
-            console.error("Gagal mengupdate item:", error);
+            console.error("Failed to update item:", error);
             if (error instanceof AxiosError) {
                 const errorMsg = error.response?.data?.message;
                 const formattedMsg = Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg;
-                toast.error(`Gagal menyimpan perubahan: ${formattedMsg || "Terjadi kesalahan."}`);
+                toast.error(`Failed to save changes: ${formattedMsg || "An error occurred."}`);
             } else if (error instanceof Error) {
                 toast.error(error.message);
             }
@@ -209,14 +202,12 @@ export const AdminFnbPage: React.FC = () => {
         if (!selectedFnb) return;
 
         try {
-            // 1. Hapus gambar dari RustFS (fire-and-forget)
             if (selectedFnb.imageKey) {
                 deleteImageAsync(selectedFnb.imageKey).catch(e => 
-                    console.warn("Gambar lama tidak ditemukan atau gagal dihapus:", e)
+                    console.warn("Failed to delete the old image from the server:", e)
                 );
             }
 
-            // 2. Hapus dari Database
             await deleteSnackAsync(selectedFnb.snackId);
 
             toast.success(`Item "${selectedFnb.snackName}" deleted successfully!`);
@@ -224,11 +215,11 @@ export const AdminFnbPage: React.FC = () => {
             setSelectedFnb(null);
 
         } catch (error) {
-            console.error("Gagal menghapus item:", error);
+            console.error("Failed to delete item:", error);
             if (error instanceof AxiosError) {
                 const errorMsg = error.response?.data?.message;
                 const formattedMsg = Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg;
-                toast.error(`Gagal menghapus: ${formattedMsg || "Terjadi kesalahan."}`);
+                toast.error(`Failed to delete: ${formattedMsg || "An error occurred."}`);
             } else if (error instanceof Error) {
                 toast.error(error.message);
             }
@@ -288,7 +279,6 @@ export const AdminFnbPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* 4. Handle Loading dan Error */}
             {isLoading && (
                 <div className="flex items-center justify-center py-20 text-white/50 animate-pulse font-medium">
                     Loading F&B menu...
@@ -297,7 +287,7 @@ export const AdminFnbPage: React.FC = () => {
 
             {isError && (
                 <div className="flex items-center justify-center py-20 text-red-500 font-medium bg-red-500/10 rounded-xl border border-red-500/20">
-                    Gagal memuat data dari server.
+                    Failed to load data from the server.
                 </div>
             )}
 

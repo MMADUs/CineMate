@@ -11,9 +11,6 @@ const chartConfig = {
   },
 };
 
-// ==========================================
-// HELPER 100% TYPE-SAFE
-// ==========================================
 function extractSafeData<T>(rawData: unknown): T | undefined {
     if (!rawData) return undefined;
     if (typeof rawData === 'object' && rawData !== null) {
@@ -47,9 +44,7 @@ const getPaymentMethod = (sale: RecentSale) => {
     return sale.provider || 'Unknown Method';
 };
 
-// ==========================================
 // KOMPONEN UTAMA DASHBOARD
-// ==========================================
 export const AdminDashboardPage: React.FC = () => {
     const { data: rawData, isLoading, isError } = useAdminDashboard();
 
@@ -73,7 +68,6 @@ export const AdminDashboardPage: React.FC = () => {
         );
     }
 
-    // Ekstrak data dengan aman!
     const actualData = extractSafeData<DashboardResponse>(rawData);
     const metrics = actualData?.metrics || { totalRevenue: 0, ticketsSold: 0, pendingOrders: 0, activeMoviesCount: 0 };
     const chart = actualData?.chart || [];

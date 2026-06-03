@@ -22,10 +22,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => 
     const menuItems = [
         { path: '/admin', label: 'Dashboard' },
         { path: '/admin/movies', label: 'Movies' },
+        { path: '/admin/cinemas', label: 'Cinemas' },
         { path: '/admin/studios', label: 'Studios & Seats' },
         { path: '/admin/showtimes', label: 'Showtimes' },
-        { path: '/admin/transactions', label: 'Transactions' },
         { path: '/admin/fnb', label: 'Food & Beverage' },
+        { path: '/admin/transactions', label: 'Booking Transactions' },
+        { path: '/admin/ordersfnb', label: 'F&B Transactions' },
     ];
 
     const getLinkClass = (path: string) => {

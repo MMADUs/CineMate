@@ -5,7 +5,6 @@ import { Footer } from '../../components/layout/Footer';
 import { Breadcrumbs } from '../../components/layout/Breadcrumbs';
 
 import { useGetPublicMovieDetails, type PublicMovieDetails } from '../../api/hooks/User/useGetPublicMovieDetails';
-import { useGetPublicShowtimes, type PublicShowtime } from '../../api/hooks/User/useGetPublicShowtimes';
 import { useGetShowtimeSeats, type ShowtimeSeatsResponse } from '../../api/hooks/User/useGetShowtimeSeats';
 
 export const SeatSelectionPage: React.FC = () => {
@@ -14,7 +13,6 @@ export const SeatSelectionPage: React.FC = () => {
     const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
 
     const { data: rawMovieData, isLoading: isMovieLoading } = useGetPublicMovieDetails(movieId);
-    const { data: rawShowtimesData, isLoading: isShowtimesLoading } = useGetPublicShowtimes(movieId);
     const { data: rawSeatsData, isLoading: isSeatsLoading, isError: isSeatsError } = useGetShowtimeSeats(showtimeId);
 
     useEffect(() => {
@@ -27,43 +25,35 @@ export const SeatSelectionPage: React.FC = () => {
     const movie = useMemo(() => {
         if (!rawMovieData) return null;
         if ('data' in rawMovieData && typeof rawMovieData === 'object') {
-            const wrapped = (rawMovieData as unknown as { data: PublicMovieDetails }).data;
-            if (wrapped && typeof wrapped === 'object') return wrapped;
+            return (rawMovieData as unknown as { data: PublicMovieDetails }).data;
         }
         return rawMovieData as PublicMovieDetails;
     }, [rawMovieData]);
 
     const currentShowtime = useMemo(() => {
-        if (!rawShowtimesData || !showtimeId) return null;
-        let safeShowtimes: PublicShowtime[] = [];
-        if (Array.isArray(rawShowtimesData)) {
-            safeShowtimes = rawShowtimesData;
-        } else if (typeof rawShowtimesData === 'object' && 'data' in rawShowtimesData) {
-            const wrapped = (rawShowtimesData as unknown as { data: PublicShowtime[] }).data;
-            if (Array.isArray(wrapped)) safeShowtimes = wrapped;
-        }
-        return safeShowtimes.find(s => s.showtimeId.toString() === showtimeId) || null;
-    }, [rawShowtimesData, showtimeId]);
+        if (!movie || !showtimeId) return null;
+        return movie.showtimes.find(s => s.showtimeId.toString() === showtimeId) || null;
+    }, [movie, showtimeId]);
 
     const seatsData = useMemo(() => {
         if (!rawSeatsData) return null;
-        if ('hall' in rawSeatsData && 'seats' in rawSeatsData) {
+        if ('studio' in rawSeatsData && 'seats' in rawSeatsData) {
             return rawSeatsData as ShowtimeSeatsResponse;
         } else if ('data' in rawSeatsData && typeof rawSeatsData === 'object') {
             const wrapped = (rawSeatsData as unknown as { data: ShowtimeSeatsResponse }).data;
-            if (wrapped && 'hall' in wrapped && 'seats' in wrapped) return wrapped;
+            if (wrapped && 'studio' in wrapped && 'seats' in wrapped) return wrapped;
         }
         return null;
     }, [rawSeatsData]);
     
     const ROWS = useMemo(() => {
-        if (!seatsData || !seatsData.hall || !seatsData.hall.totalRows) return [];
-        return Array.from({ length: seatsData.hall.totalRows }, (_, i) => String.fromCharCode(65 + i));
+        if (!seatsData || !seatsData.studio || !seatsData.studio.totalRows) return [];
+        return Array.from({ length: seatsData.studio.totalRows }, (_, i) => String.fromCharCode(65 + i));
     }, [seatsData]);
 
     const COLS = useMemo(() => {
-        if (!seatsData || !seatsData.hall || !seatsData.hall.seatsPerRow) return [];
-        return Array.from({ length: seatsData.hall.seatsPerRow }, (_, i) => i + 1);
+        if (!seatsData || !seatsData.studio || !seatsData.studio.seatsPerRow) return [];
+        return Array.from({ length: seatsData.studio.seatsPerRow }, (_, i) => i + 1);
     }, [seatsData]);
 
     const OCCUPIED_SEATS = useMemo(() => {
@@ -83,11 +73,13 @@ export const SeatSelectionPage: React.FC = () => {
     };
 
     const formattedDate = currentShowtime 
-        ? new Date(currentShowtime.showDate).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) 
+        ? new Date(currentShowtime.showDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) 
         : '';
     const formattedTime = currentShowtime?.showTime.substring(0, 5) || '';
+    
+    const cinemaName = currentShowtime?.studio?.cinema?.cinemaName || 'CineMate Studio';
 
-    const isLoading = isMovieLoading || isShowtimesLoading || isSeatsLoading;
+    const isLoading = isMovieLoading || isSeatsLoading;
 
     if (isLoading) {
         return (
@@ -115,7 +107,7 @@ export const SeatSelectionPage: React.FC = () => {
                     items={[
                         { label: 'Home', path: '/' },
                         { label: 'Film', path: '/movie' },
-                        { label: movie?.title || 'Loading...', path: `/movie/${movieId}` }, 
+                        { label: movie?.title || 'Movie Details', path: `/movie/${movieId}` }, 
                         { label: 'Select Seats' } 
                     ]} 
                 />
@@ -133,21 +125,22 @@ export const SeatSelectionPage: React.FC = () => {
                     
                     <div className="text-center mb-8 md:mb-12">
                         <h3 className="text-base md:text-lg font-medium text-white/60 mb-1">
-                            {seatsData.hall.cinemaName}
+                            {cinemaName}
                         </h3>
                         <h2 className="text-2xl md:text-3xl font-bold">
-                            {seatsData.hall.studioName}
+                            {seatsData.studio.studioName}
                         </h2>
                     </div>
 
                     <div className="w-full overflow-x-auto pb-8 [&::-webkit-scrollbar]:hidden cursor-grab active:cursor-grabbing flex justify-center">
                         <div className="min-w-max flex flex-col items-center mx-auto px-4">
                             
+                            {/* Rendering Kolom Angka (1, 2, 3...) */}
                             <div className="flex items-center w-full mb-3">
                                 <div className="w-6 md:w-8 shrink-0 mr-2 md:mr-4"></div> 
                                 <div 
                                     className="flex-1 grid gap-1.5 md:gap-2"
-                                    style={{ gridTemplateColumns: `repeat(${seatsData.hall.seatsPerRow}, max-content)` }}
+                                    style={{ gridTemplateColumns: `repeat(${seatsData.studio.seatsPerRow}, max-content)` }}
                                 >
                                     {COLS.map(col => (
                                         <div key={col} className="w-6 md:w-8 text-center text-white/50 text-xs md:text-sm font-bold">
@@ -157,6 +150,7 @@ export const SeatSelectionPage: React.FC = () => {
                                 </div>
                             </div>
 
+                            {/* Rendering Baris Kursi (A, B, C...) */}
                             <div className="flex flex-col gap-2 w-full">
                                 {ROWS.map(row => (
                                     <div key={row} className="flex items-center w-full">
@@ -166,7 +160,7 @@ export const SeatSelectionPage: React.FC = () => {
                                         
                                         <div 
                                             className="flex-1 grid gap-1.5 md:gap-2"
-                                            style={{ gridTemplateColumns: `repeat(${seatsData.hall.seatsPerRow}, max-content)` }}
+                                            style={{ gridTemplateColumns: `repeat(${seatsData.studio.seatsPerRow}, max-content)` }}
                                         >
                                             {COLS.map(col => {
                                                 const seatId = `${row}${col}`;

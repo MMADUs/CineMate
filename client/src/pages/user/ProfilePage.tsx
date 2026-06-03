@@ -7,16 +7,14 @@ import { Navbar } from '../../components/layout/Navbar';
 import { Footer } from '../../components/layout/Footer';
 import { Button } from '../../components/ui_manual/Button';
 import { ProfileSidebar } from '../../components/layout/ProfileSidebar'; 
+import toast from 'react-hot-toast';
 
-// Import Hooks Profile & Auth
 import { useGetProfile } from '../../api/hooks/User/useProfile'; 
 import { useUpdateProfile } from '../../api/mutations/useUpdateProfile'; 
 import { useLogout } from '../../api/mutations/Auth/useLogout';
 
-// Import Hooks Order History
 import { useGetUserMovieOrders, type MovieOrderResponse } from '../../api/hooks/User/useGetUserMovieOrders';
 import { useGetUserFnBOrders, type FnBOrderResponse } from '../../api/hooks/User/useGetUserFnBOrders';
-import { useGetShowtimeSeats, type ShowtimeSeatsResponse } from '../../api/hooks/User/useGetShowtimeSeats';
 import { useGetPublicFnB, type FnbItem } from '../../api/hooks/User/useGetPublicFnB'; 
 
 const profileSchema = z.object({
@@ -27,16 +25,6 @@ const profileSchema = z.object({
 });
 
 type ProfileValues = z.infer<typeof profileSchema>;
-
-// ==========================================
-// KAMUS DATA & HELPER FUNCTIONS
-// ==========================================
-const HALL_MAPPING: Record<number, { location: string; studioName: string }> = {
-    1: { location: "CGV Grand Indonesia", studioName: "Studio 1" },
-    2: { location: "CGV Grand Indonesia", studioName: "Studio 2" },
-    4: { location: "Alam Sutera XXI", studioName: "Studio 1" },
-    5: { location: "Alam Sutera XXI", studioName: "Studio 2" },
-};
 
 const getNormalizedStatus = (status: string | undefined): 'Completed' | 'Expired' | 'Pending' | 'Unknown' => {
     if (!status) return 'Unknown';
@@ -60,26 +48,14 @@ const formatCardDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-// ==========================================
-// SUB-KOMPONEN: MOVIE ORDER CARD
-// ==========================================
 const MovieOrderCard: React.FC<{ order: MovieOrderResponse; navigate: ReturnType<typeof useNavigate> }> = ({ order, navigate }) => {
     const normStatus = getNormalizedStatus(order.orderStatus);
-    const hallInfo = HALL_MAPPING[order.showtime?.hallId] || { location: "CineMate Pusat", studioName: `Studio ${order.showtime?.hallId || '-'}` };
-    const { data: rawSeatsData } = useGetShowtimeSeats(order.showtimeId?.toString());
 
-    const seatNameMap = useMemo(() => {
-        const map = new Map<number, string>();
-        if (!rawSeatsData) return map;
-        let actualSeats: { seatId: number; rowLetter: string; seatNumber: number }[] = [];
-        if ('seats' in rawSeatsData) actualSeats = (rawSeatsData as unknown as ShowtimeSeatsResponse).seats;
-        else if ('data' in rawSeatsData && typeof rawSeatsData === 'object') {
-            const wrapped = (rawSeatsData as unknown as { data: ShowtimeSeatsResponse }).data;
-            if (wrapped && 'seats' in wrapped) actualSeats = wrapped.seats;
-        }
-        actualSeats.forEach(seat => map.set(seat.seatId, `${seat.rowLetter}${seat.seatNumber}`));
-        return map;
-    }, [rawSeatsData]);
+    const studioName = order.showtime?.studio?.studioName || `Studio ${order.showtime?.studioId || '-'}`;
+    
+    const seatsDisplay = order.seats && order.seats.length > 0 
+        ? order.seats.map(s => `${s.rowLetter}${s.seatNumber}`).join(', ') 
+        : 'Check E-Ticket';
 
     return (
         <div className="flex flex-col lg:flex-row gap-6 w-full border-b border-white/5 pb-8 last:border-0 mb-8 bg-[#151515] p-5 rounded-2xl">
@@ -99,13 +75,13 @@ const MovieOrderCard: React.FC<{ order: MovieOrderResponse; navigate: ReturnType
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     <div className="bg-[#111111] border border-white/5 rounded-xl p-3 flex flex-col items-center justify-center text-center">
                         <span className="text-white/50 text-[10px] mb-1 font-bold tracking-wider">SEATS</span>
-                        <span className="font-bold text-xs text-red-500 truncate w-full px-1" title={order.seats?.map(s => seatNameMap.get(s.seatId) || `Seat ${s.seatId}`).join(', ')}>
-                            {order.seats && order.seats.length > 0 ? order.seats.map(s => seatNameMap.get(s.seatId) || `Seat ${s.seatId}`).join(', ') : 'Check E-Ticket'}
+                        <span className="font-bold text-xs text-red-500 truncate w-full px-1" title={seatsDisplay}>
+                            {seatsDisplay}
                         </span>
                     </div>
                     <div className="bg-[#111111] border border-white/5 rounded-xl p-3 flex flex-col items-center justify-center text-center">
                         <span className="text-white/50 text-[10px] mb-1 font-bold tracking-wider">STUDIO</span>
-                        <span className="font-bold text-xs">{hallInfo.studioName}</span>
+                        <span className="font-bold text-xs">{studioName}</span>
                     </div>
                     <div className="bg-[#111111] border border-white/5 rounded-xl p-3 flex flex-col items-center justify-center text-center col-span-2 md:col-span-1">
                         <span className="text-white/50 text-[10px] mb-1 font-bold tracking-wider">TOTAL</span>
@@ -116,7 +92,7 @@ const MovieOrderCard: React.FC<{ order: MovieOrderResponse; navigate: ReturnType
                 <div className="mt-auto pt-2">
                     {normStatus === 'Pending' ? (
                         <div className="flex gap-4 w-full">
-                            <a href={order.payment?.invoiceUrl} className="w-full flex items-center justify-center gap-2 bg-[#e51c23] hover:bg-[#c71118] text-white text-xs md:text-sm font-bold py-3 rounded-xl transition-colors cursor-pointer block text-center">
+                            <a href={order.payment?.invoiceUrl} className="w-full flex items-center justify-center gap-2 bg-[#e51c23] hover:bg-[#c71118] text-white text-xs md:text-sm font-bold py-3 rounded-xl transition-colors cursor-pointer text-center">
                                 Pay Now
                             </a>
                         </div>
@@ -134,10 +110,8 @@ const MovieOrderCard: React.FC<{ order: MovieOrderResponse; navigate: ReturnType
     );
 };
 
-// ==========================================
 // SUB-KOMPONEN: F&B ORDER CARD
-// ==========================================
-const FnBOrderCard: React.FC<{ order: FnBOrderResponse; navigate: ReturnType<typeof useNavigate>; movieOrders: MovieOrderResponse[] }> = ({ order, navigate, movieOrders }) => {
+const FnBOrderCard: React.FC<{ order: FnBOrderResponse; navigate: ReturnType<typeof useNavigate>; movieOrders: MovieOrderResponse[] }> = ({ order, navigate }) => {
     const normStatus = getNormalizedStatus(order.orderStatus);
     const { data: rawSnacksData } = useGetPublicFnB(null);
 
@@ -146,7 +120,7 @@ const FnBOrderCard: React.FC<{ order: FnBOrderResponse; navigate: ReturnType<typ
         if (!rawSnacksData) return map;
         let actualSnacks: FnbItem[] = [];
         if (Array.isArray(rawSnacksData)) actualSnacks = rawSnacksData;
-        else if (typeof rawSnacksData === 'object' && 'data' in rawSnacksData) {
+        else if (rawSnacksData && typeof rawSnacksData === 'object' && 'data' in rawSnacksData) {
             const wrapped = (rawSnacksData as unknown as { data: FnbItem[] }).data;
             if (Array.isArray(wrapped)) actualSnacks = wrapped;
         }
@@ -154,12 +128,10 @@ const FnBOrderCard: React.FC<{ order: FnBOrderResponse; navigate: ReturnType<typ
         return map;
     }, [rawSnacksData]);
 
-    // KEAJAIBAN PELACAKAN TIKET
     const relatedTicketId = useMemo(() => {
-        if (!order.showtimeId) return null;
-        const matchedMovie = movieOrders.find(m => m.showtimeId === order.showtimeId);
-        return matchedMovie ? matchedMovie.bookingId.split('-')[0].toUpperCase() : null;
-    }, [order.showtimeId, movieOrders]);
+        if (!order.bookingId) return null;
+        return order.bookingId.split('-')[0].toUpperCase();
+    }, [order.bookingId]);
 
     return (
         <div className="flex flex-col lg:flex-row gap-6 w-full border-b border-white/5 pb-8 last:border-0 mb-8 bg-[#151515] p-5 rounded-2xl">
@@ -175,7 +147,7 @@ const FnBOrderCard: React.FC<{ order: FnBOrderResponse; navigate: ReturnType<typ
                 <div className="flex flex-wrap items-center gap-2">
                     <span className="bg-white/10 px-3 py-1 rounded text-white/80 text-xs font-semibold">{formatCardDate(order.orderDate)}</span>
                     
-                    {order.showtimeId ? (
+                    {order.bookingId ? (
                         <span className="bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1 rounded text-xs font-semibold">
                             🎬 Booking Ticket ID : {relatedTicketId ? `${relatedTicketId}` : ''}
                         </span>
@@ -206,7 +178,7 @@ const FnBOrderCard: React.FC<{ order: FnBOrderResponse; navigate: ReturnType<typ
                 <div className="mt-auto pt-2">
                     {normStatus === 'Pending' ? (
                         <div className="flex gap-4 w-full">
-                            <a href={order.payment?.invoiceUrl} className="w-full flex items-center justify-center gap-2 bg-[#e51c23] hover:bg-[#c71118] text-white text-xs md:text-sm font-bold py-3 rounded-xl transition-colors cursor-pointer block text-center">
+                            <a href={order.payment?.invoiceUrl} className="w-full flex items-center justify-center gap-2 bg-[#e51c23] hover:bg-[#c71118] text-white text-xs md:text-sm font-bold py-3 rounded-xl transition-colors cursor-pointer text-center">
                                 Pay Now
                             </a>
                         </div>
@@ -225,9 +197,7 @@ const FnBOrderCard: React.FC<{ order: FnBOrderResponse; navigate: ReturnType<typ
     );
 };
 
-// ==========================================
-// KOMPONEN UTAMA PROFILE PAGE
-// ==========================================
+// Main Component Profile Page
 export const ProfilePage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'personal' | 'history'>('personal');
     const [isEditing, setIsEditing] = useState(false);
@@ -259,7 +229,7 @@ export const ProfilePage: React.FC = () => {
     const handleLogout = () => {
         logoutUser(undefined, {
             onSuccess: () => navigate('/login'),
-            onError: () => alert("Failed to logout. Please try again.")
+            onError: () => toast.error("Failed to logout. Please try again.")
         });
     };
 
@@ -268,30 +238,30 @@ export const ProfilePage: React.FC = () => {
             { fullName: data.fullName, phoneNum: data.phoneNum, password: data.password },
             {
                 onSuccess: () => {
-                    alert("Profil berhasil diperbarui!");
+                    toast.success("Profile updated successfully!");
                     setIsEditing(false); 
                 },
-                onError: (error) => alert(error.response?.data?.message || "Gagal memperbarui profil.")
+                onError: (error) => toast.error(error.response?.data?.message || "Failed to update profile.")
             }
         );
     };
 
-    // Parsing data movieOrders secara bersih
+    // Parsing data movieOrders 
     const movieOrders = useMemo(() => {
         if (!rawMovieOrders) return [];
         if (Array.isArray(rawMovieOrders)) return rawMovieOrders;
-        if (typeof rawMovieOrders === 'object' && 'data' in rawMovieOrders) {
+        if (rawMovieOrders && typeof rawMovieOrders === 'object' && 'data' in rawMovieOrders) {
             const wrapped = (rawMovieOrders as unknown as { data: MovieOrderResponse[] }).data;
             if (Array.isArray(wrapped)) return wrapped;
         }
         return [];
     }, [rawMovieOrders]);
 
-    // Parsing data fnbOrders secara bersih
+    // Parsing data fnbOrders
     const fnbOrders = useMemo(() => {
         if (!rawFnBOrders) return [];
         if (Array.isArray(rawFnBOrders)) return rawFnBOrders;
-        if (typeof rawFnBOrders === 'object' && 'data' in rawFnBOrders) {
+        if (rawFnBOrders && typeof rawFnBOrders === 'object' && 'data' in rawFnBOrders) {
             const wrapped = (rawFnBOrders as unknown as { data: FnBOrderResponse[] }).data;
             if (Array.isArray(wrapped)) return wrapped;
         }
@@ -424,7 +394,6 @@ export const ProfilePage: React.FC = () => {
                                     recentOrders.map((item, idx) => (
                                         item.type === 'movie' 
                                             ? <MovieOrderCard key={idx} order={item.data as MovieOrderResponse} navigate={navigate} />
-                                            // MELEMPARKAN movieOrders SEBAGAI PROPS KE DALAM F&B CARD
                                             : <FnBOrderCard key={idx} order={item.data as FnBOrderResponse} navigate={navigate} movieOrders={movieOrders} />
                                     ))
                                 ) : (

@@ -22,13 +22,15 @@ import { PaymentResultPage } from './pages/user/PaymentResultPage'
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 import { AdminMoviesPage } from './pages/admin/AdminMoviesPage'
 import { AdminShowtimesPage } from './pages/admin/AdminShowtimesPage'
-import { AdminTransactionsPage } from './pages/admin/AdminTransactionsPage'
+import { AdminTransactionsPage } from './pages/admin/AdminBookingTransactionsPage'
+import { AdminFnBTransactionsPage } from './pages/admin/AdminFnBTransactionsPage'
 import { AdminFnbPage } from './pages/admin/AdminFnBPage';
 import { AdminStudiosPage } from './pages/admin/AdminStudiosPage'
 import { AdminProfilePage } from './pages/admin/AdminProfilePage'
 
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AdminGuard } from './components/guards/AdminGuards';
+import { AdminCinemasPage } from './pages/admin/AdminCinemaPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,9 +72,11 @@ createRoot(document.getElementById('root')!).render(
             <Route element={<AdminGuard />}>
                 <Route path="/admin" element={<AdminDashboardPage />} />
                 <Route path="/admin/movies" element={<AdminMoviesPage />} />
+                <Route path="/admin/cinemas" element={<AdminCinemasPage />} />
                 <Route path="/admin/studios" element={<AdminStudiosPage />} />
                 <Route path="/admin/showtimes" element={<AdminShowtimesPage />} />
                 <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
+                <Route path="/admin/ordersfnb" element={<AdminFnBTransactionsPage />} />
                 <Route path="/admin/fnb" element={<AdminFnbPage />} />
                 <Route path="/admin/profile" element={<AdminProfilePage />} />
             </Route>

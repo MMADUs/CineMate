@@ -5,42 +5,27 @@ import { Footer } from '../../components/layout/Footer';
 import { Button } from '../../components/ui_manual/Button';
 import { QRModal } from '../../components/modals/QRModal'; 
 import { toPng } from 'html-to-image'; 
+import toast from 'react-hot-toast';
 
-// Import Hooks API
 import { useGetMovieOrderDetail, type MovieOrderDetailResponse } from '../../api/hooks/User/useGetMovieOrderDetail';
 import { useGetFnBOrderDetail, type FnBOrderDetailResponse } from '../../api/hooks/User/useGetFnBOrderDetail';
-import { useGetShowtimeSeats, type ShowtimeSeatsResponse } from '../../api/hooks/User/useGetShowtimeSeats';
 import { useGetPublicFnB, type FnbItem } from '../../api/hooks/User/useGetPublicFnB'; 
-import { useGetUserMovieOrders, type MovieOrderResponse } from '../../api/hooks/User/useGetUserMovieOrders'; 
-
-// KAMUS DATA UNTUK LOKASI BIOSKOP
-const HALL_MAPPING: Record<number, { location: string; studioName: string }> = {
-    1: { location: "CGV Grand Indonesia", studioName: "Studio 1" },
-    2: { location: "CGV Grand Indonesia", studioName: "Studio 2" },
-    4: { location: "Alam Sutera XXI", studioName: "Studio 1" },
-    5: { location: "Alam Sutera XXI", studioName: "Studio 2" },
-};
 
 export const TicketDetailsPage: React.FC = () => {
     const { orderId } = useParams<{ orderId: string }>();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     
-    // Cek apakah ini pesanan F&B dari URL
     const isFnb = searchParams.get('type') === 'fnb';
 
     const [isQrModalOpen, setIsQrModalOpen] = useState(false);
     
-    // State & Ref untuk fitur Download
     const ticketRef = useRef<HTMLDivElement>(null);
     const [isDownloading, setIsDownloading] = useState(false);
 
-    // 1. Tembak API Utama & History untuk Pelacakan
     const { data: rawMovieData, isLoading: isMovieLoading } = useGetMovieOrderDetail(isFnb ? undefined : orderId);
     const { data: rawFnBData, isLoading: isFnBLoading } = useGetFnBOrderDetail(isFnb ? orderId : undefined);
-    const { data: rawMovieOrders } = useGetUserMovieOrders(); // <-- Untuk melacak ID tiket
 
-    // Ekstraksi Data Aman
     const movieData = useMemo(() => {
         if (!rawMovieData) return null;
         if ('data' in rawMovieData && typeof rawMovieData === 'object') {
@@ -57,36 +42,7 @@ export const TicketDetailsPage: React.FC = () => {
         return rawFnBData as FnBOrderDetailResponse;
     }, [rawFnBData]);
 
-    const movieOrders = useMemo(() => {
-        if (!rawMovieOrders) return [];
-        if (Array.isArray(rawMovieOrders)) return rawMovieOrders;
-        if (typeof rawMovieOrders === 'object' && 'data' in rawMovieOrders) {
-            const wrapped = (rawMovieOrders as unknown as { data: MovieOrderResponse[] }).data;
-            if (Array.isArray(wrapped)) return wrapped;
-        }
-        return [];
-    }, [rawMovieOrders]);
-
-    // 2. Tembak API Kursi & Snacks
-    const showtimeIdStr = movieData?.showtimeId?.toString();
-    const { data: rawSeatsData } = useGetShowtimeSeats(isFnb ? undefined : showtimeIdStr);
     const { data: rawSnacksData } = useGetPublicFnB(null);
-
-    const seatNameMap = useMemo(() => {
-        const map = new Map<number, string>();
-        if (!rawSeatsData) return map;
-
-        let actualSeats: { seatId: number; rowLetter: string; seatNumber: number }[] = [];
-        if ('seats' in rawSeatsData) {
-            actualSeats = (rawSeatsData as unknown as ShowtimeSeatsResponse).seats;
-        } else if ('data' in rawSeatsData && typeof rawSeatsData === 'object') {
-            const wrapped = (rawSeatsData as unknown as { data: ShowtimeSeatsResponse }).data;
-            if (wrapped && 'seats' in wrapped) actualSeats = wrapped.seats;
-        }
-
-        actualSeats.forEach(seat => map.set(seat.seatId, `${seat.rowLetter}${seat.seatNumber}`));
-        return map;
-    }, [rawSeatsData]);
 
     const snackNameMap = useMemo(() => {
         const map = new Map<number, string>();
@@ -103,12 +59,10 @@ export const TicketDetailsPage: React.FC = () => {
         return map;
     }, [rawSnacksData]);
 
-    // 3. Pelacak Tiket untuk Makanan (Fix Dependency array sesuai React Compiler)
     const relatedTicketId = useMemo(() => {
-        if (!isFnb || !fnbData?.showtimeId) return null;
-        const matchedMovie = movieOrders.find(m => m.showtimeId === fnbData.showtimeId);
-        return matchedMovie ? matchedMovie.bookingId.split('-')[0].toUpperCase() : null;
-    }, [isFnb, fnbData, movieOrders]);
+        if (!isFnb || !fnbData?.bookingId) return null;
+        return fnbData.bookingId.split('-')[0].toUpperCase();
+    }, [isFnb, fnbData]);
 
     useEffect(() => {
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -130,9 +84,6 @@ export const TicketDetailsPage: React.FC = () => {
     const rawFnbStatus = fnbData?.orderStatus || fnbData?.payment?.paymentStatus;
     const currentStatus = getNormalizedStatus(isFnb ? rawFnbStatus : rawMovieStatus);
 
-    // ==========================================
-    // FUNGSI DOWNLOAD TIKET
-    // ==========================================
     const handleDownloadTicket = async () => {
         if (!ticketRef.current) return;
         
@@ -159,7 +110,7 @@ export const TicketDetailsPage: React.FC = () => {
             link.click();
         } catch (error) {
             console.error("Gagal mendownload tiket:", error);
-            alert("Maaf, terjadi kesalahan saat memproses tiket untuk diunduh.");
+            toast.error("Failed to download ticket. Please try again.");
         } finally {
             setIsDownloading(false);
         }
@@ -295,11 +246,11 @@ export const TicketDetailsPage: React.FC = () => {
                                 </div>
                                 <div className="flex flex-col gap-1 col-span-2 md:col-span-1 items-start md:items-start mt-2 md:mt-0">
                                     <span className="text-white/50 text-[10px] md:text-xs font-bold tracking-wider">
-                                        {fnbData.showtimeId ? "BOOKING ID" : "PICK-UP METHOD"}
+                                        {fnbData.bookingId ? "BOOKING ID" : "PICK-UP METHOD"}
                                     </span>
                                     
                                     <span className="font-bold text-sm md:text-base text-white">
-                                        {fnbData.showtimeId ? (
+                                        {fnbData.bookingId ? (
                                             relatedTicketId ? (
                                                 <span className="text-[#e51c23]">{relatedTicketId}</span>
                                             ) : (
@@ -369,8 +320,6 @@ export const TicketDetailsPage: React.FC = () => {
 
     // --- RENDER UNTUK MOVIE ORDER ---
     if (!isFnb && movieData) {
-        const hallInfo = HALL_MAPPING[movieData.showtime.hallId] || { location: "CineMate Pusat", studioName: `Studio ${movieData.showtime.hallId}` };
-
         return (
             <div className="min-h-screen bg-[#0d0d0d] text-white font-sans overflow-x-hidden flex flex-col">
                 <Navbar />
@@ -437,7 +386,7 @@ export const TicketDetailsPage: React.FC = () => {
                                     <span className="text-white/50 text-[10px] md:text-xs font-bold tracking-wider">SEATS</span>
                                     <span className="font-bold text-sm md:text-base text-red-500">
                                         {movieData.seats && movieData.seats.length > 0 
-                                            ? movieData.seats.map(s => seatNameMap.get(s.seatId) || `Seat ${s.seatId}`).join(', ') 
+                                            ? movieData.seats.map(s => `${s.rowLetter}${s.seatNumber}`).join(', ') 
                                             : '-'}
                                     </span>
                                 </div>
@@ -446,11 +395,11 @@ export const TicketDetailsPage: React.FC = () => {
                             <div className="bg-[#0D0D0D] border border-white/10 rounded-2xl p-5 md:p-6 grid grid-cols-2 md:grid-cols-4 gap-6 shadow-md">
                                 <div className="flex flex-col gap-1">
                                     <span className="text-white/50 text-[10px] md:text-xs font-bold tracking-wider">STUDIO</span>
-                                    <span className="font-bold text-sm md:text-base">{hallInfo.studioName}</span>
+                                    <span className="font-bold text-sm md:text-base">{movieData.showtime.studio.studioName}</span>
                                 </div>
                                 <div className="flex flex-col gap-1">
                                     <span className="text-white/50 text-[10px] md:text-xs font-bold tracking-wider">CINEMA NAME</span>
-                                    <span className="font-bold text-sm md:text-base">{hallInfo.location}</span>
+                                    <span className="font-bold text-sm md:text-base">{movieData.showtime.studio.cinema.cinemaName}</span>
                                 </div>
                                 <div className="flex flex-col gap-1">
                                     <span className="text-white/50 text-[10px] md:text-xs font-bold tracking-wider">TOTAL PRICE</span>

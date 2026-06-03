@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui_manual/Button";
 import { Input } from "../../components/ui_manual/Input";
 import { Link } from "../../components/ui_manual/Link";
-import { useRegister } from "../../api/mutations/Admin/useRegister"; // Sesuaikan path-nya
+import { useRegister } from "../../api/mutations/Admin/useRegister"; 
 
 const registerSchema = z
     .object({
@@ -45,7 +45,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     const navigate = useNavigate();
     const [apiError, setApiError] = useState<string | null>(null);
 
-    // Panggil custom hook TanStack Query
     const { mutate: registerUser, isPending } = useRegister();
 
     const {
@@ -64,9 +63,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     });
 
     const onSubmit = (data: RegisterFormValues) => {
-        setApiError(null); // Reset error setiap kali submit baru
+        setApiError(null); 
 
-        // Panggil fungsi mutate dari TanStack Query
         registerUser(
             {
                 fullName: data.fullName,
@@ -76,12 +74,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
             },
             {
                 onSuccess: () => {
-                    // Jika sukses, arahkan user ke halaman login
                     alert('Registration Successful! Please login.');
                     navigate("/login");
                 },
                 onError: (error) => {
-                    // Tampilkan pesan error dari backend jika email sudah terpakai, dll
                     const errorMsg = error.response?.data?.message || "An unexpected error occurred. Please try again.";
                     setApiError(errorMsg);
                 }
@@ -104,7 +100,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
                     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
                         
-                        {/* Alert untuk menampilkan error dari Backend API */}
                         {apiError && (
                             <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm px-4 py-3 rounded-lg text-center font-medium">
                                 {apiError}
@@ -167,7 +162,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                         />
 
                         <div className="mt-2">
-                            {/* Tombol akan otomatis disable & berubah teks saat sedang loading menembak API */}
                             <Button
                                 label={isPending ? "Registering..." : "Register"}
                                 variant="primary"

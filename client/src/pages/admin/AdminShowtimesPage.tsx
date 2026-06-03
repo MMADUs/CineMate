@@ -13,13 +13,15 @@ import { useCreateAdminShowtime, useUpdateAdminShowtime, useDeleteAdminShowtime 
 
 import { useGetAdminShowtimes, type AdminShowtimeResponse } from '../../api/hooks/Admin/useGetShowtimes';
 import { useGetAdminMovies, type AdminMovie } from '../../api/hooks/Admin/useGetAdminMovies';
-import { useGetAdminHalls, type CinemaHallResponse } from '../../api/hooks/Admin/useGetHalls';
+import { useGetAdminStudios, type AdminStudioResponse } from '../../api/hooks/Admin/useGetAdminStudios';
+import { useGetAdminCinemas, type CinemaResponse } from '../../api/hooks/Admin/useGetCinemas';
 
 const ITEMS_PER_PAGE = 5; 
 
+// Schema Zod (hallId -> studioId)
 const showtimeSchema = z.object({
     movieId: z.string().min(1, "Please select a movie."),
-    hallId: z.string().min(1, "Please select a studio."),
+    studioId: z.string().min(1, "Please select a studio."), 
     date: z.string().min(1, "Date is required."),
     time: z.string().min(1, "Time is required."),
     price: z.number({ message: "Must be a valid number" }).min(0, "Price cannot be negative"),
@@ -28,9 +30,11 @@ const showtimeSchema = z.object({
 type ShowtimeFormValues = z.infer<typeof showtimeSchema>;
 
 export const AdminShowtimesPage: React.FC = () => {
+    // Tarik Semua Data Secara Paralel
     const { data: rawShowtimes, isLoading: loadingST, isError: errorST } = useGetAdminShowtimes();
     const { data: rawMovies, isLoading: loadingMovies } = useGetAdminMovies();
-    const { data: rawHalls, isLoading: loadingHalls } = useGetAdminHalls();
+    const { data: rawStudios, isLoading: loadingStudios } = useGetAdminStudios();
+    const { data: rawCinemas, isLoading: loadingCinemas } = useGetAdminCinemas();
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -54,7 +58,9 @@ export const AdminShowtimesPage: React.FC = () => {
         resolver: zodResolver(showtimeSchema),
     });
 
-    // 4. Ekstraksi data yang Type-Safe (Anti-Crash)
+    // ==========================================
+    // EKSTRAKSI DATA (Type-Safe)
+    // ==========================================
     const safeMovies: AdminMovie[] = useMemo(() => {
         if (Array.isArray(rawMovies)) return rawMovies;
         if (rawMovies && typeof rawMovies === 'object' && 'data' in rawMovies) {
@@ -64,29 +70,45 @@ export const AdminShowtimesPage: React.FC = () => {
         return [];
     }, [rawMovies]);
 
-    const safeHalls: CinemaHallResponse[] = useMemo(() => {
-        if (Array.isArray(rawHalls)) return rawHalls;
-        if (rawHalls && typeof rawHalls === 'object' && 'data' in rawHalls) {
-            const wrapped = (rawHalls as unknown as { data: CinemaHallResponse[] }).data;
+    const safeStudios: AdminStudioResponse[] = useMemo(() => {
+        if (Array.isArray(rawStudios)) return rawStudios;
+        if (rawStudios && typeof rawStudios === 'object' && 'data' in rawStudios) {
+            const wrapped = (rawStudios as unknown as { data: AdminStudioResponse[] }).data;
             if (Array.isArray(wrapped)) return wrapped;
         }
         return [];
-    }, [rawHalls]);
+    }, [rawStudios]);
 
-    // Fungsi Helper untuk mengubah ID menjadi Nama
+    const safeCinemas: CinemaResponse[] = useMemo(() => {
+        if (Array.isArray(rawCinemas)) return rawCinemas;
+        if (rawCinemas && typeof rawCinemas === 'object' && 'data' in rawCinemas) {
+            const wrapped = (rawCinemas as unknown as { data: CinemaResponse[] }).data;
+            if (Array.isArray(wrapped)) return wrapped;
+        }
+        return [];
+    }, [rawCinemas]);
+
+    // ==========================================
+    // HELPER FUNCTIONS PINTAR
+    // ==========================================
     const getMovieTitle = (id: number) => safeMovies.find(m => m.movieId === id)?.title || `Unknown Movie (${id})`;
-    const getHallName = (id: number) => {
-        const hall = safeHalls.find(h => h.hallId === id);
-        return hall ? `${hall.cinemaName} - ${hall.studioName}` : `Unknown Hall (${id})`;
+    
+    // Stitching 3 Tabel: Showtime -> Studio -> Cinema
+    const getStudioFullName = (studioId: number) => {
+        const studio = safeStudios.find(s => s.studioId === studioId);
+        if (!studio) return `Unknown Studio (${studioId})`;
+        
+        const cinema = safeCinemas.find(c => c.cinemaId === studio.cinemaId);
+        return cinema ? `${cinema.cinemaName} - ${studio.studioName}` : studio.studioName;
     };
 
     useEffect(() => {
         if (isAddModalOpen) {
-            reset({ movieId: '', hallId: '', date: '', time: '', price: 0 });
+            reset({ movieId: '', studioId: '', date: '', time: '', price: 0 });
         } else if (isEditModalOpen && selectedShowtime) {
             reset({
                 movieId: selectedShowtime.movieId.toString(),
-                hallId: selectedShowtime.hallId.toString(),
+                studioId: selectedShowtime.studioId.toString(),
                 date: selectedShowtime.showDate,
                 time: selectedShowtime.showTime,
                 price: Number(selectedShowtime.price) || 0
@@ -106,10 +128,10 @@ export const AdminShowtimesPage: React.FC = () => {
 
         const filtered = safeShowtimes.filter(st => {
             const movieTitle = getMovieTitle(st.movieId).toLowerCase();
-            const hallName = getHallName(st.hallId).toLowerCase();
+            const studioName = getStudioFullName(st.studioId).toLowerCase();
             const search = searchTerm.toLowerCase();
             
-            return movieTitle.includes(search) || hallName.includes(search);
+            return movieTitle.includes(search) || studioName.includes(search);
         });
 
         const total = Math.ceil(filtered.length / ITEMS_PER_PAGE);
@@ -118,13 +140,13 @@ export const AdminShowtimesPage: React.FC = () => {
         const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
         return { paginatedShowtimes: paginated, totalPages: finalTotalPages };
-    }, [searchTerm, currentPage, rawShowtimes, safeMovies, safeHalls]);
+    }, [searchTerm, currentPage, rawShowtimes, safeMovies, safeStudios, safeCinemas]);
 
     const onAddSubmit = async (data: ShowtimeFormValues) => {
         try {
             await createShowtimeAsync({
                 movieId: parseInt(data.movieId, 10),
-                hallId: parseInt(data.hallId, 10),
+                studioId: parseInt(data.studioId, 10),
                 showDate: data.date,
                 showTime: data.time,
                 price: data.price
@@ -153,8 +175,8 @@ export const AdminShowtimesPage: React.FC = () => {
             await updateShowtimeAsync({
                 id: selectedShowtime.showtimeId,
                 payload: {
-                    movieId: selectedShowtime.movieId,
-                    hallId: selectedShowtime.hallId,
+                    movieId: parseInt(data.movieId, 10),
+                    studioId: parseInt(data.studioId, 10),
                     showDate: data.date,
                     showTime: data.time,
                     price: data.price
@@ -200,7 +222,7 @@ export const AdminShowtimesPage: React.FC = () => {
         }
     };
 
-    const isLoadingAll = loadingST || loadingMovies || loadingHalls;
+    const isLoadingAll = loadingST || loadingMovies || loadingStudios || loadingCinemas;
 
     return (
         <AdminLayout title="Showtimes Management">
@@ -259,7 +281,7 @@ export const AdminShowtimesPage: React.FC = () => {
                             <thead>
                                 <tr className="bg-white/5 border-b border-white/5 text-white/70 text-sm whitespace-nowrap">
                                     <th className="py-4 px-6 font-semibold">Movie</th>
-                                    <th className="py-4 px-6 font-semibold">Studio</th>
+                                    <th className="py-4 px-6 font-semibold">Location & Studio</th>
                                     <th className="py-4 px-6 font-semibold">Date & Time</th>
                                     <th className="py-4 px-6 font-semibold">Price</th>
                                     <th className="py-4 px-6 font-semibold text-right">Actions</th>
@@ -283,7 +305,7 @@ export const AdminShowtimesPage: React.FC = () => {
                                             </td>
                                             <td className="py-4 px-6 whitespace-nowrap">
                                                 <span className="bg-[#1a1a1a] border border-white/10 px-3 py-1 rounded text-sm font-semibold">
-                                                    {getHallName(st.hallId)}
+                                                    {getStudioFullName(st.studioId)}
                                                 </span>
                                             </td>
                                             <td className="py-4 px-6 whitespace-nowrap">
@@ -347,15 +369,15 @@ export const AdminShowtimesPage: React.FC = () => {
                     </div>
                     <div className="flex flex-col gap-1">
                         <label className="text-sm text-white/70">Studio</label>
-                        <select {...register('hallId')} className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 appearance-none">
+                        <select {...register('studioId')} className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500 appearance-none">
                             <option value="">-- Choose a studio --</option>
-                            {safeHalls.map(h => (
-                                <option key={h.hallId} value={h.hallId.toString()}>
-                                    {h.cinemaName} - {h.studioName}
+                            {safeStudios.map(s => (
+                                <option key={s.studioId} value={s.studioId.toString()}>
+                                    {getStudioFullName(s.studioId)}
                                 </option>
                             ))}
                         </select>
-                        {errors.hallId && <span className="text-xs text-red-500 mt-1">{errors.hallId.message}</span>}
+                        {errors.studioId && <span className="text-xs text-red-500 mt-1">{errors.studioId.message}</span>}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1">
@@ -400,11 +422,11 @@ export const AdminShowtimesPage: React.FC = () => {
                         </div>
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Studio</label>
-                            <select {...register('hallId')} disabled className="bg-[#1a1a1a]/50 text-white/40 border border-white/5 rounded-lg p-3 appearance-none cursor-not-allowed">
+                            <select {...register('studioId')} disabled className="bg-[#1a1a1a]/50 text-white/40 border border-white/5 rounded-lg p-3 appearance-none cursor-not-allowed">
                                 <option value="">-- Choose a studio --</option>
-                                {safeHalls.map(h => (
-                                    <option key={h.hallId} value={h.hallId.toString()}>
-                                        {h.cinemaName} - {h.studioName}
+                                {safeStudios.map(s => (
+                                    <option key={s.studioId} value={s.studioId.toString()}>
+                                        {getStudioFullName(s.studioId)}
                                     </option>
                                 ))}
                             </select>

@@ -6,15 +6,18 @@ import { AdminLayout } from '../../components/layout/AdminLayouts';
 import { AdminModal } from '../../components/modals/AdminModal';
 import { DeleteModal } from '../../components/modals/DeleteModal';
 import { Pagination } from '../../components/ui_manual/Pagination';
-import { useGetAdminHalls, type CinemaHallResponse } from '../../api/hooks/Admin/useGetHalls';
 import toast from 'react-hot-toast'; 
 import { AxiosError } from 'axios';
-import { useCreateAdminHall, useUpdateAdminHall, useDeleteAdminHall } from '../../api/mutations/Admin/useHall';
+
+import { useGetAdminStudios, type AdminStudioResponse } from '../../api/hooks/Admin/useGetAdminStudios';
+import { useGetAdminCinemas, type CinemaResponse } from '../../api/hooks/Admin/useGetCinemas';
+import { useCreateAdminStudio, useUpdateAdminStudio, useDeleteAdminStudio } from '../../api/mutations/Admin/useStudio';
 
 const ITEMS_PER_PAGE = 5; 
 
+// Schema Zod (cinemaName diganti jadi cinemaId)
 const studioSchema = z.object({
-    cinemaName: z.string().min(1, "Cinema location is required."),
+    cinemaId: z.number({ message: "Cinema is required" }).min(1, "Please select a valid Cinema."),
     studioName: z.string().min(1, "Studio name is required."),
     totalRows: z.number({ message: "Must be a number" }).min(1, "Min 1").max(26, "Max 26"),
     seatsPerRow: z.number({ message: "Must be a number" }).min(1, "Min 1"),
@@ -23,17 +26,20 @@ const studioSchema = z.object({
 type StudioFormValues = z.infer<typeof studioSchema>;
 
 export const AdminStudiosPage: React.FC = () => {
-    const { data: rawHalls, isLoading, isError } = useGetAdminHalls();
+    // 1. Fetching Data Studios & Cinemas (Paralel)
+    const { data: rawStudios, isLoading: isStudiosLoading, isError: isStudiosError } = useGetAdminStudios();
+    const { data: rawCinemas, isLoading: isCinemasLoading } = useGetAdminCinemas();
 
-    const { mutateAsync: createHallAsync, isPending: isCreating } = useCreateAdminHall();
-    const { mutateAsync: updateHallAsync, isPending: isUpdating } = useUpdateAdminHall();
-    const { mutateAsync: deleteHallAsync, isPending: isDeleting } = useDeleteAdminHall();
+    // Mutations
+    const { mutateAsync: createStudioAsync, isPending: isCreating } = useCreateAdminStudio();
+    const { mutateAsync: updateStudioAsync, isPending: isUpdating } = useUpdateAdminStudio();
+    const { mutateAsync: deleteStudioAsync, isPending: isDeleting } = useDeleteAdminStudio();
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     
-    const [selectedStudio, setSelectedStudio] = useState<CinemaHallResponse | null>(null);
+    const [selectedStudio, setSelectedStudio] = useState<AdminStudioResponse | null>(null);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -47,7 +53,7 @@ export const AdminStudiosPage: React.FC = () => {
     } = useForm<StudioFormValues>({
         resolver: zodResolver(studioSchema),
         defaultValues: {
-            cinemaName: '',
+            cinemaId: 0,
             studioName: '',
             totalRows: 0,
             seatsPerRow: 0
@@ -58,12 +64,27 @@ export const AdminStudiosPage: React.FC = () => {
     const watchedCols = Number(useWatch({ control, name: 'seatsPerRow' })) || 0;
     const dynamicCapacity = watchedRows * watchedCols;
 
+    // Persiapan Data Cinemas untuk Dropdown & Tabel
+    const cinemaList = useMemo(() => {
+        if (Array.isArray(rawCinemas)) return rawCinemas;
+        if (rawCinemas && typeof rawCinemas === 'object' && 'data' in rawCinemas) {
+            return (rawCinemas as unknown as { data: CinemaResponse[] }).data || [];
+        }
+        return [];
+    }, [rawCinemas]);
+
+    const cinemasMap = useMemo(() => {
+        const map = new Map<number, string>();
+        cinemaList.forEach(c => map.set(c.cinemaId, c.cinemaName));
+        return map;
+    }, [cinemaList]);
+
     useEffect(() => {
         if (isAddModalOpen) {
-            reset({ cinemaName: '', studioName: '', totalRows: 0, seatsPerRow: 0 });
+            reset({ cinemaId: 0, studioName: '', totalRows: 0, seatsPerRow: 0 });
         } else if (isEditModalOpen && selectedStudio) {
             reset({
-                cinemaName: selectedStudio.cinemaName,
+                cinemaId: selectedStudio.cinemaId,
                 studioName: selectedStudio.studioName,
                 totalRows: selectedStudio.totalRows,
                 seatsPerRow: selectedStudio.seatsPerRow
@@ -72,21 +93,22 @@ export const AdminStudiosPage: React.FC = () => {
     }, [isAddModalOpen, isEditModalOpen, selectedStudio, reset]);
 
     const { paginatedStudios, totalPages } = useMemo(() => {
-        let safeHalls: CinemaHallResponse[] = [];
+        let safeStudios: AdminStudioResponse[] = [];
         
-        if (Array.isArray(rawHalls)) {
-            safeHalls = rawHalls;
-        } else if (rawHalls && typeof rawHalls === 'object' && 'data' in rawHalls) {
-            const wrappedData = (rawHalls as unknown as { data: CinemaHallResponse[] }).data;
+        if (Array.isArray(rawStudios)) {
+            safeStudios = rawStudios;
+        } else if (rawStudios && typeof rawStudios === 'object' && 'data' in rawStudios) {
+            const wrappedData = (rawStudios as unknown as { data: AdminStudioResponse[] }).data;
             if (Array.isArray(wrappedData)) {
-                safeHalls = wrappedData;
+                safeStudios = wrappedData;
             }
         }
 
-        const filtered = safeHalls.filter(studio => 
-            (studio?.cinemaName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (studio?.studioName || '').toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        const filtered = safeStudios.filter(studio => {
+            const cinemaName = cinemasMap.get(studio.cinemaId) || '';
+            return cinemaName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                   (studio?.studioName || '').toLowerCase().includes(searchTerm.toLowerCase());
+        });
 
         const total = Math.ceil(filtered.length / ITEMS_PER_PAGE);
         const finalTotalPages = total === 0 ? 1 : total;
@@ -97,28 +119,20 @@ export const AdminStudiosPage: React.FC = () => {
         );
 
         return { paginatedStudios: paginated, totalPages: finalTotalPages };
-    }, [searchTerm, currentPage, rawHalls]);
+    }, [searchTerm, currentPage, rawStudios, cinemasMap]);
 
     const onAddSubmit = async (data: StudioFormValues) => {
         try {
-            // Tembak API menggunakan data dari react-hook-form
-            await createHallAsync({
-                cinemaName: data.cinemaName,
-                studioName: data.studioName,
-                totalRows: data.totalRows,
-                seatsPerRow: data.seatsPerRow
-            });
-
-            toast.success(`Studio ${data.studioName} added! Capacity is ${dynamicCapacity} seats.`);
+            await createStudioAsync(data);
+            toast.success(`Studio ${data.studioName} added successfully!`);
             setIsAddModalOpen(false);
             reset(); 
-            
         } catch (error) {
             console.error("Gagal menambahkan studio:", error);
             if (error instanceof AxiosError) {
                 const errorMsg = error.response?.data?.message;
                 const formattedMsg = Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg;
-                toast.error(`Gagal menyimpan: ${formattedMsg || "Terjadi kesalahan saat membuat studio."}`);
+                toast.error(`Gagal menyimpan: ${formattedMsg || "Terjadi kesalahan."}`);
             } else if (error instanceof Error) {
                 toast.error(error.message);
             }
@@ -127,23 +141,15 @@ export const AdminStudiosPage: React.FC = () => {
 
     const onEditSubmit = async (data: StudioFormValues) => {
         if (!selectedStudio) return;
-
         try {
-            await updateHallAsync({
-                id: selectedStudio.hallId,
-                payload: {
-                    cinemaName: data.cinemaName || selectedStudio.cinemaName,
-                    studioName: data.studioName,
-                    totalRows: data.totalRows,
-                    seatsPerRow: data.seatsPerRow
-                }
+            await updateStudioAsync({
+                id: selectedStudio.studioId,
+                payload: data
             });
-
-            toast.success(`${data.studioName} Updated! New capacity is ${dynamicCapacity} seats.`);
+            toast.success(`Studio ${data.studioName} updated successfully!`);
             setIsEditModalOpen(false);
             setSelectedStudio(null); 
             reset();
-
         } catch (error) {
             console.error("Gagal update studio:", error);
             if (error instanceof AxiosError) {
@@ -158,14 +164,11 @@ export const AdminStudiosPage: React.FC = () => {
 
     const handleDeleteConfirm = async () => {
         if (!selectedStudio) return;
-
         try {
-            await deleteHallAsync(selectedStudio.hallId);
-            
+            await deleteStudioAsync(selectedStudio.studioId);
             toast.success(`${selectedStudio.studioName} Deleted Successfully!`);
             setIsDeleteModalOpen(false); 
             setSelectedStudio(null);
-
         } catch (error) {
             console.error("Gagal hapus studio:", error);
             if (error instanceof AxiosError) {
@@ -178,18 +181,20 @@ export const AdminStudiosPage: React.FC = () => {
         }
     };
 
-    const openEditModal = (studio: CinemaHallResponse) => {
+    const openEditModal = (studio: AdminStudioResponse) => {
         setSelectedStudio(studio);
         setIsEditModalOpen(true);
     };
+
+    const isPageLoading = isStudiosLoading || isCinemasLoading;
 
     return (
         <AdminLayout title="Studios & Seats">
             
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <div>
-                    <h2 className="text-xl font-bold">Cinema Halls Management</h2>
-                    <p className="text-white/50 text-sm">Manage cinema locations, studios, and grid dimensions.</p>
+                    <h2 className="text-xl font-bold">Studios Management</h2>
+                    <p className="text-white/50 text-sm">Assign studios to cinemas and manage seat grids.</p>
                 </div>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
@@ -221,26 +226,25 @@ export const AdminStudiosPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* 3. Handle Loading dan Error (Seperti di halaman Movies) */}
-            {isLoading && (
+            {isPageLoading && (
                 <div className="flex items-center justify-center py-20 text-white/50 animate-pulse font-medium">
-                    Loading halls database...
+                    Loading studios database...
                 </div>
             )}
 
-            {isError && (
+            {isStudiosError && (
                 <div className="flex items-center justify-center py-20 text-red-500 font-medium bg-red-500/10 rounded-xl border border-red-500/20">
-                    Gagal memuat data dari server.
+                    Failed to load data from server.
                 </div>
             )}
 
-            {!isLoading && !isError && (
+            {!isPageLoading && !isStudiosError && (
                 <div className="bg-[#111111] border border-white/5 rounded-2xl shadow-xl overflow-hidden flex flex-col">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse min-w-200">
                             <thead>
                                 <tr className="bg-white/5 border-b border-white/5 text-white/70 text-sm whitespace-nowrap">
-                                    <th className="py-4 px-6 font-semibold">Hall ID</th>
+                                    <th className="py-4 px-6 font-semibold">Studio ID</th>
                                     <th className="py-4 px-6 font-semibold">Cinema Location</th>
                                     <th className="py-4 px-6 font-semibold">Studio Name</th>
                                     <th className="py-4 px-6 font-semibold text-center">Grid Setup</th>
@@ -257,16 +261,16 @@ export const AdminStudiosPage: React.FC = () => {
                                     </tr>
                                 ) : (
                                     paginatedStudios.map((studio, index) => (
-                                        <tr key={studio?.hallId || `fallback-${index}`} className="hover:bg-white/2 transition-colors group">
+                                        <tr key={studio?.studioId || `fallback-${index}`} className="hover:bg-white/2 transition-colors group">
                                             
                                             <td className="py-4 px-6 whitespace-nowrap">
-                                                <span className="font-bold text-white/80">#{studio?.hallId}</span>
+                                                <span className="font-bold text-white/80">#{studio?.studioId}</span>
                                             </td>
 
                                             <td className="py-4 px-6 whitespace-nowrap">
                                                 <div className="flex items-center gap-2">
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                                    <span className="font-bold text-base">{studio?.cinemaName || 'Unknown'}</span>
+                                                    <span className="font-bold text-base">{cinemasMap.get(studio?.cinemaId) || 'Unknown Cinema'}</span>
                                                 </div>
                                             </td>
 
@@ -283,7 +287,6 @@ export const AdminStudiosPage: React.FC = () => {
                                             </td>
 
                                             <td className="py-4 px-6 text-center whitespace-nowrap">
-                                                {/* Kapasitas dihitung dinamis dari totalRows * seatsPerRow */}
                                                 <span className="text-blue-400 font-bold">
                                                     {(studio?.totalRows || 0) * (studio?.seatsPerRow || 0)} Seats
                                                 </span>
@@ -323,12 +326,23 @@ export const AdminStudiosPage: React.FC = () => {
                 </div>
             )}
 
+            {/* MODALS */}
             <AdminModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Add New Studio">
                 <form onSubmit={handleSubmit(onAddSubmit)} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1">
-                        <label className="text-sm text-white/70">Cinema Location</label>
-                        <input {...register('cinemaName')} type="text" placeholder="e.g. Graha Bintaro" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
-                        {errors.cinemaName && <span className="text-xs text-red-500 mt-1">{errors.cinemaName.message}</span>}
+                        <label className="text-sm text-white/70">Select Cinema</label>
+                        <select 
+                            {...register('cinemaId', { valueAsNumber: true })} 
+                            className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500"
+                        >
+                            <option value={0} disabled>-- Select a Cinema Branch --</option>
+                            {cinemaList.map(cinema => (
+                                <option key={cinema.cinemaId} value={cinema.cinemaId}>
+                                    {cinema.cinemaName}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.cinemaId && <span className="text-xs text-red-500 mt-1">{errors.cinemaId.message}</span>}
                     </div>
                     
                     <div className="flex flex-col gap-1">
@@ -341,22 +355,20 @@ export const AdminStudiosPage: React.FC = () => {
                         <h4 className="text-sm font-bold text-white mb-3">Seat Grid Setup</h4>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs text-white/70">Total Rows (e.g. A to E = 5)</label>
+                                <label className="text-xs text-white/70">Total Rows</label>
                                 <input 
                                     {...register('totalRows', { valueAsNumber: true })}
                                     type="number" 
                                     className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" 
                                 />
-                                {errors.totalRows && <span className="text-xs text-red-500 mt-1">{errors.totalRows.message}</span>}
                             </div>
                             <div className="flex flex-col gap-1">
-                                <label className="text-xs text-white/70">Seats per Row (Columns)</label>
+                                <label className="text-xs text-white/70">Seats per Row</label>
                                 <input 
                                     {...register('seatsPerRow', { valueAsNumber: true })}
                                     type="number" 
                                     className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" 
                                 />
-                                {errors.seatsPerRow && <span className="text-xs text-red-500 mt-1">{errors.seatsPerRow.message}</span>}
                             </div>
                         </div>
                         
@@ -366,13 +378,10 @@ export const AdminStudiosPage: React.FC = () => {
                         </div>
                     </div>
 
-                    <p className="text-xs text-yellow-500 mt-2 leading-relaxed">
-                        * Note: The backend system will automatically generate the seat map in the Seat table based on the grid setup you enter.
-                    </p>
                     <button 
                         type="submit" 
                         disabled={isCreating}
-                        className="w-full bg-[#e51c23] hover:bg-[#c71118] text-white font-bold py-3 rounded-lg mt-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-[#e51c23] hover:bg-[#c71118] text-white font-bold py-3 rounded-lg mt-2 transition-colors disabled:opacity-50"
                     >
                         {isCreating ? "Generating Grid & Saving..." : "Create Studio"}
                     </button>
@@ -384,14 +393,23 @@ export const AdminStudiosPage: React.FC = () => {
                     <form onSubmit={handleSubmit(onEditSubmit)} className="flex flex-col gap-4">
                         
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm text-white/70">Cinema Location</label>
-                            <input {...register('cinemaName')} type="text" disabled className="bg-[#1a1a1a]/50 border border-white/5 rounded-lg p-3 text-white/40 focus:outline-none cursor-not-allowed" />
+                            <label className="text-sm text-white/70">Change Cinema</label>
+                            <select 
+                                {...register('cinemaId', { valueAsNumber: true })} 
+                                className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500"
+                            >
+                                <option value={0} disabled>-- Select a Cinema Branch --</option>
+                                {cinemaList.map(cinema => (
+                                    <option key={cinema.cinemaId} value={cinema.cinemaId}>
+                                        {cinema.cinemaName}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="flex flex-col gap-1">
                             <label className="text-sm text-white/70">Studio Name</label>
                             <input {...register('studioName')} type="text" className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" />
-                            {errors.studioName && <span className="text-xs text-red-500 mt-1">{errors.studioName.message}</span>}
                         </div>
 
                         <div className="bg-white/5 p-4 rounded-xl border border-white/10 mt-2">
@@ -404,7 +422,6 @@ export const AdminStudiosPage: React.FC = () => {
                                         type="number" 
                                         className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" 
                                     />
-                                    {errors.totalRows && <span className="text-xs text-red-500 mt-1">{errors.totalRows.message}</span>}
                                 </div>
                                 <div className="flex flex-col gap-1">
                                     <label className="text-xs text-white/70">Seats per Row</label>
@@ -413,27 +430,22 @@ export const AdminStudiosPage: React.FC = () => {
                                         type="number" 
                                         className="bg-[#1a1a1a] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-red-500" 
                                     />
-                                    {errors.seatsPerRow && <span className="text-xs text-red-500 mt-1">{errors.seatsPerRow.message}</span>}
                                 </div>
                             </div>
                             
                             <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
                                 <span className="text-sm text-white/50">New Total Capacity:</span>
-                                <span className={`text-lg font-bold ${
-                                    dynamicCapacity !== (selectedStudio.totalRows * selectedStudio.seatsPerRow) ? 'text-red-400' : 'text-blue-400'
-                                }`}>
-                                    {dynamicCapacity} Seats
-                                </span>
+                                <span className="text-lg font-bold text-blue-400">{dynamicCapacity} Seats</span>
                             </div>
                         </div>
 
                         <p className="text-xs text-red-400 mt-2 leading-relaxed">
-                            * Warning: Changing rows or columns will force the backend to reset and overwrite all existing seats for this studio in the database!
+                            * Warning: Changing rows or columns will force the backend to reset all existing seats!
                         </p>
                         <button
                             type="submit" 
                             disabled={isUpdating}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg mt-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg mt-2 transition-colors disabled:opacity-50"
                         >
                             {isUpdating ? "Updating Data..." : "Update Changes"}
                         </button>
@@ -446,7 +458,7 @@ export const AdminStudiosPage: React.FC = () => {
                 onClose={() => setIsDeleteModalOpen(false)} 
                 onConfirm={handleDeleteConfirm}
                 title="Delete Studio"
-                message={`Are you sure you want to delete ${selectedStudio?.studioName} at ${selectedStudio?.cinemaName}? This will permanently delete all associated seats and showtimes!`}
+                message={`Are you sure you want to delete ${selectedStudio?.studioName}? This will permanently delete all associated seats!`}
                 confirmText="Yes, Delete Studio"
                 isLoading={isDeleting}
             />

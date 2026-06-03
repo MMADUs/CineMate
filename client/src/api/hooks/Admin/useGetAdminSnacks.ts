@@ -5,7 +5,7 @@ export interface AdminSnackResponse {
     snackId: number;
     snackName: string;
     category: string;
-    price: string; 
+    price: string;
     stock: number;
     imageKey: string;
     imageUrl: string;

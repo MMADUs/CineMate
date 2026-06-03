@@ -2,31 +2,28 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../axios';
 import type { AdminSnackResponse } from '../../hooks/Admin/useGetAdminSnacks';
 
+export interface CreateSnackPayload {
+    snackName: string;
+    category: string;
+    price: number; 
+    stock: number;
+    imageKey: string;
+}
+
 export const useUploadSnackImage = () => {
-    return useMutation<unknown, Error, File>({
+    return useMutation<{ key: string; url: string }, Error, File>({
         mutationFn: async (file) => {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('folder', 'snacks'); 
 
             const response = await api.post('/admin/uploads/images', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
-            
             return response.data.data || response.data;
         }
     });
 };
-
-export interface CreateSnackPayload {
-    snackName: string;
-    category: string;
-    price: number;
-    stock: number;
-    imageKey: string;
-}
 
 export const useCreateAdminSnack = () => {
     const queryClient = useQueryClient();
@@ -42,7 +39,6 @@ export const useCreateAdminSnack = () => {
     });
 };
 
-// Hook untuk Mengupdate Snack
 export const useUpdateAdminSnack = () => {
     const queryClient = useQueryClient();
 
@@ -57,7 +53,6 @@ export const useUpdateAdminSnack = () => {
     });
 };
 
-// Hook untuk Menghapus Snack dari Database
 export const useDeleteAdminSnack = () => {
     const queryClient = useQueryClient();
 
@@ -72,7 +67,6 @@ export const useDeleteAdminSnack = () => {
     });
 };
 
-// Hook untuk Menghapus Gambar dari RustFS (agar tidak nyampah di server)
 export const useDeleteSnackImage = () => {
     return useMutation<unknown, Error, string>({
         mutationFn: async (imageKey) => {

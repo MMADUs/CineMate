@@ -7,9 +7,24 @@ export interface CheckoutPayload {
 }
 
 export interface CheckoutResponse {
-    booking: {
+    invoiceUrl?: string;
+    booking?: {
         bookingId: string;
-        payment: {
+        payment?: {
+            invoiceUrl: string;
+        };
+    };
+    payment?: {
+        invoiceUrl: string;
+    };
+    data?: {
+        invoiceUrl?: string;
+        booking?: {
+            payment?: {
+                invoiceUrl: string;
+            };
+        };
+        payment?: {
             invoiceUrl: string;
         };
     };

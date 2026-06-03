@@ -1,44 +1,43 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import toast from 'react-hot-toast';
+import { useNavigate, useLocation } from 'react-router-dom';
+import toast, { Toaster } from 'react-hot-toast';
 import { Navbar } from '../../components/layout/Navbar';
 import { Footer } from '../../components/layout/Footer';
 import { Button } from '../../components/ui_manual/Button';
 import { FoodCard } from '../../components/cards/FoodCard';
 import { FoodCardSkeleton } from '../../components/cards/FoodCardSkeleton'; 
 
-// Import Hooks
 import { useGetPublicFnB, type FnbItem } from '../../api/hooks/User/useGetPublicFnB';
-import { useCheckoutFnB } from '../../api/mutations/useCheckoutFnB';
-import { useGetUserMovieOrders, type MovieOrderResponse } from '../../api/hooks/User/useGetUserMovieOrders'; // <-- IMPORT BARU
+import { useCheckoutFnB, type FnBCheckoutPayload } from '../../api/mutations/useCheckoutFnB';
+import { useGetUserMovieOrders, type MovieOrderResponse } from '../../api/hooks/User/useGetUserMovieOrders'; 
+import { useGetProfile } from '../../api/hooks/User/useProfile'; 
 import { isAxiosError } from 'axios'; 
 
 interface CartItem extends FnbItem {
     quantity: number;
 }
 
-type DeepCheckoutResponse = {
-    payment?: { invoiceUrl?: string };
-    order?: { payment?: { invoiceUrl?: string } };
-    data?: {
-        payment?: { invoiceUrl?: string };
-        order?: { payment?: { invoiceUrl?: string } };
-        invoiceUrl?: string;
-    };
-    invoiceUrl?: string;
-};
+interface BackendErrorResponse {
+    message?: string;
+    error?: string | { message?: string };
+}
 
 export const FoodBeveragePage: React.FC = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>('');
     
-    // Fetch Data
+    const { data: profile } = useGetProfile();
+
     const { data: rawFnBData, isLoading, isError } = useGetPublicFnB(activeFilter);
-    const { data: rawMovieOrders } = useGetUserMovieOrders(); // <-- FETCH RIWAYAT TIKET UNTUK VALIDASI
+    const { data: rawMovieOrders } = useGetUserMovieOrders(!!profile); 
     const { mutateAsync: checkoutFnB, isPending: isCheckingOut } = useCheckoutFnB();
 
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isForMovie, setIsForMovie] = useState<boolean>(false);
-    const [bookingIdInput, setBookingIdInput] = useState<string>(''); // <-- UBAH JADI INPUT BOOKING ID
+    const [bookingIdInput, setBookingIdInput] = useState<string>(''); 
 
     useEffect(() => {
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -72,6 +71,12 @@ export const FoodBeveragePage: React.FC = () => {
     }, [fnbItems, searchQuery]);
 
     const handleAddToCart = (item: FnbItem) => {
+        if (!profile) {
+            toast.error("Please log in to add items to your cart.");
+            setTimeout(() => navigate('/login', { state: { returnUrl: location.pathname } }), 1500);
+            return;
+        }
+
         setCart(prev => {
             const existing = prev.find(i => i.snackId === item.snackId);
             if (existing) {
@@ -114,7 +119,7 @@ export const FoodBeveragePage: React.FC = () => {
             return;
         }
 
-        let parsedShowtimeId: number | undefined = undefined;
+        let parsedBookingId: string | undefined = undefined;
         
         if (isForMovie) {
             const inputId = bookingIdInput.trim().toUpperCase();
@@ -133,11 +138,11 @@ export const FoodBeveragePage: React.FC = () => {
                 return;
             }
 
-            parsedShowtimeId = matchedOrder.showtimeId;
+            parsedBookingId = matchedOrder.bookingId;
         }
 
-        const payload = {
-            showtimeId: parsedShowtimeId,
+        const payload: FnBCheckoutPayload = {
+            bookingId: parsedBookingId,
             items: cart.map(item => ({
                 snackId: item.snackId,
                 quantity: item.quantity
@@ -147,14 +152,15 @@ export const FoodBeveragePage: React.FC = () => {
         try {
             const response = await checkoutFnB(payload);
             
-            const rawRes = response as DeepCheckoutResponse;
             const invoiceUrl = 
-                rawRes?.payment?.invoiceUrl || 
-                rawRes?.order?.payment?.invoiceUrl || 
-                rawRes?.data?.payment?.invoiceUrl || 
-                rawRes?.data?.order?.payment?.invoiceUrl ||
-                rawRes?.invoiceUrl ||
-                rawRes?.data?.invoiceUrl;
+                response?.payment?.invoiceUrl || 
+                response?.order?.payment?.invoiceUrl || 
+                response?.order?.booking?.payment?.invoiceUrl || 
+                response?.data?.payment?.invoiceUrl || 
+                response?.data?.order?.payment?.invoiceUrl ||
+                response?.data?.order?.booking?.payment?.invoiceUrl ||
+                response?.invoiceUrl ||
+                response?.data?.invoiceUrl;
 
             if (invoiceUrl) {
                 window.location.href = invoiceUrl;
@@ -165,11 +171,19 @@ export const FoodBeveragePage: React.FC = () => {
             console.error("FnB Checkout Failed:", error);
             
             if (isAxiosError(error)) {
-                if (error.response && error.response.data) {
-                    toast.error("Message from Backend:\n\n" + JSON.stringify(error.response.data, null, 2));
-                } else {
-                    toast.error("Network/server error: " + error.message);
+                const responseData = error.response?.data as BackendErrorResponse;
+                
+                let errorMessage = "Checkout failed. Please try again.";
+                
+                if (typeof responseData?.error === 'object' && responseData.error?.message) {
+                    errorMessage = responseData.error.message;
+                } else if (typeof responseData?.message === 'string') {
+                    errorMessage = responseData.message;
+                } else if (typeof responseData?.error === 'string') {
+                    errorMessage = responseData.error;
                 }
+
+                toast.error(errorMessage);
             } else if (error instanceof Error) {
                 toast.error("Local error: " + error.message);
             } else {
@@ -180,7 +194,7 @@ export const FoodBeveragePage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-[#0d0d0d] text-white font-sans overflow-x-hidden flex flex-col">
-            
+            <Toaster position="top-right" reverseOrder={false} />
             <Navbar />
 
             <main className="max-w-350 mx-auto px-4 md:px-12 pt-28 md:pt-36 pb-16 grow w-full">
@@ -224,9 +238,9 @@ export const FoodBeveragePage: React.FC = () => {
                         </div>
 
                         {isError ? (
-                             <div className="text-center py-10 text-red-500 font-bold border border-white/5 rounded-2xl bg-[#111]">
-                                Gagal memuat daftar menu. Silakan coba lagi.
-                             </div>
+                            <div className="text-center py-10 text-red-500 font-bold border border-white/5 rounded-2xl bg-[#111]">
+                                Failed to load menu. Please refresh the page.
+                            </div>
                         ) : (
                             <section className="px-2 md:px-0">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
@@ -318,11 +332,11 @@ export const FoodBeveragePage: React.FC = () => {
 
                                     <div className="border-t border-gray-200 pt-4 shrink-0">
                                         <div className="flex justify-between items-center mb-4">
-                                            <span className="text-black font-bold text-sm">Total Belanja:</span>
+                                            <span className="text-black font-bold text-sm">Total Amounts:</span>
                                             <span className="text-red-600 font-black text-lg">Rp {totalAmount.toLocaleString('id-ID')}</span>
                                         </div>
                                         <Button 
-                                            label={isCheckingOut ? "Memproses..." : "Checkout Sekarang"}
+                                            label={isCheckingOut ? "Processing..." : "Checkout Now"}
                                             variant="primary"
                                             shape="rounded"
                                             onClick={handleCheckout}

@@ -4,7 +4,7 @@ import { api } from '../../axios';
 export interface AdminShowtimeResponse {
     showtimeId: number;
     movieId: number;
-    hallId: number;
+    studioId: number; 
     showDate: string;
     showTime: string;
     price: string;

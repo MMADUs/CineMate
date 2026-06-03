@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../axios';
 
-export interface HallInfo {
-    hallId: number;
-    cinemaName: string;
+export interface StudioInfo {
+    studioId: number;
+    cinemaId: number;
     studioName: string;
     totalRows: number;
     seatsPerRow: number;
@@ -11,14 +11,14 @@ export interface HallInfo {
 
 export interface Seat {
     seatId: number;
-    hallId: number;
+    studioId: number;
     rowLetter: string;
     seatNumber: number;
     isOccupied: boolean;
 }
 
 export interface ShowtimeSeatsResponse {
-    hall: HallInfo;
+    studio: StudioInfo; 
     seats: Seat[];
 }
 
@@ -29,7 +29,7 @@ export const useGetShowtimeSeats = (showtimeId?: string) => {
             const response = await api.get<ShowtimeSeatsResponse>(`/showtimes/${showtimeId}/seats`);
             return response.data;
         },
-        enabled: !!showtimeId, // Hanya jalan jika showtimeId ada di URL
+        enabled: !!showtimeId,
         refetchOnWindowFocus: false,
     });
 };

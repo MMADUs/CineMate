@@ -1,32 +1,25 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom'; 
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'; 
 import { Navbar } from '../../components/layout/Navbar';
 import { Footer } from '../../components/layout/Footer';
 import { TrailerModal } from '../../components/modals/TrailerModal'; 
 import { Breadcrumbs } from '../../components/layout/Breadcrumbs'; 
+import toast, { Toaster } from 'react-hot-toast';
 
-// Import Hooks
 import { useGetPublicMovieDetails, type PublicMovieDetails } from '../../api/hooks/User/useGetPublicMovieDetails';
-import { useGetPublicShowtimes, type PublicShowtime } from '../../api/hooks/User/useGetPublicShowtimes';
-
-// KAMUS DATA 
-const HALL_MAPPING: Record<number, { location: string; studioName: string }> = {
-    1: { location: "CGV Grand Indonesia", studioName: "Studio 1" },
-    2: { location: "CGV Grand Indonesia", studioName: "Studio 2" },
-    4: { location: "Alam Sutera XXI", studioName: "Studio 1" },
-    5: { location: "Alam Sutera XXI", studioName: "Studio 2" },
-};
+import { useGetProfile } from '../../api/hooks/User/useProfile';
 
 export const MovieDetailsPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate(); 
+    const location = useLocation();
     
     const [isTrailerOpen, setIsTrailerOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<string>('');
 
-    // 1. Tembak 2 API secara paralel
     const { data: rawMovieData, isLoading: isMovieLoading, isError } = useGetPublicMovieDetails(id);
-    const { data: rawShowtimesData, isLoading: isShowtimesLoading } = useGetPublicShowtimes(id);
+    
+    const { data: profile } = useGetProfile();
 
     useEffect(() => {
         const scrollTimer = setTimeout(() => {
@@ -35,11 +28,9 @@ export const MovieDetailsPage: React.FC = () => {
         return () => clearTimeout(scrollTimer);
     }, [id]);
 
-    // Ekstraksi Data Film
     const movie = useMemo(() => {
         if (!rawMovieData) return null;
         let safeData: PublicMovieDetails = rawMovieData;
-        
         if ('data' in rawMovieData && typeof rawMovieData === 'object') {
             const wrapped = (rawMovieData as unknown as { data: PublicMovieDetails }).data;
             if (wrapped && typeof wrapped === 'object') {
@@ -49,48 +40,24 @@ export const MovieDetailsPage: React.FC = () => {
         return safeData;
     }, [rawMovieData]);
 
-    // 2. Ekstraksi Data Showtimes dari API Baru
-    const safeShowtimes = useMemo(() => {
-        if (!rawShowtimesData) return [];
-        let safeData: PublicShowtime[] = [];
-        
-        if (Array.isArray(rawShowtimesData)) {
-            safeData = rawShowtimesData;
-        } else if (typeof rawShowtimesData === 'object' && 'data' in rawShowtimesData) {
-            const wrapped = (rawShowtimesData as unknown as { data: PublicShowtime[] }).data;
-            if (Array.isArray(wrapped)) safeData = wrapped;
-        }
-        return safeData;
-    }, [rawShowtimesData]);
+    const safeShowtimes = movie?.showtimes || [];
 
-    // Ambil tanggal unik dari safeShowtimes (bukan dari movie.showtimes lagi)
     const uniqueDates = useMemo(() => {
         const dates = safeShowtimes.map(st => st.showDate);
         return Array.from(new Set(dates)).sort();
     }, [safeShowtimes]); 
 
-    // Smart Date Selector (Otomatis pilih hari ini)
     const activeDate = useMemo(() => {
         if (selectedDate) return selectedDate;
         if (uniqueDates.length === 0) return '';
-
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const todayStr = `${year}-${month}-${day}`;
-
+        const todayStr = new Date().toISOString().split('T')[0];
         if (uniqueDates.includes(todayStr)) return todayStr;
-
         const futureDates = uniqueDates.filter(date => date >= todayStr);
         if (futureDates.length > 0) return futureDates[0];
-
         return uniqueDates[0];
     }, [selectedDate, uniqueDates]);
 
-    // Pengelompokan Jadwal Berdasarkan Lokasi + Diurutkan Sesuai Jam
     const showtimesByLocation = useMemo(() => {
-        // Gunakan safeShowtimes dari API baru
         const filtered = safeShowtimes
             .filter(st => st.showDate === activeDate)
             .sort((a, b) => a.showTime.localeCompare(b.showTime)); 
@@ -98,12 +65,11 @@ export const MovieDetailsPage: React.FC = () => {
         const grouped: Record<string, typeof filtered> = {};
         
         filtered.forEach(st => {
-            const hallInfo = HALL_MAPPING[st.hallId] || { location: "CineMate Studio", studioName: `Studio ${st.hallId}` };
-            
-            if (!grouped[hallInfo.location]) {
-                grouped[hallInfo.location] = [];
+            const cinemaName = st.studio?.cinema?.cinemaName || "Unknown Cinema";
+            if (!grouped[cinemaName]) {
+                grouped[cinemaName] = [];
             }
-            grouped[hallInfo.location].push(st);
+            grouped[cinemaName].push(st);
         });
         
         return grouped;
@@ -122,11 +88,15 @@ export const MovieDetailsPage: React.FC = () => {
     };
 
     const handleShowtimeClick = (showtimeId: number) => {
+        if (!profile) {
+            toast.error("Please log in to book tickets.");
+            setTimeout(() => navigate('/login', { state: { returnUrl: location.pathname } }), 1000);
+            return;
+        }
         navigate(`/seat-selection/${id}/${showtimeId}`); 
     };
 
-    // Tampilkan loading jika salah satu API masih loading
-    if (isMovieLoading || isShowtimesLoading) {
+    if (isMovieLoading) {
         return (
             <div className="min-h-screen bg-[#0d0d0d] text-white flex flex-col items-center justify-center">
                 <span className="animate-pulse text-xl font-semibold text-white/50">Load Film Details...</span>
@@ -159,6 +129,7 @@ export const MovieDetailsPage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-[#0d0d0d] text-white font-sans overflow-x-hidden flex flex-col">
+            <Toaster position="top-right" reverseOrder={false} />
             <Navbar />
 
             <main className="max-w-350 mx-auto px-6 md:px-12 pt-28 md:pt-36 pb-16 grow w-full">
@@ -245,15 +216,15 @@ export const MovieDetailsPage: React.FC = () => {
                                         There are no showtimes available.
                                     </div>
                                 ) : (
-                                    Object.entries(showtimesByLocation).map(([locationName, times]) => (
-                                        <div key={locationName} className="flex flex-col gap-4">
-                                            <h4 className="text-lg md:text-xl font-bold text-white/90">{locationName}</h4>
+                                    Object.entries(showtimesByLocation).map(([cinemaName, times]) => (
+                                        <div key={cinemaName} className="flex flex-col gap-4">
+                                            <h4 className="text-lg md:text-xl font-bold text-white/90">{cinemaName}</h4>
                                             
                                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                                                 {times.map((item) => {
                                                     const isExpired = checkIsExpired(item.showDate, item.showTime);
-                                                    const hallInfo = HALL_MAPPING[item.hallId] || { studioName: `Studio ${item.hallId}` };
                                                     const formattedPrice = `Rp ${Number(item.price).toLocaleString('id-ID')}`;
+                                                    const studioName = item.studio?.studioName || `Studio ${item.studioId}`;
 
                                                     let containerStyle = "rounded-xl p-4 flex flex-col items-center justify-center gap-2 transition-all duration-300 ";
                                                     
@@ -270,7 +241,7 @@ export const MovieDetailsPage: React.FC = () => {
                                                             className={containerStyle}
                                                         >
                                                             <span className={`text-xs md:text-sm font-semibold uppercase ${isExpired ? 'text-white/30' : 'text-white/70'}`}>
-                                                                {hallInfo.studioName}
+                                                                {studioName}
                                                             </span>
                                                             <span className={`font-bold text-base md:text-lg ${isExpired ? 'text-white/30' : 'text-white'}`}>
                                                                 {formattedPrice}

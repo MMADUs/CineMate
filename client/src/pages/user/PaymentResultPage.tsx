@@ -1,4 +1,3 @@
-// src/pages/user/PaymentResultPage.tsx
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from '../../components/layout/Navbar';
@@ -9,7 +8,6 @@ export const PaymentResultPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     
-    // Cek apakah user ada di /payment/success atau /payment/failed
     const isSuccess = location.pathname.includes('success');
 
     useEffect(() => {

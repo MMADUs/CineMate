@@ -83,7 +83,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         <div className="w-full rounded-3xl border border-white/10 bg-[#121212]/80 backdrop-blur-md px-10 py-12 shadow-2xl">
 
           <div className="text-center mb-10">
-            {/* Judul bisa disesuaikan sedikit untuk Admin */}
             <h1 className="text-[2.5rem] font-bold text-white tracking-tight leading-none mb-2">
               {isAdminLogin ? "Admin Login" : "Login"}
             </h1>
@@ -131,7 +130,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               />
             </div>
 
-            {/* 4. Sembunyikan Google Login jika ini adalah halaman Admin */}
             {!isAdminLogin && (
                 <>
                     <div className="py-2">
@@ -167,7 +165,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           </form>
         </div>
 
-        {/* 5. Sembunyikan Register jika ini adalah halaman Admin */}
         {!isAdminLogin && (
             <p className="text-sm text-white/50 text-center mt-2">
               Doesn't Have an Account?{" "}

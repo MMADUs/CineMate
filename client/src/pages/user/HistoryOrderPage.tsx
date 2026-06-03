@@ -7,16 +7,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useGetUserMovieOrders, type MovieOrderResponse } from '../../api/hooks/User/useGetUserMovieOrders';
 import { useGetUserFnBOrders, type FnBOrderResponse } from '../../api/hooks/User/useGetUserFnBOrders';
-import { useGetShowtimeSeats, type ShowtimeSeatsResponse } from '../../api/hooks/User/useGetShowtimeSeats'; 
 import { useGetPublicFnB, type FnbItem } from '../../api/hooks/User/useGetPublicFnB';
-
-// KAMUS DATA UNTUK LOKASI BIOSKOP
-const HALL_MAPPING: Record<number, { location: string; studioName: string }> = {
-    1: { location: "CGV Grand Indonesia", studioName: "Studio 1" },
-    2: { location: "CGV Grand Indonesia", studioName: "Studio 2" },
-    4: { location: "Alam Sutera XXI", studioName: "Studio 1" },
-    5: { location: "Alam Sutera XXI", studioName: "Studio 2" },
-};
 
 type MainTab = 'Movie' | 'FnB';
 type FilterStatus = 'All' | 'Completed' | 'Expired' | 'Pending';
@@ -47,28 +38,13 @@ const formatCardDate = (dateStr: string) => {
 
 const MovieOrderCard: React.FC<{ order: MovieOrderResponse; navigate: ReturnType<typeof useNavigate> }> = ({ order, navigate }) => {
     const normStatus = getNormalizedStatus(order.orderStatus);
-    const hallInfo = HALL_MAPPING[order.showtime?.hallId] || { location: "CineMate Pusat", studioName: `Studio ${order.showtime?.hallId || '-'}` };
-
-    const { data: rawSeatsData } = useGetShowtimeSeats(order.showtimeId?.toString());
-
-    const seatNameMap = useMemo(() => {
-        const map = new Map<number, string>();
-        if (!rawSeatsData) return map;
-
-        let actualSeats: { seatId: number; rowLetter: string; seatNumber: number }[] = [];
-        if ('seats' in rawSeatsData) {
-            actualSeats = (rawSeatsData as unknown as ShowtimeSeatsResponse).seats;
-        } else if ('data' in rawSeatsData && typeof rawSeatsData === 'object') {
-            const wrapped = (rawSeatsData as unknown as { data: ShowtimeSeatsResponse }).data;
-            if (wrapped && 'seats' in wrapped) actualSeats = wrapped.seats;
-        }
-
-        actualSeats.forEach(seat => {
-            map.set(seat.seatId, `${seat.rowLetter}${seat.seatNumber}`);
-        });
-
-        return map;
-    }, [rawSeatsData]);
+    
+    const cinemaLocation = order.showtime?.studio?.cinema?.location || order.showtime?.studio?.cinema?.cinemaName || 'Unknown Cinema';
+    const studioName = order.showtime?.studio?.studioName || `Studio ${order.showtime?.studioId || '-'}`;
+    
+    const seatsDisplay = order.seats && order.seats.length > 0 
+        ? order.seats.map(s => `${s.rowLetter}${s.seatNumber}`).join(', ') 
+        : 'Check E-Ticket';
 
     return (
         <div className="flex flex-col sm:flex-row gap-6 w-full border-b border-white/5 pb-8 last:border-0 mb-8">
@@ -101,18 +77,16 @@ const MovieOrderCard: React.FC<{ order: MovieOrderResponse; navigate: ReturnType
                     <div className="bg-[#111111] border border-white/5 rounded-xl p-3 md:p-4 flex flex-col items-center justify-center text-center">
                         <span className="text-white/50 text-[10px] md:text-xs mb-1 tracking-wider font-bold">SEATS</span>
                         <span className="font-bold text-sm md:text-base text-red-500">
-                            {order.seats && order.seats.length > 0 
-                                ? order.seats.map(s => seatNameMap.get(s.seatId) || `Seat ${s.seatId}`).join(', ') 
-                                : 'Check E-Ticket'}
+                            {seatsDisplay}
                         </span>
                     </div>
                     <div className="bg-[#111111] border border-white/5 rounded-xl p-3 md:p-4 flex flex-col items-center justify-center text-center">
                         <span className="text-white/50 text-[10px] md:text-xs mb-1 tracking-wider font-bold">STUDIO</span>
-                        <span className="font-bold text-sm md:text-base">{hallInfo.studioName}</span>
+                        <span className="font-bold text-sm md:text-base">{studioName}</span>
                     </div>
                     <div className="bg-[#111111] border border-white/5 rounded-xl p-3 md:p-4 flex flex-col items-center justify-center text-center overflow-hidden">
                         <span className="text-white/50 text-[10px] md:text-xs mb-1 tracking-wider font-bold">CINEMA</span>
-                        <span className="font-bold text-sm md:text-base truncate w-full px-1" title={hallInfo.location}>{hallInfo.location}</span>
+                        <span className="font-bold text-sm md:text-base truncate w-full px-1" title={cinemaLocation}>{cinemaLocation}</span>
                     </div>
                     <div className="bg-[#111111] border border-white/5 rounded-xl p-3 md:p-4 flex flex-col items-center justify-center text-center col-span-2 md:col-span-1">
                         <span className="text-white/50 text-[10px] md:text-xs mb-1 tracking-wider font-bold">TOTAL</span>
@@ -142,8 +116,7 @@ const MovieOrderCard: React.FC<{ order: MovieOrderResponse; navigate: ReturnType
     );
 };
 
-// MENERIMA PROPS movieOrders AGAR BISA MENCARI ID TIKET
-const FnBOrderCard: React.FC<{ order: FnBOrderResponse; navigate: ReturnType<typeof useNavigate>; movieOrders: MovieOrderResponse[] }> = ({ order, navigate, movieOrders }) => {
+const FnBOrderCard: React.FC<{ order: FnBOrderResponse; navigate: ReturnType<typeof useNavigate>; movieOrders: MovieOrderResponse[] }> = ({ order, navigate }) => {
     const normStatus = getNormalizedStatus(order.orderStatus);
 
     const { data: rawSnacksData } = useGetPublicFnB(null);
@@ -155,7 +128,7 @@ const FnBOrderCard: React.FC<{ order: FnBOrderResponse; navigate: ReturnType<typ
         let actualSnacks: FnbItem[] = [];
         if (Array.isArray(rawSnacksData)) {
             actualSnacks = rawSnacksData;
-        } else if (typeof rawSnacksData === 'object' && 'data' in rawSnacksData) {
+        } else if (rawSnacksData && typeof rawSnacksData === 'object' && 'data' in rawSnacksData) {
             const wrapped = (rawSnacksData as unknown as { data: FnbItem[] }).data;
             if (Array.isArray(wrapped)) actualSnacks = wrapped;
         }
@@ -168,10 +141,9 @@ const FnBOrderCard: React.FC<{ order: FnBOrderResponse; navigate: ReturnType<typ
     }, [rawSnacksData]);
 
     const relatedTicketId = useMemo(() => {
-        if (!order.showtimeId) return null;
-        const matchedMovie = movieOrders.find(m => m.showtimeId === order.showtimeId);
-        return matchedMovie ? matchedMovie.bookingId.split('-')[0].toUpperCase() : null;
-    }, [order.showtimeId, movieOrders]);
+        if (!order.bookingId) return null;
+        return order.bookingId.split('-')[0].toUpperCase();
+    }, [order.bookingId]);
 
     return (
         <div className="flex flex-col sm:flex-row gap-6 w-full border-b border-white/5 pb-8 last:border-0 mb-8">
@@ -198,7 +170,7 @@ const FnBOrderCard: React.FC<{ order: FnBOrderResponse; navigate: ReturnType<typ
                 <div className="flex flex-wrap items-center gap-2">
                     <span className="bg-white/10 px-3 py-1 rounded text-white/80 text-xs font-semibold">{formatCardDate(order.orderDate)}</span>
                     
-                    {order.showtimeId ? (
+                    {order.bookingId ? (
                         <span className="bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1 rounded text-xs font-semibold">
                             🎬 BOOKING TICKET ID : {relatedTicketId ? `${relatedTicketId}` : ''}
                         </span>
@@ -281,7 +253,7 @@ export const OrderHistoryPage: React.FC = () => {
     const movieOrders = useMemo(() => {
         if (!rawMovieOrders) return [];
         if (Array.isArray(rawMovieOrders)) return rawMovieOrders;
-        if (typeof rawMovieOrders === 'object' && 'data' in rawMovieOrders) {
+        if (rawMovieOrders && typeof rawMovieOrders === 'object' && 'data' in rawMovieOrders) {
             const wrapped = (rawMovieOrders as unknown as { data: MovieOrderResponse[] }).data;
             if (Array.isArray(wrapped)) return wrapped;
         }
@@ -291,7 +263,7 @@ export const OrderHistoryPage: React.FC = () => {
     const fnbOrders = useMemo(() => {
         if (!rawFnBOrders) return [];
         if (Array.isArray(rawFnBOrders)) return rawFnBOrders;
-        if (typeof rawFnBOrders === 'object' && 'data' in rawFnBOrders) {
+        if (rawFnBOrders && typeof rawFnBOrders === 'object' && 'data' in rawFnBOrders) {
             const wrapped = (rawFnBOrders as unknown as { data: FnBOrderResponse[] }).data;
             if (Array.isArray(wrapped)) return wrapped;
         }

@@ -1,13 +1,29 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../axios';
 
+export interface PublicCinema {
+    cinemaId: number;
+    cinemaName: string;
+    location: string;
+}
+
+export interface PublicStudio {
+    studioId: number;
+    cinemaId: number;
+    studioName: string;
+    totalRows: number;
+    seatsPerRow: number;
+    cinema: PublicCinema;
+}
+
 export interface PublicShowtime {
     showtimeId: number;
     movieId: number;
-    hallId: number;
+    studioId: number; 
     showDate: string;
     showTime: string;
-    price: number;
+    price: string;
+    studio: PublicStudio; 
 }
 
 export interface PublicMovieDetails {
@@ -23,7 +39,7 @@ export interface PublicMovieDetails {
     releaseDate: string;
     endDate: string;
     status: string;
-    showtimes: PublicShowtime[];
+    showtimes: PublicShowtime[]; 
 }
 
 export const useGetPublicMovieDetails = (movieId?: string) => {
