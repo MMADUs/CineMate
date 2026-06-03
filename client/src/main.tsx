@@ -1,10 +1,88 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
-import App from './App.tsx'
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+import { LoginPage } from "./pages/auth/LoginPage"
+import { RegisterPage } from "./pages/auth/RegisterPage"
+import { HomePage } from "./pages/user/HomePage" 
+import { MoviePage } from './pages/user/MoviePage'
+import { FoodBeveragePage } from './pages/user/FoodBeveragePage'
+import { MovieDetailsPage } from './pages/user/MovieDetailsPage'
+import { SeatSelectionPage } from './pages/user/SeatSelectionPage'
+import { PaymentPage } from './pages/user/PaymentPage'
+// import { ReceiptPage } from './pages/user/ReceiptPage'
+import { OrderHistoryPage } from './pages/user/HistoryOrderPage'
+import { TicketDetailsPage } from './pages/user/TicketDetailsPage'
+import { ProfilePage } from './pages/user/ProfilePage'
+import { PaymentResultPage } from './pages/user/PaymentResultPage'
+
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
+import { AdminMoviesPage } from './pages/admin/AdminMoviesPage'
+import { AdminShowtimesPage } from './pages/admin/AdminShowtimesPage'
+import { AdminTransactionsPage } from './pages/admin/AdminBookingTransactionsPage'
+import { AdminFnBTransactionsPage } from './pages/admin/AdminFnBTransactionsPage'
+import { AdminFnbPage } from './pages/admin/AdminFnBPage';
+import { AdminStudiosPage } from './pages/admin/AdminStudiosPage'
+import { AdminProfilePage } from './pages/admin/AdminProfilePage'
+
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { AdminGuard } from './components/guards/AdminGuards';
+import { AdminCinemasPage } from './pages/admin/AdminCinemaPage'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1, 
+    },
+  },
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <GoogleOAuthProvider clientId="406090746990-5gcra701or1f4dcgg4gv8lghlhdllfi9.apps.googleusercontent.com">
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage registerHref="/register" />} />
+            <Route path="/register" element={<RegisterPage loginHref="/login" />} />
+
+            {/* User Routes */}
+            <Route path="/movie" element={<MoviePage />} />
+            <Route path="/fnb" element={<FoodBeveragePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+
+            <Route path="/movie/:id" element={<MovieDetailsPage />} />
+            <Route path="/seat-selection/:movieId/:showtimeId" element={<SeatSelectionPage />} />
+            <Route path="/order/:movieId/:showtimeId/:seats" element={<PaymentPage />} />
+            {/* <Route path="/receipt/:movieId/:showtimeId/:seats" element={<ReceiptPage />} /> */}
+            <Route path="/history" element={<OrderHistoryPage />} />
+            <Route path="/ticket/:orderId" element={<TicketDetailsPage />} />
+
+            <Route path="/payment/success" element={<PaymentResultPage />} />
+            <Route path="/payment/failed" element={<PaymentResultPage />} />
+
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<LoginPage />} />
+            <Route element={<AdminGuard />}>
+                <Route path="/admin" element={<AdminDashboardPage />} />
+                <Route path="/admin/movies" element={<AdminMoviesPage />} />
+                <Route path="/admin/cinemas" element={<AdminCinemasPage />} />
+                <Route path="/admin/studios" element={<AdminStudiosPage />} />
+                <Route path="/admin/showtimes" element={<AdminShowtimesPage />} />
+                <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
+                <Route path="/admin/ordersfnb" element={<AdminFnBTransactionsPage />} />
+                <Route path="/admin/fnb" element={<AdminFnbPage />} />
+                <Route path="/admin/profile" element={<AdminProfilePage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
   </StrictMode>,
 )
