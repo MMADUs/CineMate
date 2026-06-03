@@ -45,11 +45,9 @@ api.interceptors.response.use(
             const isAdminRequest = originalRequest.url?.includes('/admin/');
             const refreshEndpoint = isAdminRequest ? '/admin/auth/refresh' : '/auth/refresh';
             
-            // CEK APAKAH INI PERMINTAAN PROFIL DARI NAVBAR
             const isProfileRequest = originalRequest.url?.includes('/profile');
 
             if (originalRequest.url?.includes(refreshEndpoint)) {
-                // Jangan redirect kalau ternyata dia cuma guest (belum punya profile)
                 if (!isProfileRequest) {
                     window.location.href = isAdminRequest ? '/admin/login' : '/login';
                 }
@@ -74,7 +72,6 @@ api.interceptors.response.use(
                     const axiosRefreshError = refreshError as AxiosError;
                     processQueue(axiosRefreshError);
                     
-                    // Jangan redirect ke login jika yang gagal di-refresh adalah navbar profile
                     if (!isProfileRequest) {
                         window.location.href = isAdminRequest ? '/admin/login' : '/login';
                     }

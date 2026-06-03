@@ -1,4 +1,3 @@
-// src/api/mutations/useUpdateProfile.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../axios';
 import { AxiosError } from 'axios';
