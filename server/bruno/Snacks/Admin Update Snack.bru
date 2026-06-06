@@ -1,0 +1,23 @@
+meta {
+  name: Admin Update Snack
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{apiUrl}}/admin/snacks/{{snackId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "snackName": "Caramel Popcorn Large",
+    "price": 50000,
+    "stock": 120
+  }
+}

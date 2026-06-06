@@ -1,0 +1,25 @@
+meta {
+  name: Admin Create Snack
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{apiUrl}}/admin/snacks
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "snackName": "Caramel Popcorn",
+    "category": "Snack",
+    "price": 45000,
+    "stock": 100,
+    "imageKey": "snacks/135c66f9-c917-43b9-a869-a5f5dc08efcc.jpg"
+  }
+}

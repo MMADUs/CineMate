@@ -1,0 +1,11 @@
+meta {
+  name: List Movies
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{apiUrl}}/movies?status=NOW_PLAYING&search=
+  body: none
+  auth: none
+}

@@ -1,0 +1,11 @@
+meta {
+  name: Admin Delete Snack
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{apiUrl}}/admin/snacks/{{snackId}}
+  body: none
+  auth: none
+}

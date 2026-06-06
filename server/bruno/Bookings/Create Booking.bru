@@ -1,0 +1,24 @@
+meta {
+  name: Checkout Booking
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{apiUrl}}/bookings/checkout
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Idempotency-Key: {{idempotencyKey}}
+}
+
+body:json {
+  {
+    "showtimeId": {{showtimeId}},
+    "seatIds": [{{seatId1}}, {{seatId2}}]
+  }
+}
+​

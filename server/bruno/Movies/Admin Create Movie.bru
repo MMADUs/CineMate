@@ -1,0 +1,30 @@
+meta {
+  name: Admin Create Movie
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{apiUrl}}/admin/movies
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Interstellar",
+    "description": "A team travels through a wormhole in space.",
+    "genre": "Sci-Fi",
+    "ageRate": "PG-13",
+    "durationMinutes": 169,
+    "imageKey": "movies/135c66f9-c917-43b9-a869-a5f5dc08efcc.jpg",
+    "trailerUrl": "https://youtube.com/watch?v=example",
+    "releaseDate": "2026-05-01",
+    "endDate": "2026-06-01",
+    "status": "NOW_PLAYING"
+  }
+}

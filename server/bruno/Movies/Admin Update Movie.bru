@@ -1,0 +1,22 @@
+meta {
+  name: Admin Update Movie
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{apiUrl}}/admin/movies/{{movieId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Interstellar Updated",
+    "status": "NOW_PLAYING"
+  }
+}
